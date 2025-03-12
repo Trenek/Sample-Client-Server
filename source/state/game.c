@@ -131,10 +131,10 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         bool isJClicked = KEY_PRESS & getKeyState(vulkan->windowControl, GLFW_KEY_J);
         bool isKClicked = KEY_PRESS & getKeyState(vulkan->windowControl, GLFW_KEY_K);
 
-        if (isJClicked) player[0].pos[0] += 5e-3;
-        if (isUClicked) player[0].pos[0] -= 5e-3;
-        if (isKClicked) player[0].pos[1] += 5e-3;
-        if (isHClicked) player[0].pos[1] -= 5e-3;
+        if (isJClicked) player[0].pos[0] += 3e00 * vulkan->deltaTime.deltaTime;
+        if (isUClicked) player[0].pos[0] -= 3e00 * vulkan->deltaTime.deltaTime;
+        if (isKClicked) player[0].pos[1] += 3e00 * vulkan->deltaTime.deltaTime;
+        if (isHClicked) player[0].pos[1] -= 3e00 * vulkan->deltaTime.deltaTime;
     }
 
     destroyModelArray(sizeof(model) / sizeof(struct Model), model, &vulkan->graphics);
