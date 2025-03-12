@@ -1,0 +1,11 @@
+# Kostka
+v -1.0 0.0 -1.0
+v 1.0 0.0 1.0
+v -1.0 0.0 1.0
+v 1.0 0.0 -1.0
+vt 0.0 0.0 # left lower
+vt 1.0 1.0 # right upper
+vt 0.0 1.0 # left upper
+vt 1.0 0.0 # right lower
+f 1/1 4/4 2/2
+f 1/1 2/2 3/3

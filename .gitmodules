@@ -1,0 +1,15 @@
+[submodule "dependencies/glfw"]
+	path = dependencies/glfw
+	url = https://github.com/glfw/glfw
+[submodule "dependencies/cglm"]
+	path = dependencies/cglm
+	url = https://github.com/recp/cglm
+[submodule "dependencies/cgltf"]
+	path = dependencies/cgltf
+	url = https://github.com/jkuhlmann/cgltf
+[submodule "dependencies/stb"]
+	path = dependencies/stb
+	url = https://github.com/nothings/stb
+[submodule "dependencies/tinyobjloader"]
+	path = dependencies/tinyobjloader
+	url = https://github.com/syoyo/tinyobjloader-c
