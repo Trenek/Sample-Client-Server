@@ -6,8 +6,6 @@
 #include "descriptor.h"
 #include "buffer.h"
 
-#include "definitions.h"
-
 struct Model {
     uint32_t instanceCount;
     struct instance *instance;
@@ -22,10 +20,6 @@ struct Model {
         struct buffer uniformModel;
 
         struct descriptor object;
-        struct descriptor *texture;
-
-        VkPipelineLayout pipelineLayout;
-        VkPipeline graphicsPipeline;
     } graphics;
 };
 

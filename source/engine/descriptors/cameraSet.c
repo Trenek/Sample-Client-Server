@@ -1,7 +1,6 @@
 #include <vulkan/vulkan_core.h>
 
 #include "uniformBufferObject.h"
-#include "modelBuilder.h"
 #include "MY_ASSERT.h"
 #include "definitions.h"
 

@@ -12,6 +12,7 @@
 
 #include "graphicsSetup.h"
 #include "camera.h"
+#include "graphicsPipelineObj.h"
 
 struct VulkanTools {
     GLFWwindow *window;
@@ -29,7 +30,7 @@ struct VulkanTools setup();
 void recreateSwapChain(struct VulkanTools *vulkan);
 void cleanup(struct VulkanTools vulkan);
 
-void drawFrame(struct VulkanTools *vulkan, uint16_t modelQuantity, struct Model model[modelQuantity]);
+void drawFrame(struct VulkanTools *vulkan, uint16_t modelQuantity, struct graphicsPipeline model[modelQuantity]);
 
 void getViewProj(struct VulkanTools vulkan, mat4 resultViewProj, vec4 resultViewPort);
 void getCoordinate(vec3 result, struct VulkanTools vulkan);

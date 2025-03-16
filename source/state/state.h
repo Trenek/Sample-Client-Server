@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-#include "model.h"
-
 struct VulkanTools;
 enum state {
     MAIN_MENU,

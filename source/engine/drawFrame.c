@@ -5,7 +5,7 @@
 #include "VulkanTools.h"
 
 #include "actualModel.h"
-#include "model.h"
+#include "graphicsPipelineObj.h"
 #include "uniformBufferObject.h"
 #include "instanceBuffer.h"
 #include "pushConstantsBuffer.h"
@@ -24,7 +24,7 @@ void updateUniformBuffer(void *uniformBuffersMapped, VkExtent2D swapChainExtent,
     memcpy(uniformBuffersMapped, &ubo, sizeof(ubo));
 }
 
-static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swapChainFramebuffer, VkExtent2D swapChainExtent, struct VulkanTools *vulkan, uint32_t currentFrame, uint16_t modelQuantity, struct Model model[modelQuantity]) {
+static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swapChainFramebuffer, VkExtent2D swapChainExtent, struct VulkanTools *vulkan, uint32_t currentFrame, uint16_t modelQuantity, struct graphicsPipeline pipe[modelQuantity]) {
     VkCommandBufferBeginInfo beginInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = 0,
@@ -80,43 +80,47 @@ static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swa
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     for (uint32_t i = 0; i < modelQuantity; i += 1) {
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, model[i].graphics.graphicsPipeline);
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe[i].pipeline);
+        for (uint32_t j = 0; j < pipe[i].modelQuantity; j += 1) {
+            VkDescriptorSet sets[] = {
+                pipe[i].model[j].graphics.object.descriptorSets[currentFrame],
+                pipe[i].texture->descriptorSets[currentFrame],
+                vulkan->graphics.cameraDescriptorSet[currentFrame]
+            };
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe[i].pipelineLayout, 0, 3, sets, 0, NULL);
+            for (uint32_t k = 0; k < pipe[i].model[j].actualModel->meshQuantity; k += 1) {
+                vkCmdBindVertexBuffers(commandBuffer, 0, 1, &pipe[i].model[j].actualModel->mesh[k].vertexBuffer, (VkDeviceSize[]){ 0 });
+                vkCmdBindIndexBuffer(commandBuffer, pipe[i].model[j].actualModel->mesh[k].indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-        VkDescriptorSet sets[] = {
-            model[i].graphics.object.descriptorSets[currentFrame],
-            model[i].graphics.texture->descriptorSets[currentFrame],
-            vulkan->graphics.cameraDescriptorSet[currentFrame]
-        };
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, model[i].graphics.pipelineLayout, 0, 3, sets, 0, NULL);
-        for (uint32_t j = 0; j < model[i].actualModel->meshQuantity; j += 1) {
-            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &model[i].actualModel->mesh[j].vertexBuffer, (VkDeviceSize[]){ 0 });
-            vkCmdBindIndexBuffer(commandBuffer, model[i].actualModel->mesh[j].indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-
-            vkCmdPushConstants(commandBuffer, model[i].graphics.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(struct MeshPushConstants), &(struct MeshPushConstants) { .meshID = j });
-            vkCmdDrawIndexed(commandBuffer, model[i].actualModel->mesh[j].indicesQuantity, model[i].instanceCount, 0, 0, 0);
+                vkCmdPushConstants(commandBuffer, pipe[i].pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(struct MeshPushConstants), &(struct MeshPushConstants) { .meshID = k });
+                vkCmdDrawIndexed(commandBuffer, pipe[i].model[j].actualModel->mesh[k].indicesQuantity, pipe[i].model[j].instanceCount, 0, 0, 0);
+            }
         }
     }
     vkCmdEndRenderPass(commandBuffer);
     MY_ASSERT(VK_SUCCESS == vkEndCommandBuffer(commandBuffer));
 }
 
-static void update(struct Model model, uint32_t currentFrame) {
-    for (uint32_t i = 0; i < model.instanceCount; i += 1) {
-        double time = clock() / (double)CLOCKS_PER_SEC;
-        glm_mat4_identity(model.instanceBuffer[i].modelMatrix);
+static void update(struct graphicsPipeline pipe, uint32_t currentFrame) {
+    for (uint32_t i = 0; i < pipe.modelQuantity; i += 1) {
+        struct Model *model = &pipe.model[i];
+        for (uint32_t j = 0; j < model->instanceCount; j += 1) {
+            double time = clock() / (double)CLOCKS_PER_SEC;
+            glm_mat4_identity(model->instanceBuffer[j].modelMatrix);
 
-        glm_translate(model.instanceBuffer[i].modelMatrix, model.instance[i].pos);
-        glm_rotate(model.instanceBuffer[i].modelMatrix, glm_rad(90) + time * model.instance[i].rotation[0], (vec3) { 1, 0, 0 });
-        glm_rotate(model.instanceBuffer[i].modelMatrix,               time * model.instance[i].rotation[1], (vec3) { 0, 1, 0 });
-        glm_rotate(model.instanceBuffer[i].modelMatrix,               time * model.instance[i].rotation[2], (vec3) { 0, 0, 1 });
-        glm_scale(model.instanceBuffer[i].modelMatrix, model.instance[i].scale);
-        model.instanceBuffer[i].textureIndex = model.texturePointer + model.instance[i].textureIndex + model.instance[i].textureInc;
-        model.instanceBuffer[i].shadow = model.instance[i].shadow;
+            glm_translate(model->instanceBuffer[j].modelMatrix, model->instance[j].pos);
+            glm_rotate(model->instanceBuffer[j].modelMatrix, glm_rad(90) + time * model->instance[j].rotation[0], (vec3) { 1, 0, 0 });
+            glm_rotate(model->instanceBuffer[j].modelMatrix,               time * model->instance[j].rotation[1], (vec3) { 0, 1, 0 });
+            glm_rotate(model->instanceBuffer[j].modelMatrix,               time * model->instance[j].rotation[2], (vec3) { 0, 0, 1 });
+            glm_scale(model->instanceBuffer[j].modelMatrix, model->instance[j].scale);
+            model->instanceBuffer[j].textureIndex = model->texturePointer + model->instance[j].textureIndex + model->instance[j].textureInc;
+            model->instanceBuffer[j].shadow = model->instance[j].shadow;
+        }
+        memcpy((uint8_t *)model->graphics.uniformModel.buffersMapped[currentFrame], model->instanceBuffer, sizeof(struct instanceBuffer) * model->instanceCount);
     }
-    memcpy((uint8_t *)model.graphics.uniformModel.buffersMapped[currentFrame], model.instanceBuffer, sizeof(struct instanceBuffer) * model.instanceCount);
 }
 
-static VkResult localDrawFrame(struct VulkanTools *vulkan, uint16_t modelQuantity, struct Model model[modelQuantity]) {
+static VkResult localDrawFrame(struct VulkanTools *vulkan, uint16_t modelQuantity, struct graphicsPipeline model[modelQuantity]) {
     VkResult result = VK_TRUE;
 
     uint32_t imageIndex = 0;
@@ -185,7 +189,7 @@ static VkResult localDrawFrame(struct VulkanTools *vulkan, uint16_t modelQuantit
     return result;
 }
 
-void drawFrame(struct VulkanTools *vulkan, uint16_t modelQuantity, struct Model model[modelQuantity]) {
+void drawFrame(struct VulkanTools *vulkan, uint16_t modelQuantity, struct graphicsPipeline model[modelQuantity]) {
     updateDeltaTime(&vulkan->deltaTime);
 
     switch (localDrawFrame(vulkan, modelQuantity, model)) {
