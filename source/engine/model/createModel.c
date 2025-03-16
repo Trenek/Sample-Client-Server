@@ -1,11 +1,11 @@
-#include "VulkanTools.h"
+#include "graphicsSetup.h"
 
-#include "model.h"
 #include "modelBuilder.h"
-#include "bufferOperations.h"
 
 #include "modelFunctions.h"
 #include "instanceBuffer.h"
+
+#include "descriptor.h"
 
 struct Model createModels(struct ModelBuilder modelBuilder, struct GraphicsSetup *vulkan) {
     struct Model result = { 0 };
@@ -37,28 +37,6 @@ struct Model createModels(struct ModelBuilder modelBuilder, struct GraphicsSetup
     result.graphics.graphicsPipeline = createGraphicsPipeline(modelBuilder.vertexShader, modelBuilder.fragmentShader, modelBuilder.minDepth, modelBuilder.maxDepth, vulkan->device, vulkan->renderPass, result.graphics.pipelineLayout, vulkan->msaaSamples);
 
     return result;
-}
-
-[[maybe_unused]]
-static void unloadMesh(struct Vertex *vertices, uint16_t *indices) {
-    free(vertices);
-    free(indices);
-}
-
-void destroyActualModels(VkDevice device, uint32_t modelQuantity, struct actualModel *model) {
-    for (uint32_t i = 0; i < modelQuantity; i += 1) {
-        for (uint32_t j = 0; j < model[i].meshQuantity; j += 1) {
-            destroyBuffer(device, model[i].mesh[j].indexBuffer, model[i].mesh[j].indexBufferMemory);
-            destroyBuffer(device, model[i].mesh[j].vertexBuffer, model[i].mesh[j].vertexBufferMemory);
-        }
-
-        for (uint32_t j = 0; j < model[i].meshQuantity; j += 1) {
-            unloadMesh(model[i].mesh[j].vertices, model[i].mesh[j].indices);
-        }
-        free(model[i].mesh);
-
-        destroyStorageBuffer(device, model[i].localMesh.buffers, model[i].localMesh.buffersMemory);
-    }
 }
 
 static void destroyModels(VkDevice device, struct Model model) {

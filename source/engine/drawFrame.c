@@ -3,7 +3,9 @@
 #include <time.h>
 
 #include "VulkanTools.h"
-#include "model/model.h"
+
+#include "actualModel.h"
+#include "model.h"
 #include "uniformBufferObject.h"
 #include "instanceBuffer.h"
 #include "pushConstantsBuffer.h"

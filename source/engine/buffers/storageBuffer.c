@@ -1,7 +1,6 @@
 #include <vulkan/vulkan.h>
 
 #include "bufferOperations.h"
-#include "model.h"
 
 #include "definitions.h"
 

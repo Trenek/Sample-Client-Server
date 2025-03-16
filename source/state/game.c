@@ -1,45 +1,19 @@
-#include <string.h>
-
 #include "VulkanTools.h"
 #include "state.h"
+
+#include "asset.h"
 
 #include "model.h"
 #include "modelBuilder.h"
 #include "instanceBuffer.h"
 
-#include "modelFunctions.h"
-
-void loadModel(struct actualModel *model, const char *modelPath, struct GraphicsSetup *vulkan) {
-    (NULL != strstr(modelPath, ".obj") ? objLoadModel : gltfLoadModel)(
-        modelPath, 
-        model,
-        vulkan->device,
-        vulkan->physicalDevice,
-        vulkan->surface
-    );
-
-    for (uint32_t i = 0; i < model->meshQuantity; i += 1) {
-        model->mesh[i].vertexBuffer = createVertexBuffer(&model->mesh[i].vertexBufferMemory, vulkan->device, vulkan->physicalDevice, vulkan->surface, vulkan->commandPool, vulkan->transferQueue, model->mesh[i].verticesQuantity, model->mesh[i].vertices);
-        model->mesh[i].indexBuffer = createIndexBuffer(&model->mesh[i].indexBufferMemory, vulkan->device, vulkan->physicalDevice, vulkan->surface, vulkan->commandPool, vulkan->transferQueue, model->mesh[i].verticesQuantity, model->mesh[i].indicesQuantity, model->mesh[i].indices);
-    }
-}
-
-void loadModels(size_t quantity, struct actualModel model[quantity], const char *modelPath[quantity], struct GraphicsSetup *vulkan) {
-    for (size_t i = 0; i < quantity; i += 1) {
-        loadModel(&model[i], modelPath[i], vulkan);
-    }
-}
-
 void game(struct VulkanTools *vulkan, enum state *state) {
     const char *texturePaths[] = {
-        "textures/pause.png",
-        "textures/grass.jpg",
-        "textures/texture.jpg",
+        "textures/texture.jpg"
     };
     size_t texturesQuantity = sizeof(texturePaths) / sizeof(const char *);
 
-    struct descriptor textureDesc;
-    struct Textures *textureData = loadTextures(&textureDesc, &vulkan->graphics, texturesQuantity, texturePaths);
+    struct Textures texture = loadTextures(&vulkan->graphics, texturesQuantity, texturePaths);
 
     const char *modelPath[] = {
         "models/my_model2d.obj",
@@ -48,16 +22,16 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     };
     size_t modelQuantity = sizeof(modelPath) / sizeof(const char *);
 
-    struct actualModel actualModel[sizeof(modelPath) / sizeof(const char *)];
-
-    loadModels(modelQuantity, actualModel, modelPath, &vulkan->graphics); 
+    struct actualModel actualModel[sizeof(modelPath) / sizeof(const char *)]; {
+        loadModels(modelQuantity, actualModel, modelPath, &vulkan->graphics);
+    }
 
     struct Model model[] = {
         /*floor*/ createModels((struct ModelBuilder) {
             .instanceCount = 1,
             .texturesQuantity = 1,
-            .texturePointer = 1,
-            .texture = &textureDesc,
+            .texturePointer = 0,
+            .texture = &texture.descriptor,
             .modelPath = &actualModel[1],
             .vertexShader = "shaders/vert.spv",
             .fragmentShader = "shaders/frag.spv",
@@ -68,7 +42,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .instanceCount = 2,
             .texturesQuantity = 1,
             .texturePointer = 0,
-            .texture = &textureDesc,
+            .texture = &texture.descriptor,
             .modelPath = &actualModel[2],
             .vertexShader = "shaders/vert.spv",
             .fragmentShader = "shaders/frag.spv",
@@ -78,8 +52,8 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         /*background*/ createModels((struct ModelBuilder) {
             .instanceCount = 1,
             .texturesQuantity = 1,
-            .texturePointer = 2,
-            .texture = &textureDesc,
+            .texturePointer = 0,
+            .texture = &texture.descriptor,
             .modelPath = &actualModel[0],
             .vertexShader = "shaders/vert2d.spv",
             .fragmentShader = "shaders/frag2d.spv",
@@ -88,7 +62,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         }, &vulkan->graphics),
     };
 
-    struct instance (*player) = model[1].instance;
+    struct instance *player = model[1].instance;
 
     *model[0].instance = (struct instance){
         .pos = { 0.0f, 0.0f, -50.0f },
@@ -138,6 +112,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     }
 
     destroyModelArray(sizeof(model) / sizeof(struct Model), model, &vulkan->graphics);
-    destroyActualModels(vulkan->graphics.device, sizeof(actualModel) / sizeof(struct actualModel), actualModel);
-    unloadTextures(vulkan->graphics.device, texturesQuantity, textureData, textureDesc);
+
+    destroyActualModels(vulkan->graphics.device, modelQuantity, actualModel);
+    unloadTextures(vulkan->graphics.device, texture);
 }

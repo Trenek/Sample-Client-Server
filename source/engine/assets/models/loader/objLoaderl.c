@@ -1,11 +1,7 @@
-#include "Vertex.h"
-#include "modelBuilder.h"
-#include "modelFunctions.h"
-
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
 #include <tinyobj_loader_c.h>
 
-#include "model.h"
+#include "actualModel.h"
 #include "myMalloc.h"
 
 //#define GOOD_OLD
@@ -130,7 +126,7 @@ static void get_file_data(void* ctx, const char* filename, [[maybe_unused]] cons
     }
 }
 
-static void loadModel(const char *objectPath, struct actualModel *model, [[maybe_unused]] VkDevice device, [[maybe_unused]] VkPhysicalDevice physicalDevice, [[maybe_unused]] VkSurfaceKHR surface) {
+void objLoadModel(const char *objectPath, struct actualModel *model, [[maybe_unused]] VkDevice device, [[maybe_unused]] VkPhysicalDevice physicalDevice, [[maybe_unused]] VkSurfaceKHR surface) {
     tinyobj_attrib_t attrib;
     tinyobj_shape_t *shapes;
     size_t num_shapes = 0;
@@ -218,8 +214,4 @@ static void loadModel(const char *objectPath, struct actualModel *model, [[maybe
     for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {
         glm_mat4_identity(((mat4 **)model->localMesh.buffersMapped)[k][0]);
     }
-}
-
-void objLoadModel(const char *filePath, struct actualModel *model, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
-    loadModel(filePath, model, device, physicalDevice, surface);
 }

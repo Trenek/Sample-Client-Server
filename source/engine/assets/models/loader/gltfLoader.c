@@ -1,12 +1,10 @@
 #define CGLTF_IMPLEMENTATION
+
 #include <vulkan/vulkan.h>
 #include <cgltf.h>
 #include <string.h>
 
-#include "Vertex.h"
-#include "modelBuilder.h"
-#include "model.h"
-#include "modelFunctions.h"
+#include "actualModel.h"
 
 static void *getBufferOffset(cgltf_buffer_view *bufferView) {
     return (uint8_t *)bufferView->buffer->data + bufferView->offset;
@@ -42,7 +40,7 @@ static int countMeshes(uint16_t n, cgltf_node x[n]) {
     return quantity;
 }
 
-cgltf_accessor *getAccessor(cgltf_attribute_type type, cgltf_primitive* primitive) {
+static cgltf_accessor *getAccessor(cgltf_attribute_type type, cgltf_primitive* primitive) {
     cgltf_accessor *result = NULL;
 
     for (size_t i = 0; result == NULL && i < primitive->attributes_count; i += 1) {
@@ -54,7 +52,7 @@ cgltf_accessor *getAccessor(cgltf_attribute_type type, cgltf_primitive* primitiv
     return result;
 }
 
-void loadFromAccessor(cgltf_accessor *accessor, void *local, size_t size, uint16_t quantity) {
+static void loadFromAccessor(cgltf_accessor *accessor, void *local, size_t size, uint16_t quantity) {
     if (accessor != NULL) {
         memcpy(local, getAccessorOffset(accessor), size * quantity);
         applySparce(accessor, local, size);
@@ -106,7 +104,7 @@ static struct Mesh loadMesh(cgltf_mesh *mesh) {
     return result;
 }
 
-void loadTransformations(mat4 transformations, cgltf_node *node) {
+static void loadTransformations(mat4 transformations, cgltf_node *node) {
     glm_mat4_identity(transformations);
 
     if (node->has_matrix) {
@@ -132,7 +130,7 @@ void loadTransformations(mat4 transformations, cgltf_node *node) {
     }
 }
 
-static void loadModel(const char *filePath, struct actualModel *model, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
+void gltfLoadModel(const char *filePath, struct actualModel *model, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     cgltf_options options = { 0 };
     cgltf_data *data = NULL;
 
@@ -174,8 +172,4 @@ static void loadModel(const char *filePath, struct actualModel *model, VkDevice 
 
         cgltf_free(data);
     }
-}
-
-void gltfLoadModel(const char *filePath, struct actualModel *model, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
-    loadModel(filePath, model, device, physicalDevice, surface);
 }

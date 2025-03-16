@@ -3,7 +3,7 @@
 #include "MY_ASSERT.h"
 #include "definitions.h"
 
-void fillArray(int num, VkDescriptorSetLayout layouts[], VkDescriptorSetLayout elem) {
+static void fillArray(int num, VkDescriptorSetLayout layouts[], VkDescriptorSetLayout elem) {
     while (num --> 0) {
         layouts[num] = elem;
     }

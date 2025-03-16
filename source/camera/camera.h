@@ -1,3 +1,5 @@
+#include <cglm.h>
+
 struct camera {
     vec3 cameraPos;
     vec3 center;

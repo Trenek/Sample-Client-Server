@@ -1,25 +1,22 @@
 #include <vulkan/vulkan_core.h>
 
-#include "uniformBufferObject.h"
-#include "instanceBuffer.h"
-#include "model.h"
-#include "modelBuilder.h"
+#include "texture.h"
 #include "MY_ASSERT.h"
 #include "definitions.h"
 
-VkDescriptorSetLayout createCameraDescriptorSetLayout(VkDevice device) {
+VkDescriptorSetLayout createTextureDescriptorSetLayout(VkDevice device, uint32_t textureQuantity) {
     VkDescriptorSetLayout descriptorSetLayout = NULL;
 
-    VkDescriptorSetLayoutBinding uboLayoutBinding = {
+    VkDescriptorSetLayoutBinding samplerLayoutBinding = {
         .binding = 0,
-        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .descriptorCount = 1,
-        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-        .pImmutableSamplers = NULL
+        .descriptorCount = textureQuantity,
+        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .pImmutableSamplers = NULL,
+        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
     };
 
     VkDescriptorSetLayoutBinding bindings[] = {
-        uboLayoutBinding
+        samplerLayoutBinding
     };
 
     VkDescriptorSetLayoutCreateInfo layoutInfo = {
@@ -33,13 +30,13 @@ VkDescriptorSetLayout createCameraDescriptorSetLayout(VkDevice device) {
     return descriptorSetLayout;
 }
 
-VkDescriptorPool createCameraDescriptorPool(VkDevice device) {
+VkDescriptorPool createTextureDescriptorPool(VkDevice device, uint32_t texturesCount) {
     VkDescriptorPool descriptorPool = NULL;
 
     VkDescriptorPoolSize poolSize[] = {
         [0] = {
-            .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = MAX_FRAMES_IN_FLIGHT
+            .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = texturesCount * MAX_FRAMES_IN_FLIGHT
         }
     };
 
@@ -56,23 +53,26 @@ VkDescriptorPool createCameraDescriptorPool(VkDevice device) {
     return descriptorPool;
 }
 
-void bindCameraBuffersToDescriptorSets(VkDescriptorSet descriptorSets[], VkDevice device, VkBuffer uniformBuffers[]) {
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i += 1) {
-        VkDescriptorBufferInfo bufferInfo = {
-            .buffer = uniformBuffers[i],
-            .offset = 0,
-            .range = sizeof(struct UniformBufferObject)
+void bindTextureBuffersToDescriptorSets(VkDescriptorSet descriptorSets[], VkDevice device, uint32_t texturesQuantity, struct Textures *texture) {
+    VkDescriptorImageInfo imageInfoArray[texturesQuantity];
+    for (uint32_t i = 0; i < texturesQuantity; i += 1) {
+        imageInfoArray[i] = (VkDescriptorImageInfo) {
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            .imageView = texture->data[i].imageView,
+            .sampler = texture->data[i].sampler
         };
+    }
 
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i += 1) {
         VkWriteDescriptorSet descriptorWrites[] = {
             [0] = {
                 .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                 .dstSet = descriptorSets[i],
                 .dstBinding = 0,
                 .dstArrayElement = 0,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .descriptorCount = 1,
-                .pBufferInfo = &bufferInfo,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = sizeof(imageInfoArray) / sizeof(VkDescriptorImageInfo),
+                .pImageInfo = imageInfoArray,
                 .pTexelBufferView = NULL
             }
         };

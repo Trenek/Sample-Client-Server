@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 #include "VulkanTools.h"
 
 #include "graphicsSetup.h"
