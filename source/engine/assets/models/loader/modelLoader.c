@@ -6,7 +6,10 @@
 #include "bufferOperations.h"
 
 void loadModel(const char *filePath, struct actualModel *model, struct GraphicsSetup *vulkan) {
-    (NULL != strstr(filePath, ".obj") ? objLoadModel : gltfLoadModel)(
+    (
+        NULL != strstr(filePath, ".obj") ? objLoadModel : 
+        NULL != strstr(filePath, ".ttf") ? ttfLoadModel :
+        gltfLoadModel)(
         filePath, 
         model,
         vulkan->device,

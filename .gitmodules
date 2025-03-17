@@ -13,3 +13,6 @@
 [submodule "dependencies/tinyobjloader"]
 	path = dependencies/tinyobjloader
 	url = https://github.com/syoyo/tinyobjloader-c
+[submodule "dependencies/freetype"]
+	path = dependencies/freetype
+	url = https://github.com/freetype/freetype

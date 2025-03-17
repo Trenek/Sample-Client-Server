@@ -6,6 +6,7 @@
 
 #include "MY_ASSERT.h"
 #include "Vertex.h"
+#include "vulkan/vulkan_core.h"
 
 #define UNUSED_RETVAL(x) if (x) {}
 
@@ -50,7 +51,7 @@ static VkShaderModule createShaderModule(VkDevice device, const char *filename) 
     return shaderModule;
 }
 
-VkPipeline createGraphicsPipeline(const char *vertexShader, const char *fragmentShader, float minDepth, float maxDepth, VkDevice device, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkSampleCountFlagBits msaaSamples) {
+VkPipeline createGraphicsPipeline(const char *vertexShader, const char *fragmentShader, float minDepth, float maxDepth, VkDevice device, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology) {
     VkPipeline graphicsPipeline = NULL;
 
     VkShaderModule vertShaderModule = createShaderModule(device, vertexShader);
@@ -137,7 +138,7 @@ VkPipeline createGraphicsPipeline(const char *vertexShader, const char *fragment
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .topology = topology,
         .primitiveRestartEnable = VK_FALSE
     };
 

@@ -2,6 +2,7 @@ find_package(Vulkan REQUIRED)
 
 add_subdirectory(glfw EXCLUDE_FROM_ALL)
 add_subdirectory(cglm EXCLUDE_FROM_ALL)
+add_subdirectory(freetype EXCLUDE_FROM_ALL)
 
 set(INCLUDE_DIRECTORIES
     "${Vulkan_INCLUDE_DIRS}"
@@ -15,6 +16,7 @@ set(LINK_LIBRARIES
     "${Vulkan_LIBRARIES}"
     glfw
     cglm
+    freetype
 )
 
 if (WIN32)

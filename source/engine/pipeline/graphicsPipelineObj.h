@@ -13,6 +13,8 @@ struct graphicsPipelineBuilder {
 
     const float minDepth;
     const float maxDepth;
+
+    VkPrimitiveTopology topology;
 };
 
 struct graphicsPipeline {

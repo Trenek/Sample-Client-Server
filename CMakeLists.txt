@@ -59,6 +59,7 @@ add_custom_command(TARGET shaders POST_BUILD
     COMMAND glslc ${SHADER_SRC}/shader2d.vert -o ${SHADER_DST}/vert2d.spv
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/textures ${CMAKE_BINARY_DIR}/textures
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/models ${CMAKE_BINARY_DIR}/models
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/fonts ${CMAKE_BINARY_DIR}/fonts
 )
 
 add_dependencies(Test shaders)
