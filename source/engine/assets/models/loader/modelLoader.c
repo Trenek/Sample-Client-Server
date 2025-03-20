@@ -6,16 +6,15 @@
 #include "bufferOperations.h"
 
 void loadModel(const char *filePath, struct actualModel *model, struct GraphicsSetup *vulkan) {
-    (
+    void (*fun)(const char *, struct actualModel *, VkDevice, VkPhysicalDevice, VkSurfaceKHR) =
         NULL != strstr(filePath, ".obj") ? objLoadModel : 
         NULL != strstr(filePath, ".ttf") ? ttfLoadModel :
-        gltfLoadModel)(
-        filePath, 
-        model,
-        vulkan->device,
-        vulkan->physicalDevice,
-        vulkan->surface
-    );
+        NULL != strstr(filePath, ".gltf") ? gltfLoadModel :
+        NULL != strstr(filePath, ".glb") ? gltfLoadModel :
+        NULL;
+    assert(NULL != fun);
+
+    fun(filePath, model, vulkan->device, vulkan->physicalDevice, vulkan->surface);
 
     for (uint32_t i = 0; i < model->meshQuantity; i += 1) {
         model->mesh[i].vertexBuffer = createVertexBuffer(&model->mesh[i].vertexBufferMemory, vulkan->device, vulkan->physicalDevice, vulkan->surface, vulkan->commandPool, vulkan->transferQueue, model->mesh[i].verticesQuantity, model->mesh[i].vertices);
