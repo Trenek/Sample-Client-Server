@@ -126,7 +126,7 @@ static void get_file_data(void* ctx, const char* filename, [[maybe_unused]] cons
     }
 }
 
-void objLoadModel(const char *objectPath, struct actualModel *model, [[maybe_unused]] VkDevice device, [[maybe_unused]] VkPhysicalDevice physicalDevice, [[maybe_unused]] VkSurfaceKHR surface) {
+void objLoadModel(const char *objectPath, struct actualModel *model, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     tinyobj_attrib_t attrib;
     tinyobj_shape_t *shapes;
     size_t num_shapes = 0;
