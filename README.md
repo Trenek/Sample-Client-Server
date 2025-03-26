@@ -6,3 +6,5 @@
 `cmake -B build`
 
 `cmake --build build --target all -j16`
+
+Pozdrawiam
