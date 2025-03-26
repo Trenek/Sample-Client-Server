@@ -40,14 +40,6 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
         }, &vulkan->graphics),
         createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
-            .vertexShader = "shaders/vert2d.spv",
-            .fragmentShader = "shaders/frag2d.spv",
-            .minDepth = 1.0f,
-            .maxDepth = 1.0f,
-            .texture = &texture.descriptor,
-            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
-        }, &vulkan->graphics),
-        createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
             .vertexShader = "shaders/vert.spv",
             .fragmentShader = "shaders/frag.spv",
             .minDepth = 0.0f,
@@ -77,37 +69,23 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     pipe[0].modelQuantity = sizeof(model1) / sizeof(struct Model);
     pipe[0].model = model1;
     
-    struct Model model2[] = {
-        /*background*/ createModels((struct ModelBuilder) {
-            .instanceCount = 1,
-            .texturesQuantity = 1,
-            .texturePointer = 0,
-            .modelPath = &actualModel[0],
-            .objectLayout = pipe[1].objectLayout,
-        }, &vulkan->graphics),
-    };
-
-    pipe[1].modelQuantity = sizeof(model2) / sizeof(struct Model);
-    pipe[1].model = model2;
-
     struct Model model3[] = {
         /*comma*/ createModels((struct ModelBuilder) {
             .instanceCount = 1,
             .texturesQuantity = 1,
             .texturePointer = 0,
             .modelPath = &actualModel[3],
-            .objectLayout = pipe[2].objectLayout,
+            .objectLayout = pipe[1].objectLayout,
         }, &vulkan->graphics),
     };
 
-    pipe[2].modelQuantity = sizeof(model3) / sizeof(struct Model);
-    pipe[2].model = model3;
+    pipe[1].modelQuantity = sizeof(model3) / sizeof(struct Model);
+    pipe[1].model = model3;
 
     struct instance *floor = pipe[0].model[0].instance;
     struct instance *player = pipe[0].model[1].instance;
-    struct instance *background = pipe[1].model[0].instance;
 
-    struct instance *comma = pipe[2].model[0].instance;
+    struct instance *comma = pipe[1].model[0].instance;
 
     *floor = (struct instance){
         .pos = { 0.0f, 0.0f, -50.0f },
@@ -128,14 +106,6 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         .rotation = { 0.0f, 0.0f, 0.0f },
         .scale = { 1.0f, 1.0f, 1.0f },
         .textureIndex = 0
-    };
-
-    *background = (struct instance){
-        .pos = { 0.0f, 0.0f, 0.0f },
-        .rotation = { 0.0f, 0.0f, 0.0f },
-        .scale = { 1.0f, 1.0f, 1.0f },
-        .textureIndex = 0,
-        .shadow = false
     };
 
     *comma = (struct instance){
@@ -166,10 +136,9 @@ void game(struct VulkanTools *vulkan, enum state *state) {
 
     destroyObjGraphicsPipeline(vulkan->graphics.device, pipe[0]);
     destroyObjGraphicsPipeline(vulkan->graphics.device, pipe[1]);
-    destroyObjGraphicsPipeline(vulkan->graphics.device, pipe[2]);
 
     destroyModelArray(sizeof(model1) / sizeof(struct Model), model1, &vulkan->graphics);
-    destroyModelArray(sizeof(model2) / sizeof(struct Model), model2, &vulkan->graphics);
+    destroyModelArray(sizeof(model3) / sizeof(struct Model), model3, &vulkan->graphics);
 
     destroyActualModels(vulkan->graphics.device, modelQuantity, actualModel);
     unloadTextures(vulkan->graphics.device, texture);

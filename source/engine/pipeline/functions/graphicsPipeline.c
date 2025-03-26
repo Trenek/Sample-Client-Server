@@ -199,7 +199,7 @@ VkPipeline createGraphicsPipeline(const char *vertexShader, const char *fragment
         .depthTestEnable = VK_TRUE,
         .depthWriteEnable = VK_TRUE,
         .depthCompareOp = VK_COMPARE_OP_LESS,
-        .depthBoundsTestEnable = VK_TRUE,
+        .depthBoundsTestEnable = VK_FALSE,
         .minDepthBounds = minDepth,
         .maxDepthBounds = maxDepth,
         .stencilTestEnable = VK_FALSE,
