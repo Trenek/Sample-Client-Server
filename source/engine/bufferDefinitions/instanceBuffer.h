@@ -14,6 +14,7 @@ struct instance {
     uint32_t textureInc;
     vec3 pos;
     vec3 rotation;
+    vec3 fixedRotation;
     vec3 scale;
     bool shadow;
 };

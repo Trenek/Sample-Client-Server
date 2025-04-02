@@ -1,12 +1,13 @@
 #version 450
 
-layout(location = 0) in vec3 inPosition;
+layout(location = 0) in vec2 inPosition;
 layout(location = 1) in vec3 inColor;
-layout(location = 2) in vec2 inTexCoord;
+layout(location = 2) in vec2 inBezzier;
+layout(location = 3) in uint inInOut;
 
 layout(location = 0) out vec3 fragColor;
-layout(location = 1) out vec2 fragTexCoord;
-layout(location = 2) out flat uint fragTexIndex;
+layout(location = 1) out vec2 fragBezzier;
+layout(location = 2) out flat uint fragInOut;
 layout(location = 3) out flat uint shadow;
 
 layout(set = 2, binding = 0) readonly uniform UniformBufferObject {
@@ -33,10 +34,11 @@ layout(push_constant) uniform constants {
 } PushConstants;
 
 void main() {
-    gl_Position = mesh.localModel[PushConstants.meshID] * vec4(inPosition, 1.0);
+    //gl_Position = mesh.localModel[PushConstants.meshID] * vec4(inPosition, 1.0);
+    gl_Position = ubo.proj * ubo.view * instance.objects[gl_InstanceIndex].model * mesh.localModel[PushConstants.meshID] * vec4(inPosition, 0.0, 1.0);
 
     fragColor = inColor;
-    fragTexCoord = inTexCoord;
-    fragTexIndex = instance.objects[gl_InstanceIndex].index;
+    fragBezzier = inBezzier;
+    fragInOut = inInOut;
     shadow = instance.objects[gl_InstanceIndex].shadow ? 1 : 0;
 }

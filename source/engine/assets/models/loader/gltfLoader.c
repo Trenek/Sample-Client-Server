@@ -6,6 +6,10 @@
 
 #include "actualModel.h"
 
+#include "Vertex.h"
+
+#define BFR(x) ((struct Vertex *)(x))
+
 static void *getBufferOffset(cgltf_buffer_view *bufferView) {
     return (uint8_t *)bufferView->buffer->data + bufferView->offset;
 }
@@ -83,7 +87,7 @@ static struct Mesh loadMesh(cgltf_mesh *mesh) {
     loadFromAccessor(color_accessor, localColor, sizeof(float[3]), result.verticesQuantity);
 
     for (size_t i = 0; i < result.verticesQuantity; i += 1) {
-        result.vertices[i] = (struct Vertex) {
+        BFR(result.vertices)[i] = (struct Vertex) {
             .pos = {
                 [0] = vertex_accessor == NULL ? 0.0f : localPosition[i][0],
                 [1] = vertex_accessor == NULL ? 0.0f : localPosition[i][1],
@@ -144,6 +148,8 @@ void gltfLoadModel(const char *filePath, struct actualModel *model, VkDevice dev
         int i = 0;
         for (uint32_t j = 0; j < data->nodes_count; j += 1) if (data->nodes[j].mesh != NULL) {
             model->mesh[i] = loadMesh(data->nodes[j].mesh);
+            model->mesh[i].sizeOfVertex = sizeof(struct Vertex);
+
             for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {
                 loadTransformations(((mat4 **)model->localMesh.buffersMapped)[k][i], &data->nodes[j]);
             }

@@ -15,6 +15,10 @@ struct graphicsPipelineBuilder {
     const float maxDepth;
 
     VkPrimitiveTopology topology;
+
+    const size_t sizeOfVertex;
+    const size_t numOfAttributes;
+    VkVertexInputAttributeDescription *attributeDescription;
 };
 
 struct graphicsPipeline {

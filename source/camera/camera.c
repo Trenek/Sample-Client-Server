@@ -68,10 +68,10 @@ void moveCamera(struct windowControl *windowControl, GLFWwindow *window, vec3 di
     }
 
 
-    if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_LEFT)) cameraTilt[0] += glm_rad(4500) * deltaTime;
-    if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_RIGHT)) cameraTilt[0] -= glm_rad(4500) * deltaTime;
-    if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_UP)) cameraTilt[1] -= glm_rad(4500) * deltaTime;
-    if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_DOWN)) cameraTilt[1] += glm_rad(4500) * deltaTime;
+    if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_LEFT)) cameraTilt[0] += glm_rad(18'000) * deltaTime;
+    if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_RIGHT)) cameraTilt[0] -= glm_rad(18'000) * deltaTime;
+    if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_UP)) cameraTilt[1] -= glm_rad(18'000) * deltaTime;
+    if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_DOWN)) cameraTilt[1] += glm_rad(18'000) * deltaTime;
 
     if (cameraTilt[1] > 80.0f) cameraTilt[1] = 80.0f;
     if (cameraTilt[1] < -80.0f) cameraTilt[1] = -80.0f;
