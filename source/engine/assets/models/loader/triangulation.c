@@ -22,7 +22,7 @@ const char *names[] = {
     "MERGE"
 };
 
-static int doesIntersect(vec2 p0, vec2 p1, vec2 p2, vec2 p3) {
+static int doesIntersect(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
     vec2 s02 = {
         p0[0] - p2[0],
         p0[1] - p2[1]
@@ -62,55 +62,80 @@ struct Point {
     struct Point *helper;
 };
 
-static int countIntersections(struct Point *this, bool hi, vec2 hiPos) {
+static bool less(const struct Point *p, const struct Point *q) {
+    return p->pos[1] < q->pos[1] || p->pos[1] == q->pos[1] && p->pos[0] > q->pos[0];
+}
+
+static bool more(const struct Point *p, const struct Point *q) {
+    return p->pos[1] > q->pos[1] || p->pos[1] == q->pos[1] && p->pos[0] < q->pos[0];
+}
+
+static bool lessX(const struct Point *p, const struct Point *q) {
+    return p->pos[0] < q->pos[0] || p->pos[0] == q->pos[0] && p->pos[1] > q->pos[1];
+}
+
+static bool moreX(const struct Point *p, const struct Point *q) {
+    return p->pos[0] > q->pos[0] || p->pos[0] == q->pos[0] && p->pos[1] < q->pos[1];
+}
+
+static int countIntersectionsRight(struct Point *this) {
     int count = 0;
-    int aaa = 0;
 
-    struct Point *that = this->next;
-    struct Point *end = this;
-    while (hi ? (this->pos[0] == that->pos[0])
-              : (this->pos[1] == that->pos[1])) {
-        that = that->next;
-    }
-    while (hi ? (this->pos[0] == end->pos[0])
-              : (this->pos[1] == end->pos[1])) {
-        end = end->prev;
-    }
+    vec2 hiPos = {
+        this->pos[0] + 10,
+        this->pos[1]
+    };
+
+    struct Point *that = this;
     do {
-        if (hi ? (this->pos[0] == that->pos[0] && this->pos[1] < that->pos[1])
-               : (this->pos[0] < that->pos[0] && this->pos[1] == that->pos[1])) {
-            aaa += 1;
-        }
-        else {
-            int temp = doesIntersect(this->pos, hiPos, that->pos, that->next->pos);
-
-            count += aaa + temp;
-            aaa = 0;
+        if (more(this, that) && less(this, that->next) || more(this, that->next) && less(this, that)) {
+            count += this->pos[0] < that->pos[0] && this->pos[1] == that->pos[1] ? 1 :
+                     this->pos[0] < that->next->pos[0] && this->pos[1] == that->next->pos[1] ? 1 : 
+                     doesIntersect(this->pos, hiPos, that->pos, that->next->pos);
         }
 
         that = that->next;
-    } while (that != end && that->next != end);
+    } while (that != this);
 
     return count;
 }
 
-static bool less(const struct Point *p, const struct Point *q) {
-    return p->pos[1] < q->pos[1] || (p->pos[1] == q->pos[1] && p->pos[0] > q->pos[0]);
-}
+static int countIntersectionsUp(const struct Point *const this) {
+    int count = 0;
 
-static bool more(const struct Point *p, const struct Point *q) {
-    return p->pos[1] > q->pos[1] || (p->pos[1] == q->pos[1] && p->pos[0] < q->pos[0]);
+    vec2 hiPos = {
+        this->pos[0],
+        this->pos[1] + 10
+    };
+
+    struct Point *that = this->next;
+    do {
+        if (moreX(this, that) && lessX(this, that->next) || moreX(this, that->next) && lessX(this, that)) {
+            count += this->pos[1] < that->pos[1] && this->pos[0] == that->pos[0] ? 1 :
+                     this->pos[1] < that->next->pos[1] && this->pos[0] == that->next->pos[0] ? 1 : 
+                     doesIntersect(this->pos, hiPos, that->pos, that->next->pos);
+        }
+        else {
+            if (that->pos[0] != that->next->pos[0] && (
+                    that->pos[1] > this->pos[1] && this->pos[0] == that->pos[0] || 
+                    that->next->pos[1] > this->pos[1] && this->pos[0] == that->next->pos[0])) {
+                count += 1;
+            }
+        }
+
+        that = that->next;
+    } while (that->next != this);
+
+    printf("%d\n", count);
+    return count;
 }
 
 static enum PointState getState(struct Point *this) {
-    vec2 hiPos = {
-        this->pos[0],
-        this->pos[1] + 1
-    };
+    size_t qIntersections = countIntersectionsUp(this);
 
     return 
-        (more(this, this->next) && more(this, this->prev)) ? (countIntersections(this, true, hiPos) % 2 == 0 ? START : SPLIT) :
-        (less(this, this->next) && less(this, this->prev)) ? (countIntersections(this, true, hiPos) % 2 == 1 ? END   : MERGE) :
+        (more(this, this->next) && more(this, this->prev)) ? (qIntersections % 2 == 0 ? START : SPLIT) :
+        (less(this, this->next) && less(this, this->prev)) ? (qIntersections % 2 == 1 ? END   : MERGE) :
         REGULAR;
 }
 
@@ -158,12 +183,7 @@ static size_t getLeft(size_t qT, struct Point **T, struct Point *this) {
 }
 
 static bool insideOnRight(struct Point *v) {
-    vec2 rPos = {
-        v->pos[0] + 10,
-        v->pos[1]
-    };
-
-    return countIntersections(v, false, rPos) % 2 == 1;
+    return countIntersectionsRight(v) % 2 == 1;
 }
 
 static void MakeMonotone(size_t *outN, struct Point *polygon) {
@@ -187,7 +207,6 @@ static void MakeMonotone(size_t *outN, struct Point *polygon) {
         switch(a) {
             case REGULAR:
                 if (insideOnRight(v[i])) {
-                    printf("\tPolygon On Right\n");
                     if (getState(v[i]->prev->helper) == MERGE) {
                         toAdd[qAdded + 0] = v[i];
                         toAdd[qAdded + 1] = v[i]->prev->helper;
@@ -199,21 +218,14 @@ static void MakeMonotone(size_t *outN, struct Point *polygon) {
                     (T[qT++] = v[i])->helper = v[i];
                 }
                 else {
-                    printf("\tPolygon On Left\n");
                     j = getLeft(qT, T, v[i]);
-                    printf("\t%zu\n", qT);
-                    for (size_t q = 0; q < qT; q += 1) {
-                        printf("\t%f %f\n", T[q]->pos[0], T[q]->pos[1]);
-                    }
-                    printf("\t%zu\n", j);
-                    if (getState(v[j]->helper) == MERGE) {
-                        printf("\tAAAA\n");
+                    if (getState(T[j]->helper) == MERGE) {
                         toAdd[qAdded + 0] = v[i];
-                        toAdd[qAdded + 1] = v[j]->helper;
+                        toAdd[qAdded + 1] = T[j]->helper;
 
                         qAdded += 2;
                     }
-                    v[j]->helper = v[i];
+                    T[j]->helper = v[i];
                 }
                 break;
             case END:
@@ -229,7 +241,7 @@ static void MakeMonotone(size_t *outN, struct Point *polygon) {
             case SPLIT:
                 j = getLeft(qT, T, v[i]);
                 toAdd[qAdded + 0] = v[i];
-                toAdd[qAdded + 1] = v[j]->helper;
+                toAdd[qAdded + 1] = T[j]->helper;
 
                 qAdded += 2;
 
@@ -249,17 +261,16 @@ static void MakeMonotone(size_t *outN, struct Point *polygon) {
                 removePoint(qT--, (void **)T, v[i]->prev);
 
                 j = getLeft(qT, T, v[i]);
-                if (getState(v[j]->helper) == MERGE) {
+                if (getState(T[j]->helper) == MERGE) {
                     toAdd[qAdded + 0] = v[i];
-                    toAdd[qAdded + 1] = v[j]->helper;
+                    toAdd[qAdded + 1] = T[j]->helper;
 
                     qAdded += 2;
                 }
-                v[j]->helper = v[i];
+                T[j]->helper = v[i];
 
                 break;
         }
-        printf("Good\n");
     }
 
     for (size_t i = 0; i < qAdded; i += 2) {
@@ -450,10 +461,6 @@ void triangulate(size_t vertexQuantity, size_t vertexIDs[vertexQuantity], struct
         };
     }
 
-    for (size_t i = 0; i < vertexQuantity; i += 1) {
-        printf("(%f, %f)\n", polygon[i][0], polygon[i][1]);
-    }
     MakeMonotone(&vertexQuantity, actualPolygon);
-    printf("Oho");
     TriangulatePolygon(vertexQuantity, actualPolygon, triangles);
 }

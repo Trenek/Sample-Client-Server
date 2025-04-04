@@ -28,6 +28,8 @@ target_compile_options(Test PUBLIC
     -Wpedantic
     -Wshadow
     -Wunused
+    -Wno-logical-op-parentheses
+    -Wno-parentheses
     -Werror
     -Wno-comment
     -pedantic

@@ -399,8 +399,6 @@ size_t createOutline(struct contour *tree, size_t *arr, struct FontVertex *verte
     return q;
 }
 
-#define LOG(x, y) printf("%s: %f %f, ", #y, x[0], x[1])
-
 void avg(vec2 out, vec2 a, vec2 b, vec2 c) {
     out[0] = (a[0] + b[0] + c[0]) / 3;
     out[1] = (a[1] + b[1] + c[1]) / 3;
