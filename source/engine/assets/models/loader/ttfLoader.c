@@ -128,7 +128,7 @@ void loadBezier(FT_GlyphSlot slot, struct Mesh *mesh, struct contour *contours, 
 
         contours[i].arr = pointIDs + q;
         for (size_t j = 0; j < N; j += 1) {
-            bool isLeftV = !isClockWise(3, (vec2[]) { 
+            bool isLeftV = isClockWise(3, (vec2[]) { 
                 { onLine[j][0], onLine[j][1] },
                 { offLine[j][0], offLine[j][1] },
                 { onLine[(j + 1) % N][0], onLine[(j + 1) % N][1] }
@@ -448,7 +448,7 @@ void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
     IF (0 == FT_Init_FreeType(&library), "No Library")
     IF (0 == FT_New_Face(library, objectPath, 0, &face), "No Face")
     IF (0 == FT_Set_Pixel_Sizes(face, 100, 100), "Size Error")
-    IF (0 == FT_Load_Glyph(face, FT_Get_Char_Index(face, 'R'), FT_LOAD_NO_BITMAP), "No Glyph") {
+    IF (0 == FT_Load_Glyph(face, FT_Get_Char_Index(face, 'S'), FT_LOAD_NO_BITMAP), "No Glyph") {
         FT_GlyphSlot slot = face->glyph;
         FT_Outline *outline = &slot->outline;
 

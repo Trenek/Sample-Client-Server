@@ -331,7 +331,7 @@ static bool isGood(int l, vec2 a, vec2 b, vec2 c) {
         { c[0], c[1] },
     };
 
-    return isClockWise(3, arr) ? l == 1 : l == 2;
+    return isClockWise(3, arr) ? l == 2 : l == 1;
 }
 
 static bool isLeft(vec2 a, vec2 b, vec2 c) {
@@ -474,7 +474,7 @@ void triangulate(size_t vertexQuantity, size_t vertexIDs[vertexQuantity], struct
         verticies[i][0] = vertex[vertexIDs[i]].pos[0];
         verticies[i][1] = vertex[vertexIDs[i]].pos[1];
     }
-    bool isOk = !isClockWise(vertexQuantity, verticies);
+    bool isOk = isClockWise(vertexQuantity, verticies);
 
     struct Point polygon[vertexQuantity * 2];
     for (size_t i = 0; i < vertexQuantity; i += 1) {
