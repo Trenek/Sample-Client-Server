@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,6 +22,9 @@ const char *names[] = {
     "SPLIT",
     "MERGE"
 };
+
+bool isClockWise(size_t N, vec2 *v);
+float getAngle(vec2 A, vec2 B, vec2 C);
 
 static int doesIntersect(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
     vec2 s02 = {
@@ -70,14 +74,6 @@ static bool more(const struct Point *p, const struct Point *q) {
     return p->pos[1] > q->pos[1] || p->pos[1] == q->pos[1] && p->pos[0] < q->pos[0];
 }
 
-static bool lessX(const struct Point *p, const struct Point *q) {
-    return p->pos[0] < q->pos[0] || p->pos[0] == q->pos[0] && p->pos[1] > q->pos[1];
-}
-
-static bool moreX(const struct Point *p, const struct Point *q) {
-    return p->pos[0] > q->pos[0] || p->pos[0] == q->pos[0] && p->pos[1] < q->pos[1];
-}
-
 static int countIntersectionsRight(struct Point *this) {
     int count = 0;
 
@@ -100,42 +96,14 @@ static int countIntersectionsRight(struct Point *this) {
     return count;
 }
 
-static int countIntersectionsUp(const struct Point *const this) {
-    int count = 0;
-
-    vec2 hiPos = {
-        this->pos[0],
-        this->pos[1] + 10
-    };
-
-    struct Point *that = this->next;
-    do {
-        if (moreX(this, that) && lessX(this, that->next) || moreX(this, that->next) && lessX(this, that)) {
-            count += this->pos[1] < that->pos[1] && this->pos[0] == that->pos[0] ? 1 :
-                     this->pos[1] < that->next->pos[1] && this->pos[0] == that->next->pos[0] ? 1 : 
-                     doesIntersect(this->pos, hiPos, that->pos, that->next->pos);
-        }
-        else {
-            if (that->pos[0] != that->next->pos[0] && (
-                    that->pos[1] > this->pos[1] && this->pos[0] == that->pos[0] || 
-                    that->next->pos[1] > this->pos[1] && this->pos[0] == that->next->pos[0])) {
-                count += 1;
-            }
-        }
-
-        that = that->next;
-    } while (that->next != this);
-
-    printf("%d\n", count);
-    return count;
-}
-
 static enum PointState getState(struct Point *this) {
-    size_t qIntersections = countIntersectionsUp(this);
+    float angle = getAngle(this->prev->pos, this->pos, this->next->pos);
+
+    printf("angle = %f =>", angle);
 
     return 
-        (more(this, this->next) && more(this, this->prev)) ? (qIntersections % 2 == 0 ? START : SPLIT) :
-        (less(this, this->next) && less(this, this->prev)) ? (qIntersections % 2 == 1 ? END   : MERGE) :
+        (more(this, this->next) && more(this, this->prev)) ? (angle < M_PI ? START : SPLIT) :
+        (less(this, this->next) && less(this, this->prev)) ? (angle < M_PI ? END   : MERGE) :
         REGULAR;
 }
 
@@ -186,6 +154,37 @@ static bool insideOnRight(struct Point *v) {
     return countIntersectionsRight(v) % 2 == 1;
 }
 
+void printPoint(const char *str, const struct Point *const v) {
+    printf("\t%c%d%s\n",
+        'A' + (v->id % ('Z' - 'A' + 1)),
+        (v->id / ('Z' - 'A' + 1)),
+        str
+    );
+    printf("\t\tPrev: %c%d\n",
+        'A' + (v->prev->id % ('Z' - 'A' + 1)),
+        (v->prev->id / ('Z' - 'A' + 1))
+    );
+    printf("\t\tNext %c%d\n",
+        'A' + (v->next->id % ('Z' - 'A' + 1)),
+        (v->next->id / ('Z' - 'A' + 1))
+    );
+}
+
+void getProper(struct Point **lesser, struct Point **bigger) {
+    struct Point **temp = lesser;
+    struct Point *tempP;
+
+    if (more(*lesser, *bigger)) {
+        lesser = bigger;
+        bigger = temp;
+    }
+
+    tempP = *lesser;
+    while (more(tempP, *bigger) || less(tempP, *bigger)) tempP = tempP->next;
+
+    *bigger = tempP;
+}
+
 static void MakeMonotone(size_t *outN, struct Point *polygon) {
     size_t N = *outN;
     struct Point *v[N]; {
@@ -202,9 +201,10 @@ static void MakeMonotone(size_t *outN, struct Point *polygon) {
     size_t j = 0;
 
     for (size_t i = 0; i < N; i += 1) {
-        auto a = getState(v[i]);
-        printf("%s - (%f, %f)\n", names[a], v[i]->pos[0], v[i]->pos[1]);
-        switch(a) {
+        size_t temp = getState(v[i]);
+        printf("%s", names[temp]);
+        printPoint("", v[i]);
+        switch(temp) {
             case REGULAR:
                 if (insideOnRight(v[i])) {
                     if (getState(v[i]->prev->helper) == MERGE) {
@@ -274,19 +274,19 @@ static void MakeMonotone(size_t *outN, struct Point *polygon) {
     }
 
     for (size_t i = 0; i < qAdded; i += 2) {
+        getProper(&toAdd[i + 0], &toAdd[i + 1]);
+
         polygon[N + 0] = (struct Point) {
             .pos = {
                 [0] = toAdd[i + 0]->pos[0],
                 [1] = toAdd[i + 0]->pos[1]
             },
-            .prev = toAdd[i + 0]->prev,
-            .next = toAdd[i + 1],
+            .prev = &polygon[N + 1],
+            .next = toAdd[i + 0]->next,
             .helpVal = 0,
             .helper = toAdd[i + 0]->helper,
             .id = toAdd[i + 0]->id
         };
-
-        toAdd[i + 0]->prev->next = &polygon[N + 0];
 
         polygon[N + 1] = (struct Point) {
             .pos = {
@@ -294,37 +294,34 @@ static void MakeMonotone(size_t *outN, struct Point *polygon) {
                 [1] = toAdd[i + 1]->pos[1],
             },
             .prev = toAdd[i + 1]->prev,
-            .next = toAdd[i + 0],
+            .next = &polygon[N + 0],
             .helpVal = 0,
             .helper = toAdd[i + 1]->helper,
             .id = toAdd[i + 1]->id
         };
 
+        toAdd[i + 0]->next->prev = &polygon[N + 0];
         toAdd[i + 1]->prev->next = &polygon[N + 1];
+
+        toAdd[i + 0]->next = toAdd[i + 1];
+        toAdd[i + 1]->prev = toAdd[i + 0];
+
+        printf("\t%c%d-%c%d\n",
+            'A' + (toAdd[i + 0]->id % ('Z' - 'A' + 1)),
+            (toAdd[i + 0]->id / ('Z' - 'A' + 1)),
+            'A' + (toAdd[i + 1]->id % ('Z' - 'A' + 1)),
+            (toAdd[i + 1]->id / ('Z' - 'A' + 1))
+        );
+
+        printPoint("1", toAdd[i + 0]);
+        printPoint("1", toAdd[i + 1]);
+        printPoint("2", &polygon[N + 0]);
+        printPoint("2", &polygon[N + 1]);
 
         N += 2;
     }
 
     *outN += qAdded;
-}
-
-static bool isClockWise(size_t N, vec2 *v) {
-    float crossProductSum = 0.0f;
-    
-    for (size_t i = 0; i < N; i++) {
-        size_t next = (i + 1) % N;
-        size_t nextNext = (i + 2) % N;
-        
-        crossProductSum += 
-            (v[next][0] - v[i][0]) * (v[nextNext][1] - v[i][1]) - 
-            (v[next][1] - v[i][1]) * (v[nextNext][0] - v[i][0]);
-    }
-    
-    return crossProductSum < 0;
-}
-
-static bool isClockWise2(vec2 v[3]) {
-    return isClockWise(3, v);
 }
 
 static bool isGood(int l, vec2 a, vec2 b, vec2 c) {
@@ -334,7 +331,7 @@ static bool isGood(int l, vec2 a, vec2 b, vec2 c) {
         { c[0], c[1] },
     };
 
-    return isClockWise2(arr) ? l == 1 : l == 2;
+    return isClockWise(3, arr) ? l == 1 : l == 2;
 }
 
 static bool isLeft(vec2 a, vec2 b, vec2 c) {
@@ -351,17 +348,40 @@ static void TriangulateMonotone(size_t N, struct Point **u, uint16_t (**triangle
     S[0] = 0;
     S[1] = 1;
 
-    c = u[0]; while (c->next < c) (c = c->next)->helpVal = 1;
-    c = u[0]; while (c->prev < c) (c = c->prev)->helpVal = 2;
+    c = u[0]; while (c->next != u[N - 1]) {
+        (c = c->next)->helpVal = 1;
+        printf("L %c%d\n", 
+            'A' + (c->id % ('Z' - 'A' + 1)),
+            c->id / ('Z' - 'A' + 1)
+        );
+    }
+    c = u[0]; while (c->prev != u[N - 1]) {
+        (c = c->prev)->helpVal = 2;
+        printf("R %c%d\n", 
+            'A' + (c->id % ('Z' - 'A' + 1)),
+            c->id / ('Z' - 'A' + 1)
+        );
+    }
 
     for (size_t j = 2; j < N - 1; j += 1) {
-        if (u[S[top]]->next != u[j] && u[S[top]]->prev != u[j]) {
+        // if (u[S[top]]->next != u[j] && u[S[top]]->prev != u[j]) {
+        printf("Top = %d, J = %d, Triangle = ", u[S[top]]->helpVal, u[j]->helpVal);
+        if (u[S[top]]->helpVal != u[j]->helpVal) {
             while (top > 0) {
                 bool isLeftV = isLeft(u[j]->pos, u[S[top]]->pos, u[S[top - 1]]->pos);
 
                 (**triangles)[0] = u[j]->id;
                 (**triangles)[1] = u[S[top - (isLeftV ? 0 : 1)]]->id;
                 (**triangles)[2] = u[S[top - (isLeftV ? 1 : 0)]]->id;
+
+                printf("%c%d-%c%d-%c%d\n", 
+                    'A' + ((**triangles)[0] % ('Z' - 'A' + 1)), 
+                    ((**triangles)[0] / ('Z' - 'A' + 1)), 
+                    'A' + ((**triangles)[1] % ('Z' - 'A' + 1)), 
+                    ((**triangles)[1] / ('Z' - 'A' + 1)), 
+                    'A' + ((**triangles)[2] % ('Z' - 'A' + 1)), 
+                    ((**triangles)[2] / ('Z' - 'A' + 1))
+                );
 
                 *triangles += 1;
 
@@ -381,6 +401,15 @@ static void TriangulateMonotone(size_t N, struct Point **u, uint16_t (**triangle
                 (**triangles)[1] = u[S[top - (isLeftV ? 0 : 1)]]->id;
                 (**triangles)[2] = u[S[top - (isLeftV ? 1 : 0)]]->id;
 
+                printf("%c%d-%c%d-%c%d\n", 
+                    'A' + ((**triangles)[0] % ('Z' - 'A' + 1)), 
+                    ((**triangles)[0] / ('Z' - 'A' + 1)), 
+                    'A' + ((**triangles)[1] % ('Z' - 'A' + 1)), 
+                    ((**triangles)[1] / ('Z' - 'A' + 1)), 
+                    'A' + ((**triangles)[2] % ('Z' - 'A' + 1)), 
+                    ((**triangles)[2] / ('Z' - 'A' + 1))
+                );
+
                 *triangles += 1;
 
                 top -= 1;
@@ -398,13 +427,22 @@ static void TriangulateMonotone(size_t N, struct Point **u, uint16_t (**triangle
         (**triangles)[1] = u[S[top - (isLeftV ? 0 : 1)]]->id;
         (**triangles)[2] = u[S[top - (isLeftV ? 1 : 0)]]->id;
 
+        printf("%c%d-%c%d-%c%d\n", 
+            'A' + ((**triangles)[0] % ('Z' - 'A' + 1)), 
+            ((**triangles)[0] / ('Z' - 'A' + 1)), 
+            'A' + ((**triangles)[1] % ('Z' - 'A' + 1)), 
+            ((**triangles)[1] / ('Z' - 'A' + 1)), 
+            'A' + ((**triangles)[2] % ('Z' - 'A' + 1)), 
+            ((**triangles)[2] / ('Z' - 'A' + 1))
+        );
+
         *triangles += 1;
 
         top -= 1;
     }
 }
 
-static void TriangulatePolygon(size_t N, struct Point *polygon, uint16_t triangles[18][3]) {
+static void TriangulatePolygon(size_t N, struct Point *polygon, uint16_t (*triangles)[3]) {
     struct Point *end;
     struct Point *monotone[N];
     size_t qTab = 0;
@@ -413,9 +451,13 @@ static void TriangulatePolygon(size_t N, struct Point *polygon, uint16_t triangl
         if (polygon[i].helpVal == 0) {
             end = &polygon[i];
             qTab = 0;
+            
+            printf("AHA\n");
             do {
                 (monotone[qTab++] = (end = end->next))->helpVal = 1;
+                printPoint("", end);
             } while (end != &polygon[i]);
+            printf("AHA\n");
 
             TriangulateMonotone(qTab, monotone, &triangles);
 
@@ -424,43 +466,46 @@ static void TriangulatePolygon(size_t N, struct Point *polygon, uint16_t triangl
     }
 }
 
+#define OK(i) (isOk ? i : (vertexQuantity - 1 - i))
+
 void triangulate(size_t vertexQuantity, size_t vertexIDs[vertexQuantity], struct FontVertex *vertex, uint16_t (*triangles)[3]) {
-    vec2 polygon[vertexQuantity];
+    vec2 verticies[vertexQuantity];
     for (size_t i = 0; i < vertexQuantity; i += 1) {
-        polygon[i][0] = vertex[vertexIDs[i]].pos[0];
-        polygon[i][1] = vertex[vertexIDs[i]].pos[1];
+        verticies[i][0] = vertex[vertexIDs[i]].pos[0];
+        verticies[i][1] = vertex[vertexIDs[i]].pos[1];
     }
-    vec2 *ready[vertexQuantity];
-    size_t indexes[vertexQuantity];
+    bool isOk = !isClockWise(vertexQuantity, verticies);
 
-    if (isClockWise(vertexQuantity, polygon)) {
-        for (size_t i = 0; i < vertexQuantity; i += 1) {
-            indexes[i] = vertexIDs[vertexQuantity - 1 - i];
-            ready[i] = &polygon[vertexQuantity - 1 - i];
-        }
-    }
-    else {
-        for (size_t i = 0; i < vertexQuantity; i += 1) {
-            indexes[i] = vertexIDs[i];
-            ready[i] = &polygon[i];
-        }
-    }
-
-    struct Point actualPolygon[vertexQuantity * 2];
+    struct Point polygon[vertexQuantity * 2];
     for (size_t i = 0; i < vertexQuantity; i += 1) {
-        actualPolygon[i] = (struct Point) {
+        polygon[i] = (struct Point) {
             .helpVal = 0,
-            .next = &actualPolygon[(i + 1) % vertexQuantity],
-            .prev = &actualPolygon[(i - 1 + vertexQuantity) % vertexQuantity],
+            .next = &polygon[(i + 1) % vertexQuantity],
+            .prev = &polygon[(i - 1 + vertexQuantity) % vertexQuantity],
             .pos = {
-                [0] = (*ready[i])[0],
-                [1] = (*ready[i])[1]
+                [0] = verticies[OK(i)][0],
+                [1] = verticies[OK(i)][1]
             },
             .helper = NULL,
-            .id = indexes[i]
+            .id = vertexIDs[OK(i)]
         };
     }
 
-    MakeMonotone(&vertexQuantity, actualPolygon);
-    TriangulatePolygon(vertexQuantity, actualPolygon, triangles);
+    for (size_t i = 0; i < vertexQuantity; i += 1) {
+        printf("%zu\n",
+            vertexIDs[i]
+        );
+    }
+    for (size_t i = 0; i < vertexQuantity; i += 1) {
+        printf("%c%d = (%f, %f)\n",
+            (polygon[i].id % ('Z' - 'A' + 1)) + 'A',
+            (polygon[i].id / ('Z' - 'A' + 1)),
+            polygon[i].pos[0],
+            polygon[i].pos[1]
+        );
+    }
+
+    MakeMonotone(&vertexQuantity, polygon);
+    printf("Aha\n");
+    TriangulatePolygon(vertexQuantity, polygon, triangles);
 }

@@ -12,12 +12,14 @@
 
 #define BFR(x) ((struct FontVertex *)(x))
 
+bool isClockWise(size_t N, vec2 *v);
+
 static void lerp_l(vec2 out, FT_Vector from, FT_Vector to, float t) {
     out[0] = glm_lerp(from.x, to.x, t);
     out[1] = glm_lerp(from.y, to.y, t);
 }
 
-static size_t countP(int N, unsigned char *tags) {
+static size_t countOnlineVerticesInOutline(int N, unsigned char *tags) {
     size_t result = N;
 
     for (int i = 0; i < N; i += 1) {
@@ -29,11 +31,11 @@ static size_t countP(int N, unsigned char *tags) {
     return result / 2;
 }
 
-static size_t countPoints(FT_Outline *outline) {
-    size_t result = countP(outline->contours[0] + 1, outline->tags);
+static size_t countOnlineVerticesInPolygon(FT_Outline *outline) {
+    size_t result = countOnlineVerticesInOutline(outline->contours[0] + 1, outline->tags);
 
     for (size_t i = 1; i < outline->n_contours; i += 1) {
-        result += countP(
+        result += countOnlineVerticesInOutline(
             outline->contours[i] - outline->contours[i - 1],
             outline->tags + outline->contours[i - 1] + 1
         );
@@ -89,10 +91,6 @@ static void toArrays(size_t S, size_t E, FT_Outline *outline, size_t N, vec2 onL
     }
 }
 
-static bool isLeft(vec2 a, vec2 b, vec2 c) {
-    return (b[0] - a[0]) * (c[1] - a[1]) > (b[1] - a[1]) * (c[0] - a[0]);
-}
-
 struct contour {
     size_t *arr;
     size_t quantity;
@@ -104,7 +102,7 @@ struct contour {
 
 float max(float x, float y) { return x > y ? x : y; }
 
-void loadBezier(FT_GlyphSlot slot, struct Mesh *mesh, struct contour *contours, size_t pQuantity, size_t pointIDs[pQuantity]) {
+void loadBezier(FT_GlyphSlot slot, struct Mesh *mesh, struct contour *contours, size_t pQuantity, size_t pointIDs[2 * pQuantity]) {
     FT_Outline *outline = &slot->outline;
     
     size_t q = 0;
@@ -122,7 +120,7 @@ void loadBezier(FT_GlyphSlot slot, struct Mesh *mesh, struct contour *contours, 
         size_t start_point = (i == 0) ? 0 : outline->contours[i - 1] + 1;
         size_t end_point = outline->contours[i];
 
-        size_t N = countP(end_point - start_point + 1, outline->tags + start_point);
+        size_t N = countOnlineVerticesInOutline(end_point - start_point + 1, outline->tags + start_point);
         vec2 onLine[N];
         vec2 offLine[N];
 
@@ -130,7 +128,11 @@ void loadBezier(FT_GlyphSlot slot, struct Mesh *mesh, struct contour *contours, 
 
         contours[i].arr = pointIDs + q;
         for (size_t j = 0; j < N; j += 1) {
-            bool isLeftV = isLeft(onLine[j], offLine[j], onLine[(j + 1) % N]);
+            bool isLeftV = !isClockWise(3, (vec2[]) { 
+                { onLine[j][0], onLine[j][1] },
+                { offLine[j][0], offLine[j][1] },
+                { onLine[(j + 1) % N][0], onLine[(j + 1) % N][1] }
+            });
 
             vertices[z + j][0] = (struct FontVertex) {
                 .pos = {
@@ -184,6 +186,8 @@ void loadBezier(FT_GlyphSlot slot, struct Mesh *mesh, struct contour *contours, 
             .inOut = vertices[z - 1][0].inOut,
         };
     }
+
+    printf("pq = %zu, q = %zu\n", pQuantity, q);
 }
 
 int doesIntersect(vec2 p0, vec2 p1, vec2 p2, vec2 p3) {
@@ -281,10 +285,10 @@ void printTree(struct contour *tree, int q) {
     }
 }
 
-size_t countTriangles(struct contour *tree) {
+size_t countTriangles(const struct contour *const tree) {
     size_t n = tree->quantity - 2;
 
-    struct contour *t = tree->hole;
+    const struct contour *t = tree->hole;
     while (t != NULL) {
         n += t->quantity + (t->hole == NULL ? 0 : countTriangles(t->hole)) + 2;
         t = t->next;
@@ -376,8 +380,8 @@ size_t createOutline(struct contour *tree, size_t *arr, struct FontVertex *verte
     size_t rm = getRightmost(arr, tree->mostRight, vertex);
 
     while (NULL != hole) {
-        [[maybe_unused]] size_t rightMost = getRightmost(hole->arr, hole->mostRight, vertex);
-        [[maybe_unused]] size_t i = rm;
+        size_t rightMost = getRightmost(hole->arr, hole->mostRight, vertex);
+        size_t i = rm;
 
         while (isDiagonal(rightMost, i, q, arr, vertex) || isDiagonal(rightMost, i, hole->quantity, hole->arr, vertex)) {
             i += 1;
@@ -406,6 +410,37 @@ void avg(vec2 out, vec2 a, vec2 b, vec2 c) {
 
 void triangulate(int N, size_t vertexIDs[N], struct FontVertex *vertex, uint16_t (*indices)[3]);
 
+// Works Perfectly:
+// .
+// ,
+// C
+// E
+// F
+// G
+// H
+// I
+// J
+// K
+// L
+// M
+// N
+// S
+// T
+// U
+// V
+// W
+// X
+// Y
+// Z
+//
+// Problematic
+// A
+// B
+// D
+// O
+// P
+// Q
+// R
 void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     FT_Library library;
     FT_Face face;
@@ -413,21 +448,21 @@ void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
     IF (0 == FT_Init_FreeType(&library), "No Library")
     IF (0 == FT_New_Face(library, objectPath, 0, &face), "No Face")
     IF (0 == FT_Set_Pixel_Sizes(face, 100, 100), "Size Error")
-    IF (0 == FT_Load_Glyph(face, FT_Get_Char_Index(face, 'I'), FT_LOAD_NO_BITMAP), "No Glyph") {
+    IF (0 == FT_Load_Glyph(face, FT_Get_Char_Index(face, 'R'), FT_LOAD_NO_BITMAP), "No Glyph") {
         FT_GlyphSlot slot = face->glyph;
         FT_Outline *outline = &slot->outline;
 
-        size_t Points = countPoints(outline);
-        size_t Arr[Points] = {};
+        size_t qOnlinePoints = countOnlineVerticesInPolygon(outline);
+        size_t Arr[2 * qOnlinePoints] = {};
 
         struct contour contours[outline->n_contours] = {};
         struct contour *tree = contours;
 
         model->meshQuantity = 1;
         model->mesh = malloc(sizeof(struct Mesh) * model->meshQuantity);
-        model->mesh[0].sizeOfVertex = sizeof(struct FontVertex);
+        model->mesh->sizeOfVertex = sizeof(struct FontVertex);
 
-        loadBezier(slot, model->mesh, contours, Points, Arr);
+        loadBezier(slot, model->mesh, contours, qOnlinePoints, Arr);
         for (size_t i = 1; i < outline->n_contours; i += 1) {
             tree = addToTree(tree, &contours[i], model->mesh->vertices);
         }
@@ -435,21 +470,22 @@ void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
         flatten(tree = sortHoles(tree));
         size_t ntq = countTriangles(tree);
 
-        model->mesh->indicesQuantity = 3 * (Points + ntq);
+        model->mesh->indicesQuantity += 3 * ntq;
         model->mesh->indices = realloc(model->mesh->indices, sizeof(uint16_t) * model->mesh->indicesQuantity);
 
-        triangulate(tree->quantity, tree->arr, model->mesh->vertices, (void *)(model->mesh->indices + 3 * Points));
+        triangulate(tree->quantity, tree->arr, model->mesh->vertices, (void *)(model->mesh->indices + 3 * qOnlinePoints));
 
-        model->mesh->verticesQuantity = 4 * Points + 1;
+        model->mesh->verticesQuantity += 2 * qOnlinePoints;
         model->mesh->vertices = realloc(model->mesh->vertices, sizeof(struct FontVertex) * model->mesh->verticesQuantity);
-        memcpy(BFR(model->mesh->vertices) + 2 * Points + 1, model->mesh->vertices, sizeof(struct FontVertex) * 2 * Points);
+        memcpy(BFR(model->mesh->vertices) + 2 * qOnlinePoints + 1, model->mesh->vertices, sizeof(struct FontVertex) * 2 * qOnlinePoints);
 
-        for (size_t i = 2 * Points + 1; i < 4 * Points; i += 1) {
+        for (size_t i = 2 * qOnlinePoints + 1; i < 4 * qOnlinePoints + 1; i += 1) {
             BFR(model->mesh->vertices)[i].inOut = 2;
         }
 
-        for (size_t i = 3 * Points; i < 3 * (Points + ntq); i += 1) {
-            model->mesh->indices[i] += 2 * Points + 1;
+        for (size_t i = 3 * qOnlinePoints; i < 3 * (qOnlinePoints + ntq); i += 1) {
+            model->mesh->indices[i] %= 2 * qOnlinePoints + 1;
+            model->mesh->indices[i] += 2 * qOnlinePoints + 1;
         }
     }
 
