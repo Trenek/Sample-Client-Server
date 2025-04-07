@@ -37,7 +37,7 @@ float getAngle(vec2 A, vec2 B, vec2 C) {
     return result;
 }
 
-bool isClockWise(size_t N, vec2 *poly) {
+bool isCounterClockwise(size_t N, vec2 *poly) {
     double angle = 0;
 
     for (size_t i = 0; i < N; i += 1) {

@@ -23,7 +23,7 @@ const char *names[] = {
     "MERGE"
 };
 
-bool isClockWise(size_t N, vec2 *v);
+bool isCounterClockwise(size_t N, vec2 *v);
 float getAngle(vec2 A, vec2 B, vec2 C);
 
 static int doesIntersect(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
@@ -331,7 +331,7 @@ static bool isGood(int l, vec2 a, vec2 b, vec2 c) {
         { c[0], c[1] },
     };
 
-    return isClockWise(3, arr) ? l == 2 : l == 1;
+    return isCounterClockwise(3, arr) ? l == 2 : l == 1;
 }
 
 static bool isLeft(vec2 a, vec2 b, vec2 c) {
@@ -466,37 +466,37 @@ static void TriangulatePolygon(size_t N, struct Point *polygon, uint16_t (*trian
     }
 }
 
-#define OK(i) (isOk ? i : (vertexQuantity - 1 - i))
+size_t sum(int q, size_t arr[q]) {
+    size_t result = 0;
 
-void triangulate(size_t vertexQuantity, size_t vertexIDs[vertexQuantity], struct FontVertex *vertex, uint16_t (*triangles)[3]) {
-    vec2 verticies[vertexQuantity];
-    for (size_t i = 0; i < vertexQuantity; i += 1) {
-        verticies[i][0] = vertex[vertexIDs[i]].pos[0];
-        verticies[i][1] = vertex[vertexIDs[i]].pos[1];
-    }
-    bool isOk = isClockWise(vertexQuantity, verticies);
+    while (q >= 0) result += arr[q--];
 
-    struct Point polygon[vertexQuantity * 2];
-    for (size_t i = 0; i < vertexQuantity; i += 1) {
-        polygon[i] = (struct Point) {
-            .helpVal = 0,
-            .next = &polygon[(i + 1) % vertexQuantity],
-            .prev = &polygon[(i - 1 + vertexQuantity) % vertexQuantity],
-            .pos = {
-                [0] = verticies[OK(i)][0],
-                [1] = verticies[OK(i)][1]
-            },
-            .helper = NULL,
-            .id = vertexIDs[OK(i)]
-        };
+    return result;
+}
+
+void triangulate(size_t q, size_t vertexQuantity[q], size_t *vertexIDs[q], struct FontVertex *vertex, uint16_t (*triangles)[3]) {
+    struct Point polygon[2 * sum(q, vertexQuantity)];
+    size_t actualVertexQuantity = 0;
+
+    for (size_t i = 0; i < q; i += 1) {
+        for (size_t j = 0; j < vertexQuantity[i]; j += 1) {
+            polygon[actualVertexQuantity + j] = (struct Point) {
+                .helpVal = 0,
+                .next = &polygon[actualVertexQuantity + ((j + 1) % vertexQuantity[i])],
+                .prev = &polygon[actualVertexQuantity + ((i - 1 + vertexQuantity[i]) % vertexQuantity[i])],
+                .pos = {
+                    [0] = vertex[vertexIDs[i][j]].pos[0],
+                    [1] = vertex[vertexIDs[i][j]].pos[1]
+                },
+                .helper = NULL,
+                .id = vertexIDs[i][j]
+            };
+        }
+
+        actualVertexQuantity += vertexQuantity[i];
     }
 
-    for (size_t i = 0; i < vertexQuantity; i += 1) {
-        printf("%zu\n",
-            vertexIDs[i]
-        );
-    }
-    for (size_t i = 0; i < vertexQuantity; i += 1) {
+    for (size_t i = 0; i < actualVertexQuantity; i += 1) {
         printf("%c%d = (%f, %f)\n",
             (polygon[i].id % ('Z' - 'A' + 1)) + 'A',
             (polygon[i].id / ('Z' - 'A' + 1)),
@@ -505,7 +505,6 @@ void triangulate(size_t vertexQuantity, size_t vertexIDs[vertexQuantity], struct
         );
     }
 
-    MakeMonotone(&vertexQuantity, polygon);
-    printf("Aha\n");
-    TriangulatePolygon(vertexQuantity, polygon, triangles);
+    MakeMonotone(&actualVertexQuantity, polygon);
+    TriangulatePolygon(actualVertexQuantity, polygon, triangles);
 }
