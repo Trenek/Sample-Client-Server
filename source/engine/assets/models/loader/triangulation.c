@@ -469,7 +469,11 @@ static void TriangulatePolygon(size_t N, struct Point *polygon, uint16_t (*trian
 size_t sum(int q, size_t arr[q]) {
     size_t result = 0;
 
-    while (q >= 0) result += arr[q--];
+    while (q > 0) {
+        q -= 1;
+
+        result += arr[q];
+    }
 
     return result;
 }
@@ -479,11 +483,14 @@ void triangulate(size_t q, size_t vertexQuantity[q], size_t *vertexIDs[q], struc
     size_t actualVertexQuantity = 0;
 
     for (size_t i = 0; i < q; i += 1) {
+        printf("%zu\n", vertexQuantity[i]);
+
         for (size_t j = 0; j < vertexQuantity[i]; j += 1) {
+            printf("\t%zu\n", vertexIDs[i][j]);
             polygon[actualVertexQuantity + j] = (struct Point) {
                 .helpVal = 0,
                 .next = &polygon[actualVertexQuantity + ((j + 1) % vertexQuantity[i])],
-                .prev = &polygon[actualVertexQuantity + ((i - 1 + vertexQuantity[i]) % vertexQuantity[i])],
+                .prev = &polygon[actualVertexQuantity + ((j - 1 + vertexQuantity[i]) % vertexQuantity[i])],
                 .pos = {
                     [0] = vertex[vertexIDs[i][j]].pos[0],
                     [1] = vertex[vertexIDs[i][j]].pos[1]

@@ -108,7 +108,7 @@ static void loadBezier(FT_GlyphSlot slot, struct Mesh *mesh, struct contour *con
     size_t q = 0;
     size_t z = 0;
 
-    mesh->verticesQuantity = 2 * pQuantity + outline->n_contours;
+    mesh->verticesQuantity = 4 * pQuantity + outline->n_contours;
     mesh->indicesQuantity = pQuantity * 3;
     mesh->vertices = malloc(sizeof(struct FontVertex) * mesh->verticesQuantity);
     mesh->indices = malloc(sizeof(uint16_t) * mesh->indicesQuantity);
@@ -171,8 +171,8 @@ static void loadBezier(FT_GlyphSlot slot, struct Mesh *mesh, struct contour *con
             contours[i].quantity += 1;
         }
 
-        indices[z + N - 1][2] = 2 * pQuantity + i;
-        vertices[pQuantity][i] = (struct FontVertex) {
+        indices[z + N - 1][2] = 4 * pQuantity + i;
+        vertices[2 * pQuantity][i] = (struct FontVertex) {
             .pos = {
                 vertices[z][0].pos[0],
                 vertices[z][0].pos[1],
@@ -189,6 +189,12 @@ static void loadBezier(FT_GlyphSlot slot, struct Mesh *mesh, struct contour *con
     }
 
     printf("pq = %zu, q = %zu\n", pQuantity, q);
+
+    memcpy(BFR(mesh->vertices) + 2 * pQuantity, mesh->vertices, sizeof(struct FontVertex) * 2 * pQuantity);
+
+    for (size_t i = 2 * pQuantity; i < 4 * pQuantity; i += 1) {
+        BFR(mesh->vertices)[i].inOut = 2;
+    }
 }
 
 static int doesIntersect(vec2 p0, vec2 p1, vec2 p2, vec2 p3) {
@@ -406,7 +412,7 @@ void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
     IF (0 == FT_Init_FreeType(&library), "No Library")
     IF (0 == FT_New_Face(library, objectPath, 0, &face), "No Face")
     IF (0 == FT_Set_Pixel_Sizes(face, 100, 100), "Size Error")
-    IF (0 == FT_Load_Glyph(face, FT_Get_Char_Index(face, 'B'), FT_LOAD_NO_BITMAP), "No Glyph") {
+    IF (0 == FT_Load_Glyph(face, FT_Get_Char_Index(face, 'O'), FT_LOAD_NO_BITMAP), "No Glyph") {
         FT_GlyphSlot slot = face->glyph;
         FT_Outline *outline = &slot->outline;
 
@@ -434,7 +440,6 @@ void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
         model->mesh->indicesQuantity += 3 * ntq;
         model->mesh->indices = realloc(model->mesh->indices, sizeof(uint16_t) * model->mesh->indicesQuantity);
 
-        /*
         while (tree != NULL) {
             size_t q = getPolygonQuantity(tree);
 
@@ -445,23 +450,14 @@ void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
 
             printf("%zu\n", q);
 
-            triangulate(q, vq, vi, model->mesh->vertices, (void *)(model->mesh->indices + 3 * qOnlinePoints));
+            //triangulate(q, vq, vi, model->mesh->vertices, (void *)(model->mesh->indices + 3 * qOnlinePoints));
 
             tree = tree->next;
         }
-        */
-
-        model->mesh->verticesQuantity += 2 * qOnlinePoints;
-        model->mesh->vertices = realloc(model->mesh->vertices, sizeof(struct FontVertex) * model->mesh->verticesQuantity);
-        memcpy(BFR(model->mesh->vertices) + 2 * qOnlinePoints + outline->n_contours, model->mesh->vertices, sizeof(struct FontVertex) * 2 * qOnlinePoints);
-
-        for (size_t i = 2 * (qOnlinePoints + outline->n_contours); i < 4 * qOnlinePoints + outline->n_contours; i += 1) {
-            BFR(model->mesh->vertices)[i].inOut = 2;
-        }
 
         for (size_t i = 3 * qOnlinePoints; i < 3 * (qOnlinePoints + ntq); i += 1) {
-            model->mesh->indices[i] %= 2 * qOnlinePoints + outline->n_contours;
-            model->mesh->indices[i] += 2 * qOnlinePoints + outline->n_contours;
+            model->mesh->indices[i] %= 2 * qOnlinePoints;
+            model->mesh->indices[i] += 2 * qOnlinePoints;
         }
     }
 
