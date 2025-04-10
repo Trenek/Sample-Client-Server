@@ -24,6 +24,20 @@ float vec2_angle(vec2 a) {
                     M_PI - asin;
 }
 
+bool isInBetween(vec2 C, vec2 B, vec2 A, vec2 D) {
+    float ba = vec2_angle((vec2){ A[0] - B[0], A[1] - B[1] });
+    float bc = vec2_angle((vec2){ C[0] - B[0], C[1] - B[1] });
+    float bd = vec2_angle((vec2){ D[0] - B[0], D[1] - B[1] });
+
+    printf("(BA = %f, BC = %f, BD = %f)\n", ba, bc, bd);
+    return (
+        bc > ba ? bd > ba && bc > bd :
+        bc < ba ? !(bd > bc && ba > bd) :
+                  bd == ba && bd == bc
+    );
+}
+
+
 float getAngle(vec2 A, vec2 B, vec2 C) {
     float ba = vec2_angle((vec2){ A[0] - B[0], A[1] - B[1] });
     float bc = vec2_angle((vec2){ C[0] - B[0], C[1] - B[1] });
@@ -31,8 +45,6 @@ float getAngle(vec2 A, vec2 B, vec2 C) {
     float result = ba - bc;
 
     if (result < 0) result += 2 * M_PI;
-
-    printf("%f,", glm_deg(result));
 
     return result;
 }

@@ -94,13 +94,10 @@ static void toArrays(size_t S, size_t E, FT_Outline *outline, size_t N, vec2 onL
 struct contour {
     size_t *arr;
     size_t quantity;
-    float mostRight;
 
     struct contour *next;
     struct contour *hole;
 };
-
-static float max(float x, float y) { return x > y ? x : y; }
 
 static void loadBezier(FT_GlyphSlot slot, struct Mesh *mesh, struct contour *contours, size_t pQuantity, size_t pointIDs[2 * pQuantity]) {
     FT_Outline *outline = &slot->outline;
@@ -157,11 +154,9 @@ static void loadBezier(FT_GlyphSlot slot, struct Mesh *mesh, struct contour *con
             indices[z + j][1] = 2 * (z + j) + (isLeftV ? 1 : 0);
             indices[z + j][2] = 2 * (z + j + 1);
 
-            contours[i].mostRight = max(contours[i].mostRight, vertices[z + j][0].pos[0]);
             pointIDs[q] = 2 * (z + j);
             q += 1;
             if (isLeftV) {
-                contours[i].mostRight = max(contours[i].mostRight, vertices[z + j][1].pos[0]);
                 pointIDs[q] = 2 * (z + j) + 1;
 
                 contours[i].quantity += 1;
@@ -226,9 +221,6 @@ static int doesIntersect(vec2 p0, vec2 p1, vec2 p2, vec2 p3) {
     ) ? 1 : 0;
 }
 
-float getAngle(vec2 A, vec2 B, vec2 C);
-
-[[maybe_unused]]
 static bool isPointInside(vec2 P, size_t quantity, size_t indices[quantity], struct FontVertex *vertices) {
     int count = 0;
     vec2 Q = {
@@ -251,14 +243,16 @@ static bool isContourInside(struct contour *this, struct contour *that, struct F
     bool result = true;
 
     for (size_t i = 0; result && i < this->quantity; i += 1) {
-        result = isPointInside(vertices[this->arr[i]].pos, that->quantity, this->arr, vertices);
+        result = isPointInside(vertices[this->arr[i]].pos, that->quantity, that->arr, vertices);
     }
 
     return result;
 }
 
 static struct contour *addToTree(struct contour *tree, struct contour *new, struct FontVertex *vertex) {
+    printf("Oho\n");
     if (isContourInside(tree, new, vertex)) {
+        printf("1");
         struct contour *toAdd = tree->next;
         tree->next = NULL;
 
@@ -274,16 +268,19 @@ static struct contour *addToTree(struct contour *tree, struct contour *new, stru
         }
     }
     else if (isContourInside(new, tree, vertex)) {
+        printf("2");
         tree->hole = (tree->hole == NULL) ? new : addToTree(tree->hole, new, vertex);
     }
     else {
+        printf("3");
         tree->next = (tree->next == NULL) ? new : addToTree(tree->next, new, vertex);
     }
 
     return tree;
 }
 
-void printTree(struct contour *tree, int q) {
+[[maybe_unused]]
+static void printTree(struct contour *tree, int q) {
     if (tree != NULL) {
         printf("%*sThis %zu\n", q, "", tree->quantity);
 
@@ -329,7 +326,7 @@ static void flatten(struct contour *tree) {
     }
 }
 
-void reverse(int N, size_t arr[N]) {
+static void reverse(int N, size_t arr[N]) {
     size_t temp = 0;
 
     for (int i = 0; i < N - 1 - i; i += 1) {
@@ -340,7 +337,7 @@ void reverse(int N, size_t arr[N]) {
     }
 }
 
-bool isCounterClockwiseVertex(size_t N, size_t arr[N], struct FontVertex *vertex) {
+static bool isCounterClockwiseVertex(size_t N, size_t arr[N], struct FontVertex *vertex) {
     vec2 array[N];
 
     for (size_t i = 0; i < N; i += 1) {
@@ -361,8 +358,8 @@ static void getOrderRight(struct contour *tree, struct FontVertex *vertex) {
 
         hole = tree->hole;
         while (hole != NULL) {
-            if (isCounterClockwiseVertex(tree->quantity, tree->arr, vertex)) {
-                reverse(tree->quantity, tree->arr);
+            if (isCounterClockwiseVertex(hole->quantity, hole->arr, vertex)) {
+                reverse(hole->quantity, hole->arr);
             }
             
             hole = hole->next;
@@ -401,18 +398,19 @@ void polygonToArrays(struct contour *tree, size_t *vq, size_t **vi) {
 void triangulate(size_t q, size_t vertexQuantity[q], size_t *vertexIDs[q], struct FontVertex *vertex, uint16_t (*triangles)[3]);
 
 // Works Perfectly:
-// '.', ',', 'C', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 
-// 'M', 'N', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+// '.', ',', 'A', 'B', 'C', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 
+// 'M', 'N', 'P', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+//
 // Problematic
-// 'A', 'B', 'D', 'O', 'P', 'Q', 'R'
+// 'D', 'O', 'Q'
 void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     FT_Library library;
     FT_Face face;
 
     IF (0 == FT_Init_FreeType(&library), "No Library")
     IF (0 == FT_New_Face(library, objectPath, 0, &face), "No Face")
-    IF (0 == FT_Set_Pixel_Sizes(face, 100, 100), "Size Error")
-    IF (0 == FT_Load_Glyph(face, FT_Get_Char_Index(face, 'O'), FT_LOAD_NO_BITMAP), "No Glyph") {
+    IF (0 == FT_Set_Pixel_Sizes(face, 1000, 1000), "Size Error")
+    IF (0 == FT_Load_Glyph(face, FT_Get_Char_Index(face, 'D'), FT_LOAD_NO_BITMAP), "No Glyph") {
         FT_GlyphSlot slot = face->glyph;
         FT_Outline *outline = &slot->outline;
 
@@ -431,7 +429,6 @@ void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
             tree = addToTree(tree, &contours[i], model->mesh->vertices);
         }
 
-        printTree(tree, 0);
         flatten(tree);
         getOrderRight(tree, model->mesh->vertices);
 
@@ -448,9 +445,9 @@ void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
 
             polygonToArrays(tree, vq, vi);
 
-            printf("%zu\n", q);
+            printf("Number of thingis = %zu\n", q);
 
-            //triangulate(q, vq, vi, model->mesh->vertices, (void *)(model->mesh->indices + 3 * qOnlinePoints));
+            triangulate(q, vq, vi, model->mesh->vertices, (void *)(model->mesh->indices + 3 * qOnlinePoints));
 
             tree = tree->next;
         }

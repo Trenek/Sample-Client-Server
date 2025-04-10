@@ -8,7 +8,8 @@
 typedef float vec2[2];
 
 enum PointState {
-    REGULAR,
+    REGULAR_INSIDE_ON_LEFT,
+    REGULAR_INSIDE_ON_RIGHT,
     START,
     END,
     SPLIT,
@@ -16,7 +17,8 @@ enum PointState {
 };
 
 const char *names[] = {
-    "REGULAR",
+    "REGULAR_POLYGON_ON_LEFT",
+    "REGULAR_POLYGON_ON_RIGHT",
     "START",
     "END",
     "SPLIT",
@@ -25,35 +27,6 @@ const char *names[] = {
 
 bool isCounterClockwise(size_t N, vec2 *v);
 float getAngle(vec2 A, vec2 B, vec2 C);
-
-static int doesIntersect(const vec2 p0, const vec2 p1, const vec2 p2, const vec2 p3) {
-    vec2 s02 = {
-        p0[0] - p2[0],
-        p0[1] - p2[1]
-    };
-    vec2 s10 = {
-        p1[0] - p0[0],
-        p1[1] - p0[1]
-    };
-    vec2 s32 = {
-        p3[0] - p2[0],
-        p3[1] - p2[1]
-    };
-
-    float denom = s10[0] * s32[1] - s32[0] * s10[1];
-    float s_numer = s10[0] * s02[1] - s10[1] * s02[0];
-    float t_numer = s32[0] * s02[1] - s32[1] * s02[0];
-
-    bool denomPositive = denom > 0;
-
-    return (
-        denom != 0 && // colinear
-        (s_numer < 0) != denomPositive &&
-        (t_numer < 0) != denomPositive &&
-        (s_numer > denom) != denomPositive &&
-        (t_numer > denom) != denomPositive
-    ) ? 1 : 0;
-}
 
 struct Point {
     vec2 pos;
@@ -74,28 +47,6 @@ static bool more(const struct Point *p, const struct Point *q) {
     return p->pos[1] > q->pos[1] || p->pos[1] == q->pos[1] && p->pos[0] < q->pos[0];
 }
 
-static int countIntersectionsRight(struct Point *this) {
-    int count = 0;
-
-    vec2 hiPos = {
-        this->pos[0] + 10,
-        this->pos[1]
-    };
-
-    struct Point *that = this;
-    do {
-        if (more(this, that) && less(this, that->next) || more(this, that->next) && less(this, that)) {
-            count += this->pos[0] < that->pos[0] && this->pos[1] == that->pos[1] ? 1 :
-                     this->pos[0] < that->next->pos[0] && this->pos[1] == that->next->pos[1] ? 1 : 
-                     doesIntersect(this->pos, hiPos, that->pos, that->next->pos);
-        }
-
-        that = that->next;
-    } while (that != this);
-
-    return count;
-}
-
 static enum PointState getState(struct Point *this) {
     float angle = getAngle(this->prev->pos, this->pos, this->next->pos);
 
@@ -104,7 +55,8 @@ static enum PointState getState(struct Point *this) {
     return 
         (more(this, this->next) && more(this, this->prev)) ? (angle < M_PI ? START : SPLIT) :
         (less(this, this->next) && less(this, this->prev)) ? (angle < M_PI ? END   : MERGE) :
-        REGULAR;
+       // (more(this, this->prev) && less(this, this->next)) ? REGULAR_INSIDE_ON_RIGHT : REGULAR_INSIDE_ON_LEFT; not good because of some idiotic desicions
+        !(more(this, this->prev) && less(this, this->next)) ? REGULAR_INSIDE_ON_RIGHT : REGULAR_INSIDE_ON_LEFT;
 }
 
 static float getXCoord(const struct Point *this, float y) {
@@ -115,12 +67,12 @@ static float getXCoord(const struct Point *this, float y) {
 }
 
 static int comparePoints(const void *p, const void *q) {
-    auto pp = *(const struct Point *const *)p;
-    auto qq = *(const struct Point *const *)q;
+    const struct Point *const *pp = p;
+    const struct Point *const *qq = q;
     return 
-        more(pp, qq) ? -1 :
-        less(pp, qq) ?  1 :
-                        0;
+        more(*pp, *qq) ? -1 :
+        less(*pp, *qq) ?  1 :
+                          0;
 }
 
 static void removePoint(size_t N, void **arr, void *toRemove) {
@@ -150,11 +102,7 @@ static size_t getLeft(size_t qT, struct Point **T, struct Point *this) {
     return max;
 }
 
-static bool insideOnRight(struct Point *v) {
-    return countIntersectionsRight(v) % 2 == 1;
-}
-
-void printPoint(const char *str, const struct Point *const v) {
+static void printPoint(const char *str, const struct Point *const v) {
     printf("\t%c%d%s\n",
         'A' + (v->id % ('Z' - 'A' + 1)),
         (v->id / ('Z' - 'A' + 1)),
@@ -170,19 +118,25 @@ void printPoint(const char *str, const struct Point *const v) {
     );
 }
 
-void getProper(struct Point **lesser, struct Point **bigger) {
+bool isInBetween(vec2 A, vec2 B, vec2 C, vec2 D);
+
+static void getProper(struct Point **lesser, struct Point **bigger, int N, struct Point *polygon) {
     struct Point **temp = lesser;
-    struct Point *tempP;
 
     if (more(*lesser, *bigger)) {
         lesser = bigger;
         bigger = temp;
     }
 
-    tempP = *lesser;
-    while (more(tempP, *bigger) || less(tempP, *bigger)) tempP = tempP->next;
+    while ((more(polygon, *bigger) || less(polygon, *bigger)) || 
+            !isInBetween(polygon->prev->pos, polygon->pos, polygon->next->pos, (*lesser)->pos)) {
+        polygon += 1;
+        N -= 1;
 
-    *bigger = tempP;
+        assert(N >= 0);
+    }
+
+    *bigger = polygon;
 }
 
 static void MakeMonotone(size_t *outN, struct Point *polygon) {
@@ -205,28 +159,28 @@ static void MakeMonotone(size_t *outN, struct Point *polygon) {
         printf("%s", names[temp]);
         printPoint("", v[i]);
         switch(temp) {
-            case REGULAR:
-                if (insideOnRight(v[i])) {
-                    if (getState(v[i]->prev->helper) == MERGE) {
-                        toAdd[qAdded + 0] = v[i];
-                        toAdd[qAdded + 1] = v[i]->prev->helper;
+            case REGULAR_INSIDE_ON_RIGHT:
+                if (getState(v[i]->prev->helper) == MERGE) {
+                    toAdd[qAdded + 0] = v[i];
+                    toAdd[qAdded + 1] = v[i]->prev->helper;
 
-                        qAdded += 2;
-                    }
-                    removePoint(qT--, (void **)T, v[i]->prev);
-
-                    (T[qT++] = v[i])->helper = v[i];
+                    qAdded += 2;
                 }
-                else {
-                    j = getLeft(qT, T, v[i]);
-                    if (getState(T[j]->helper) == MERGE) {
-                        toAdd[qAdded + 0] = v[i];
-                        toAdd[qAdded + 1] = T[j]->helper;
+                removePoint(qT--, (void **)T, v[i]->prev);
 
-                        qAdded += 2;
-                    }
-                    T[j]->helper = v[i];
+                (T[qT++] = v[i])->helper = v[i];
+
+                break;
+            case REGULAR_INSIDE_ON_LEFT:
+                j = getLeft(qT, T, v[i]);
+                if (getState(T[j]->helper) == MERGE) {
+                    toAdd[qAdded + 0] = v[i];
+                    toAdd[qAdded + 1] = T[j]->helper;
+
+                    qAdded += 2;
                 }
+                T[j]->helper = v[i];
+
                 break;
             case END:
                 if (getState(v[i]->prev->helper) == MERGE) {
@@ -244,6 +198,8 @@ static void MakeMonotone(size_t *outN, struct Point *polygon) {
                 toAdd[qAdded + 1] = T[j]->helper;
 
                 qAdded += 2;
+
+                T[j]->helper = v[i];
 
                 (T[qT++] = v[i])->helper = v[i];
                 break;
@@ -274,7 +230,7 @@ static void MakeMonotone(size_t *outN, struct Point *polygon) {
     }
 
     for (size_t i = 0; i < qAdded; i += 2) {
-        getProper(&toAdd[i + 0], &toAdd[i + 1]);
+        getProper(&toAdd[i + 0], &toAdd[i + 1], N, polygon);
 
         polygon[N + 0] = (struct Point) {
             .pos = {
@@ -466,7 +422,7 @@ static void TriangulatePolygon(size_t N, struct Point *polygon, uint16_t (*trian
     }
 }
 
-size_t sum(int q, size_t arr[q]) {
+static size_t sum(int q, size_t arr[q]) {
     size_t result = 0;
 
     while (q > 0) {
