@@ -152,25 +152,51 @@ static int doesIntersect(vec2 p0, vec2 p1, vec2 p2, vec2 p3) {
     ) ? 1 : 0;
 }
 
+static int doesIntersect2(vec2 p0, vec2 p1, vec2 p2, vec2 p3) {
+    return 
+        p0[1] > p2[1] && p0[1] > p3[1] ? 0 :
+        p0[0] > p2[0] && p0[0] > p3[0] ? 0 :
+        p0[0] < p2[0] && p0[0] < p3[0] ? 0 :
+        p0[0] == p2[0] && p0[0] == p3[0] ? 0 :
+        p0[0] == p2[0] && p0[0] > p3[0] ? 0 :
+        p0[0] == p3[0] && p0[0] > p2[0] ? 0 :
+        p0[1] < p2[1] && p0[1] < p3[1] && p0[0] == p2[0] && p0[0] < p3[0] ? 1 :
+        p0[1] < p2[1] && p0[1] < p3[1] && p0[0] == p3[0] && p0[0] < p2[0] ? 1 :
+        doesIntersect(p0, p1, p2, p3);
+}
+
 static bool isPointInside(vec2 P, struct contour *that) {
     int count = 0;
     vec2 Q = {
         [0] = P[0],
-        [1] = P[1] + 10.0f,
+        [1] = P[1] + 10.0f
     };
 
     for (size_t i = 0; i < that->N; i += 1) {
-        count += doesIntersect(P, Q, that->vertices[i][0].pos, that->vertices[(i + 1) % that->N][0].pos);
+        count += doesIntersect2(P, Q, that->vertices[i][0].pos, that->vertices[(i + 1) % that->N][0].pos);
     }
 
+    printf("Point = (%f, %f), Count = %d\n", P[0], P[1], count);
     return count % 2 == 1;
 }
 
 static bool isContourInside(struct contour *this, struct contour *that) {
+    printf("Checking\n");
     bool result = true;
+    size_t i = 0;
 
-    for (size_t i = 0; result && i < this->N; i += 1) {
+    for (i = 0; result && i < this->N; i += 1) {
         result = isPointInside(this->vertices[i][0].pos, that);
+    }
+
+    if (result) {
+        printf("\tInside\n");
+    }
+    else {
+        printf("\tOutside\n");
+
+        i -= 1;
+        printf("\tBad Point - (%f, %f)\n", this->vertices[i][0].pos[0], this->vertices[i][0].pos[1]);
     }
 
     return result;
@@ -179,6 +205,7 @@ static bool isContourInside(struct contour *this, struct contour *that) {
 static struct contour *addToTree(struct contour *tree, struct contour *new) {
     printf("Oho\n");
     if (isContourInside(tree, new)) {
+        printf("1\n");
         struct contour *toAdd = tree->next;
         tree->next = NULL;
 
@@ -194,9 +221,11 @@ static struct contour *addToTree(struct contour *tree, struct contour *new) {
         }
     }
     else if (isContourInside(new, tree)) {
+        printf("2\n");
         tree->hole = (tree->hole == NULL) ? new : addToTree(tree->hole, new);
     }
     else {
+        printf("3\n");
         tree->next = (tree->next == NULL) ? new : addToTree(tree->next, new);
     }
 
@@ -631,13 +660,6 @@ void generateTriangles(struct contour *tree, struct Mesh *mesh, size_t qOnlinePo
     }
 }
 
-// Works Perfectly:
-// '.', ',', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'
-// 'L', 'M', 'N', 'P', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
-//
-// Problematic
-// 'O', 'Q'
-extern char glyph;
 void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     FT_Library library;
     FT_Face face;
@@ -647,7 +669,7 @@ void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
     IF (0 == FT_Init_FreeType(&library), "No Library")
     IF (0 == FT_New_Face(library, objectPath, 0, &face), "No Face")
     IF (0 == FT_Set_Pixel_Sizes(face, 1000, 1000), "Size Error")
-    IF (0 == FT_Load_Glyph(face, FT_Get_Char_Index(face, glyph), FT_LOAD_NO_BITMAP), "No Glyph") {
+    IF (0 == FT_Load_Glyph(face, FT_Get_Char_Index(face, 'A'), FT_LOAD_NO_BITMAP), "No Glyph") {
         FT_GlyphSlot slot = face->glyph;
         FT_Outline *outline = &slot->outline;
 

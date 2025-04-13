@@ -23,7 +23,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         "models/my_model2d.obj",
         "models/my_floor.obj",
         "models/cylinder.glb",
-        "fonts/a.ttf",
+        "fonts/b.ttf",
     };
     size_t modelQuantity = sizeof(modelPath) / sizeof(const char *);
 
