@@ -5,7 +5,10 @@
 
 #include "state.h"
 
-int main(void) {
+char glyph;
+
+int main(int, char **argv) {
+    glyph = argv[1][0];
     struct VulkanTools vulkan = setup();
     void (* const state[])(struct VulkanTools *vulkan, enum state *state) = {
         [GAME] = game

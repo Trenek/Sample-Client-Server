@@ -49,14 +49,21 @@ float getAngle(vec2 A, vec2 B, vec2 C) {
     return result;
 }
 
+float getAngle2(vec2 A, vec2 B, vec2 C) {
+    float ba = vec2_angle((vec2){ A[0] - B[0], A[1] - B[1] });
+    float bc = vec2_angle((vec2){ C[0] - B[0], C[1] - B[1] });
+
+    float result = ba - bc;
+
+    return result;
+}
+
 bool isCounterClockwise(size_t N, vec2 *poly) {
     double angle = 0;
 
     for (size_t i = 0; i < N; i += 1) {
         angle += getAngle(poly[(i - 1 + N) % N], poly[i], poly[(i + 1) % N]);
     }
-
-    printf("(%lf == %f)\n", angle, M_PI * (N - 2));
 
     return fabs(angle - M_PI * (N - 2)) < 10e-5;
 }
