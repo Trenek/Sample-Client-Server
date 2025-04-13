@@ -10,7 +10,7 @@ struct ModelBuilder {
 
     uint32_t instanceCount;
 
-    struct actualModel *modelPath;
+    struct actualModel *modelData;
 
     VkDescriptorSetLayout objectLayout;
 };

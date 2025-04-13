@@ -75,14 +75,14 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .instanceCount = 1,
             .texturesQuantity = 1,
             .texturePointer = 0,
-            .modelPath = &actualModel[1],
+            .modelData = &actualModel[1],
             .objectLayout = pipe[0].objectLayout,
         }, &vulkan->graphics),
         /*players*/ createModels((struct ModelBuilder) {
             .instanceCount = 2,
             .texturesQuantity = 1,
             .texturePointer = 0,
-            .modelPath = &actualModel[2],
+            .modelData = &actualModel[2],
             .objectLayout = pipe[0].objectLayout,
         }, &vulkan->graphics),
     };
@@ -95,7 +95,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .instanceCount = 1,
             .texturesQuantity = 1,
             .texturePointer = 0,
-            .modelPath = &actualModel[0],
+            .modelData = &actualModel[0],
             .objectLayout = pipe[2].objectLayout,
         }, &vulkan->graphics),
     };
@@ -108,7 +108,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .instanceCount = 1,
             .texturesQuantity = 1,
             .texturePointer = 0,
-            .modelPath = &actualModel[3],
+            .modelData = &actualModel[3],
             .objectLayout = pipe[1].objectLayout,
         }, &vulkan->graphics),
     };

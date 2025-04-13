@@ -29,7 +29,6 @@ bool isInBetween(vec2 C, vec2 B, vec2 A, vec2 D) {
     float bc = vec2_angle((vec2){ C[0] - B[0], C[1] - B[1] });
     float bd = vec2_angle((vec2){ D[0] - B[0], D[1] - B[1] });
 
-    printf("(BA = %f, BC = %f, BD = %f)\n", ba, bc, bd);
     return (
         bc > ba ? bd > ba && bc > bd :
         bc < ba ? !(bd > bc && ba > bd) :

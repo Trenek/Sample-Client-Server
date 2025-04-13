@@ -24,7 +24,6 @@ static void lerp_f(vec2 out, vec2 from, vec2 to, float t) {
     out[1] = glm_lerp(from[1], to[1], t);
 }
 
-[[maybe_unused]]
 static void divideBezzier(vec2 out, vec2 part1, vec2 part2, vec2 a, vec2 b, vec2 c, float t) {
     vec2 part[2];
 
@@ -46,20 +45,6 @@ static size_t countOnlineVerticesInOutline(int N, unsigned char *tags) {
     }
 
     return result / 2;
-}
-
-[[maybe_unused]]
-static size_t countOnlineVerticesInPolygon(FT_Outline *outline) {
-    size_t result = countOnlineVerticesInOutline(outline->contours[0] + 1, outline->tags);
-
-    for (size_t i = 1; i < outline->n_contours; i += 1) {
-        result += countOnlineVerticesInOutline(
-            outline->contours[i] - outline->contours[i - 1],
-            outline->tags + outline->contours[i - 1] + 1
-        );
-    }
-
-    return result;
 }
 
 static void toArrays(size_t S, size_t E, FT_Outline *outline, size_t N, vec2 onLine[N], vec2 offLine[N]) {
@@ -176,12 +161,10 @@ static bool isPointInside(vec2 P, struct contour *that) {
         count += doesIntersect2(P, Q, that->vertices[i][0].pos, that->vertices[(i + 1) % that->N][0].pos);
     }
 
-    printf("Point = (%f, %f), Count = %d\n", P[0], P[1], count);
     return count % 2 == 1;
 }
 
 static bool isContourInside(struct contour *this, struct contour *that) {
-    printf("Checking\n");
     bool result = true;
     size_t i = 0;
 
@@ -189,23 +172,11 @@ static bool isContourInside(struct contour *this, struct contour *that) {
         result = isPointInside(this->vertices[i][0].pos, that);
     }
 
-    if (result) {
-        printf("\tInside\n");
-    }
-    else {
-        printf("\tOutside\n");
-
-        i -= 1;
-        printf("\tBad Point - (%f, %f)\n", this->vertices[i][0].pos[0], this->vertices[i][0].pos[1]);
-    }
-
     return result;
 }
 
 static struct contour *addToTree(struct contour *tree, struct contour *new) {
-    printf("Oho\n");
     if (isContourInside(tree, new)) {
-        printf("1\n");
         struct contour *toAdd = tree->next;
         tree->next = NULL;
 
@@ -221,31 +192,15 @@ static struct contour *addToTree(struct contour *tree, struct contour *new) {
         }
     }
     else if (isContourInside(new, tree)) {
-        printf("2\n");
         tree->hole = (tree->hole == NULL) ? new : addToTree(tree->hole, new);
     }
     else {
-        printf("3\n");
         tree->next = (tree->next == NULL) ? new : addToTree(tree->next, new);
     }
 
     return tree;
 }
 
-[[maybe_unused]]
-static void printTree(struct contour *tree, int q) {
-    if (tree != NULL) {
-        printf("%*sThis %zu\n", q, "", tree->qPointsIDs);
-
-        printf("%*sHole\n", q, "");
-        printTree(tree->hole, q + 4);
-
-        printf("%*sNext\n", q, "");
-        printTree(tree->next, q + 4);
-    }
-}
-
-[[maybe_unused]]
 static size_t countTriangles(const struct contour *const tree) {
     size_t n = tree->qPointsIDs - 2;
 
@@ -291,18 +246,6 @@ static void reverse(int N, size_t arr[N]) {
     }
 }
 
-[[maybe_unused]]
-static bool isCounterClockwiseVertex(size_t N, size_t arr[N], struct FontVertex *vertex) {
-    vec2 array[N];
-
-    for (size_t i = 0; i < N; i += 1) {
-        array[i][0] = vertex[arr[i]].pos[0];
-        array[i][1] = vertex[arr[i]].pos[1];
-    }
-
-    return isCounterClockwise(N, array);
-}
-
 static void getOrderRight(struct contour *tree, struct FontVertex *) {
     struct contour *hole = NULL;
 
@@ -320,7 +263,7 @@ static void getOrderRight(struct contour *tree, struct FontVertex *) {
     }
 }
 
-size_t getPolygonQuantity(struct contour *tree) {
+static size_t getPolygonQuantity(struct contour *tree) {
     size_t q = 0;
     struct contour *hole = tree->hole;
 
@@ -339,7 +282,7 @@ size_t getPolygonQuantity(struct contour *tree) {
     return q;
 }
 
-void polygonToArrays(struct contour *tree, size_t *vq, size_t **vi) {
+static void polygonToArrays(struct contour *tree, size_t *vq, size_t **vi) {
     struct contour *hole = tree->hole;
 
     do {
@@ -415,54 +358,7 @@ static struct contour createContour(FT_GlyphSlot slot, size_t start_point, size_
     return new;
 }
 
-// N = 5
-//
-// 1, 1,
-// 2, 2,
-// 3, 3,
-// 4, 4
-// _, _,
-//
-// 1, 1, 2,
-// 2, 2, 3,
-// 3, _, _,
-// _  3, 4,
-// 4, 4, 1,
-//
-// i = 2 * 2 + 1
-//
-void printContour(struct contour a) {
-    printf("N = %zu\n", a.N);
-    printf("Vertex = {\n");
-    for (size_t i = 0; i < a.N; i += 1) {
-        printf("\t(%f, %f), (%f, %f)\n", 
-            a.vertices[i][0].pos[0], a.vertices[i][0].pos[1],
-            a.vertices[i][1].pos[0], a.vertices[i][1].pos[1]
-        );
-    }
-    printf("\n");
-    printf("Index = {\n");
-    for (size_t i = 0; i < a.N; i += 1) {
-        printf("\t(%hu), (%hu), (%hu)\n", 
-            a.indices[i][0],
-            a.indices[i][1],
-            a.indices[i][2]
-        );
-    }
-    printf("}\n");
-    printf("Point IDs = {\n");
-    for (size_t i = 0; i < a.qPointsIDs; i += 1) {
-        printf("\t%zu\n", a.pointIDs[i]);
-    }
-    printf("}\n");
-}
-
-void addBezzier(struct contour *toAdd, [[maybe_unused]] size_t index) {
-    printf("Adding Bezzier\n");
-
-    printf("Index = %zu", index);
-    printContour(*toAdd);
-
+static void addBezzier(struct contour *toAdd, size_t index) {
     toAdd->N += 1;
 
     toAdd->vertices = realloc(toAdd->vertices, toAdd->N * sizeof(struct FontVertex[2]));
@@ -525,7 +421,7 @@ void addBezzier(struct contour *toAdd, [[maybe_unused]] size_t index) {
     }
 }
 
-void doHR(struct contour *suspect, struct contour *other) {
+static void doHR(struct contour *suspect, struct contour *other) {
     for (size_t i = 0; i < suspect->qPointsIDs; i += 1) {
         for (size_t j = 0; j < other->qPointsIDs; j += 1) {
             size_t index[4] = {
@@ -549,7 +445,7 @@ void doHR(struct contour *suspect, struct contour *other) {
     }
 }
 
-void doHigherResolution(struct contour *contours, int max) {
+static void doHigherResolution(struct contour *contours, int max) {
     struct contour *suspect = &contours[max--];
 
     while (max >= 0) {
@@ -638,7 +534,7 @@ static struct contour *loadBezier(FT_GlyphSlot slot, struct Mesh *mesh, struct c
 
 void triangulate(size_t q, size_t vertexQuantity[q], size_t *vertexIDs[q], struct FontVertex *vertex, uint16_t (*triangles)[3]);
 
-void generateTriangles(struct contour *tree, struct Mesh *mesh, size_t qOnlinePoints) {
+static void generateTriangles(struct contour *tree, struct Mesh *mesh, size_t qOnlinePoints) {
     size_t ntq = countTriangles(tree);
 
     mesh->indicesQuantity += 3 * ntq;
@@ -650,8 +546,6 @@ void generateTriangles(struct contour *tree, struct Mesh *mesh, size_t qOnlinePo
 
     polygonToArrays(tree, vq, vi);
 
-    printf("Number of thingis = %zu\n", q);
-
     triangulate(q, vq, vi, mesh->vertices, (void *)(mesh->indices + 3 * qOnlinePoints));
 
     for (size_t i = 3 * qOnlinePoints; i < 3 * (qOnlinePoints + ntq); i += 1) {
@@ -660,28 +554,18 @@ void generateTriangles(struct contour *tree, struct Mesh *mesh, size_t qOnlinePo
     }
 }
 
-void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
-    FT_Library library;
-    FT_Face face;
-
+static void loadCharacter(FT_Face face, struct Mesh *mesh, char character) {
     size_t qOnlinePoints = 0;
 
-    IF (0 == FT_Init_FreeType(&library), "No Library")
-    IF (0 == FT_New_Face(library, objectPath, 0, &face), "No Face")
-    IF (0 == FT_Set_Pixel_Sizes(face, 1000, 1000), "Size Error")
-    IF (0 == FT_Load_Glyph(face, FT_Get_Char_Index(face, 'A'), FT_LOAD_NO_BITMAP), "No Glyph") {
+    IF (0 == FT_Load_Glyph(face, FT_Get_Char_Index(face, character), FT_LOAD_NO_BITMAP), "No Glyph") {
         FT_GlyphSlot slot = face->glyph;
         FT_Outline *outline = &slot->outline;
 
         struct contour contours[outline->n_contours] = {};
-        [[maybe_unused]] struct contour *tree = contours;
+        struct contour *tree = contours;
 
-        model->meshQuantity = 1;
-        model->mesh = malloc(sizeof(struct Mesh) * model->meshQuantity);
-        model->mesh->sizeOfVertex = sizeof(struct FontVertex);
-
-        tree = loadBezier(slot, model->mesh, contours, &qOnlinePoints);
-        generateTriangles(tree, model->mesh, qOnlinePoints);
+        tree = loadBezier(slot, mesh, contours, &qOnlinePoints);
+        generateTriangles(tree, mesh, qOnlinePoints);
 
         for (int i = 0; i < outline->n_contours; i += 1) {
             free(contours[i].indices);
@@ -689,10 +573,29 @@ void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
             free(contours[i].pointIDs);
         }
     }
+}
+
+void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
+    FT_Library library;
+    FT_Face face;
+
+    model->meshQuantity = 'Z' - 'A' + 1;
+    model->mesh = malloc(sizeof(struct Mesh) * model->meshQuantity);
+
+    IF (0 == FT_Init_FreeType(&library), "No Library")
+    IF (0 == FT_New_Face(library, objectPath, 0, &face), "No Face")
+    IF (0 == FT_Set_Pixel_Sizes(face, 1000, 1000), "Size Error") {
+        for (char i = 'A'; i <= 'Z'; i += 1) {
+            loadCharacter(face, &model->mesh[i - 'A'], i);
+        }
+    }
 
     createStorageBuffer(model->meshQuantity * sizeof(mat4), model->localMesh.buffers, model->localMesh.buffersMemory, model->localMesh.buffersMapped, device, physicalDevice, surface);
-
-    for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {
-        glm_mat4_identity(((mat4 **)model->localMesh.buffersMapped)[k][0]);
+    
+    for (size_t i = 0; i < model->meshQuantity; i += 1) {
+        for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {
+            model->mesh[i].sizeOfVertex = sizeof(struct FontVertex);
+            glm_mat4_identity(((mat4 **)model->localMesh.buffersMapped)[k][i]);
+        }
     }
 }
