@@ -25,6 +25,7 @@ struct Model createModels(struct ModelBuilder builder, struct GraphicsSetup *vul
 
     result.meshQuantity = builder.meshQuantity;
     result.mesh = builder.mesh;
+    result.buffer = builder.buffers;
 
     result.graphics.object.descriptorPool = createObjectDescriptorPool(vulkan->device);
     createDescriptorSets(result.graphics.object.descriptorSets, vulkan->device, result.graphics.object.descriptorPool, builder.objectLayout);

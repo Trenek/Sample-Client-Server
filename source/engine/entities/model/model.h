@@ -5,6 +5,7 @@
 
 #include "descriptor.h"
 #include "buffer.h"
+#include "modelBuilder.h"
 
 struct Model {
     uint32_t instanceCount;
@@ -16,6 +17,7 @@ struct Model {
 
     uint32_t meshQuantity;
     struct Mesh *mesh;
+    VkBuffer (*buffer)[MAX_FRAMES_IN_FLIGHT];
 
     struct ModelGraphics {
         struct buffer uniformModel;

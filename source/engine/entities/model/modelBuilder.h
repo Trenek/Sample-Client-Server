@@ -2,6 +2,8 @@
 #define MODEL_BUILDER
 #include <vulkan/vulkan.h>
 
+#include "definitions.h"
+
 struct actualModel;
 
 struct ModelBuilder {
@@ -12,7 +14,7 @@ struct ModelBuilder {
 
     uint32_t meshQuantity;
     struct Mesh *mesh;
-    VkBuffer (*buffers)[2];
+    VkBuffer (*buffers)[MAX_FRAMES_IN_FLIGHT];
 
     VkDescriptorSetLayout objectLayout;
 };

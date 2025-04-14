@@ -366,7 +366,6 @@ void triangulate(size_t q, size_t vertexQuantity[q], size_t *vertexIDs[q], struc
     size_t actualVertexQuantity = 0;
 
     for (size_t i = 0; i < q; i += 1) {
-
         for (size_t j = 0; j < vertexQuantity[i]; j += 1) {
             polygon[actualVertexQuantity + j] = (struct Point) {
                 .helpVal = 0,

@@ -66,7 +66,7 @@ VkDescriptorPool createObjectDescriptorPool(VkDevice device) {
     return descriptorPool;
 }
 
-void bindObjectBuffersToDescriptorSets(VkDescriptorSet descriptorSets[], VkDevice device, struct Model model, uint32_t meshQuantity, VkBuffer (*buffers)[2]) {
+void bindObjectBuffersToDescriptorSets(VkDescriptorSet descriptorSets[], VkDevice device, struct Model model, uint32_t meshQuantity, VkBuffer (*buffers)[MAX_FRAMES_IN_FLIGHT]) {
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i += 1) {
         VkDescriptorBufferInfo modelBufferInfo[] = {
             {

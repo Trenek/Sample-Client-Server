@@ -25,7 +25,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         "models/my_model2d.obj",
         "models/my_floor.obj",
         "models/cylinder.glb",
-        "fonts/b.ttf",
+        "fonts/c.ttf",
     };
     size_t modelQuantity = sizeof(modelPath) / sizeof(const char *);
 
@@ -112,9 +112,9 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     pipe[2].model = model2;
 
     struct Model model3[] = {
-        /*comma*/ createString((struct StringBuilder) {
+        /*text*/ createString((struct StringBuilder) {
             .instanceCount = 1,
-            .string = "Z",
+            .string = "Hello World!",
             .modelData = &actualModel[3],
             .objectLayout = pipe[1].objectLayout,
         }, &vulkan->graphics),
@@ -127,7 +127,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     struct instance *player = pipe[0].model[1].instance;
     struct instance *background = pipe[2].model[0].instance;
 
-    struct instance *comma1 = pipe[1].model[0].instance;
+    struct instance *text = pipe[1].model[0].instance;
 
     *floor = (struct instance){
         .pos = { 0.0f, 0.0f, -50.0f },
@@ -158,11 +158,11 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         .shadow = false
     };
 
-    *comma1 = (struct instance){
+    *text = (struct instance){
         .pos = { 0.0f, 0.0f, 2.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
         .fixedRotation = { glm_rad(-90), 0.0f, glm_rad(90) },
-        .scale = { 1.0f, 1.0f, 1.0f },
+        .scale = { 0.3f, 0.3f, 0.3f },
         .textureIndex = 0,
         .shadow = false
     };
@@ -185,7 +185,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         if (isUClicked) player[0].pos[0] -= 3e00 * vulkan->deltaTime.deltaTime;
         if (isHClicked) player[0].pos[1] -= 3e00 * vulkan->deltaTime.deltaTime;
 
-        if (isMClicked) comma1->shadow = !comma1->shadow;
+        if (isMClicked) text->shadow = !text->shadow;
     }
 
     for (size_t i = 0; i < sizeof(pipe) / sizeof(struct graphicsPipeline); i += 1) {

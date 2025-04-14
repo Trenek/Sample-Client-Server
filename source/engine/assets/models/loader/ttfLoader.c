@@ -150,14 +150,17 @@ static int doesIntersect2(vec2 p0, vec2 p1, vec2 p2, vec2 p3) {
         doesIntersect(p0, p1, p2, p3);
 }
 
+
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#define MAX3(x, y, z) MAX(MAX(x, y), z)
 static bool isPointInside(vec2 P, struct contour *that) {
     int count = 0;
-    vec2 Q = {
-        [0] = P[0],
-        [1] = P[1] + 10.0f
-    };
 
     for (size_t i = 0; i < that->N; i += 1) {
+        vec2 Q = {
+            [0] = P[0],
+            [1] = MAX3(P[1], that->vertices[i][0].pos[1], that->vertices[(i + 1) % that->N][0].pos[1]) + 1.0f
+        };
         count += doesIntersect2(P, Q, that->vertices[i][0].pos, that->vertices[(i + 1) % that->N][0].pos);
     }
 
@@ -301,8 +304,8 @@ static void polygonToArrays(struct contour *tree, size_t *vq, size_t **vi) {
     } while (tree != NULL);
 }
 
-static struct contour createContour(FT_GlyphSlot slot, size_t start_point, size_t end_point) {
-    FT_Outline *outline = &slot->outline;
+static struct contour createContour(FT_Face face, size_t start_point, size_t end_point) {
+    FT_Outline *outline = &face->glyph->outline;
 
     size_t N = countOnlineVerticesInOutline(end_point - start_point + 1, outline->tags + start_point);
     struct contour new = {
@@ -326,8 +329,8 @@ static struct contour createContour(FT_GlyphSlot slot, size_t start_point, size_
 
         new.vertices[i][0] = (struct FontVertex) {
             .pos = {
-                onLine[i][0] / 1'000'000'0 * slot->metrics.height,
-                onLine[i][1] / 1'000'000'0 * slot->metrics.height,
+                onLine[i][0] / face->max_advance_width,
+                onLine[i][1] / face->max_advance_width,
             },
             .color = { 0.0, 0.0, 0.0 },
             .bezzier = { i & 1, i & 1 },
@@ -335,8 +338,8 @@ static struct contour createContour(FT_GlyphSlot slot, size_t start_point, size_
         };
         new.vertices[i][1] = (struct FontVertex) {
             .pos = {
-                offLine[i][0] / 1'000'000'0 * slot->metrics.height,
-                offLine[i][1] / 1'000'000'0 * slot->metrics.height,
+                offLine[i][0] / face->max_advance_width,
+                offLine[i][1] / face->max_advance_width,
             },
             .color = { 0.0, 0.0, 0.0 },
             .bezzier = { 0.5f, 0.0f },
@@ -453,9 +456,9 @@ static void doHigherResolution(struct contour *contours, int max) {
     }
 }
 
-static struct contour *loadBezier(FT_GlyphSlot slot, struct Mesh *mesh, struct contour *contours, size_t *outPQuantity) {
+static struct contour *loadBezier(FT_Face face, struct Mesh *mesh, struct contour *contours, size_t *outPQuantity) {
     struct contour *tree = NULL;
-    FT_Outline *outline = &slot->outline;
+    FT_Outline *outline = &face->glyph->outline;
     
     size_t z = 0;
     size_t pQuantity = 0;
@@ -464,7 +467,7 @@ static struct contour *loadBezier(FT_GlyphSlot slot, struct Mesh *mesh, struct c
         size_t start_point = (i == 0) ? 0 : outline->contours[i - 1] + 1;
         size_t end_point = outline->contours[i];
 
-        contours[i] = createContour(slot, start_point, end_point);
+        contours[i] = createContour(face, start_point, end_point);
         doHigherResolution(contours, i);
 
         tree = tree == NULL ? &contours[i] : addToTree(tree, &contours[i]);
@@ -554,17 +557,19 @@ static void generateTriangles(struct contour *tree, struct Mesh *mesh, size_t qO
     }
 }
 
-static void loadCharacter(FT_Face face, struct Mesh *mesh, char character) {
+static void loadCharacter(FT_Face face, struct Mesh *mesh, char character, float *space) {
     size_t qOnlinePoints = 0;
 
     IF (0 == FT_Load_Glyph(face, FT_Get_Char_Index(face, character), FT_LOAD_NO_BITMAP), "No Glyph") {
         FT_GlyphSlot slot = face->glyph;
         FT_Outline *outline = &slot->outline;
 
+        *space = (float)(slot->advance.x) / face->max_advance_width;
+
         struct contour contours[outline->n_contours] = {};
         struct contour *tree = contours;
 
-        tree = loadBezier(slot, mesh, contours, &qOnlinePoints);
+        tree = loadBezier(face, mesh, contours, &qOnlinePoints);
         generateTriangles(tree, mesh, qOnlinePoints);
 
         for (int i = 0; i < outline->n_contours; i += 1) {
@@ -575,30 +580,74 @@ static void loadCharacter(FT_Face face, struct Mesh *mesh, char character) {
     }
 }
 
-#define F 'A'
-#define L 'Z'
+static float loadSpaceOffset(FT_Face face) {
+    float result = 0;
+
+    IF (0 == FT_Load_Glyph(face, FT_Get_Char_Index(face, ' '), FT_LOAD_NO_BITMAP), "No Glyph") {
+        FT_GlyphSlot slot = face->glyph;
+
+        result = (float)slot->advance.x / face->max_advance_width;
+    }
+
+    return result;
+}
+
+const char *buffer =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijlmnopqrstuvwxyz"
+    "0123456789"
+    "!?"
+;
+
+size_t getGlyphID(char a) {
+    size_t i = 0;
+
+    while (buffer[i] != 0 && buffer[i] != a) i += 1;
+
+    return 
+        a == ' ' ? i :
+        buffer[i] == 0 ? i - 1 : i;
+}
 
 void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     FT_Library library;
     FT_Face face;
+    float space = 0;
 
-    model->meshQuantity = L - F + 1;
-    model->mesh = malloc(sizeof(struct Mesh) * model->meshQuantity);
+    model->meshQuantity = strlen(buffer);
+    model->mesh = malloc(sizeof(struct Mesh) * (model->meshQuantity));
+
+    createStorageBuffer(
+        model->meshQuantity * sizeof(mat4) + sizeof(mat4),
+        model->localMesh.buffers, 
+        model->localMesh.buffersMemory, 
+        model->localMesh.buffersMapped, 
+        device, 
+        physicalDevice, 
+        surface
+    );
+
+    mat4 **glyphOffset = (mat4 **)model->localMesh.buffersMapped;
 
     IF (0 == FT_Init_FreeType(&library), "No Library")
     IF (0 == FT_New_Face(library, objectPath, 0, &face), "No Face")
     IF (0 == FT_Set_Pixel_Sizes(face, 100, 100), "Size Error") {
-        for (char i = F; i <= L; i += 1) {
-            loadCharacter(face, &model->mesh[i - F], i);
-        }
-    }
+        for (size_t i = 0; i < model->meshQuantity; i += 1) {
+            loadCharacter(face, &model->mesh[i], buffer[i], &space);
 
-    createStorageBuffer(model->meshQuantity * sizeof(mat4), model->localMesh.buffers, model->localMesh.buffersMemory, model->localMesh.buffersMapped, device, physicalDevice, surface);
-    
-    for (size_t i = 0; i < model->meshQuantity; i += 1) {
+            for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {
+                model->mesh[i].sizeOfVertex = sizeof(struct FontVertex);
+                glm_mat4_identity(glyphOffset[k][i]);
+                glm_translate(glyphOffset[k][i], (vec3) {
+                    space, 0, 0
+                });
+            }
+        }
         for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {
-            model->mesh[i].sizeOfVertex = sizeof(struct FontVertex);
-            glm_mat4_identity(((mat4 **)model->localMesh.buffersMapped)[k][i]);
+            glm_mat4_identity(glyphOffset[k][model->meshQuantity]);
+            glm_translate(glyphOffset[k][model->meshQuantity], (vec3) {
+                loadSpaceOffset(face), 0, 0
+            });
         }
     }
 }

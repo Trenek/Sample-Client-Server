@@ -20,7 +20,7 @@ void bindCameraBuffersToDescriptorSets(VkDescriptorSet descriptorSets[], VkDevic
 
 VkDescriptorSetLayout createObjectDescriptorSetLayout(VkDevice device);
 VkDescriptorPool createObjectDescriptorPool(VkDevice device);
-void bindObjectBuffersToDescriptorSets(VkDescriptorSet descriptorSets[], VkDevice device, struct Model model, uint32_t meshQuantity, VkBuffer (*buffers)[2]);
+void bindObjectBuffersToDescriptorSets(VkDescriptorSet descriptorSets[], VkDevice device, struct Model model, uint32_t meshQuantity, VkBuffer (*buffers)[MAX_FRAMES_IN_FLIGHT]);
 
 void createDescriptorSets(VkDescriptorSet descriptorSets[], VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout);
 
