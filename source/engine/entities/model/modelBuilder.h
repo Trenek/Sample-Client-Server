@@ -10,7 +10,9 @@ struct ModelBuilder {
 
     uint32_t instanceCount;
 
-    struct actualModel *modelData;
+    uint32_t meshQuantity;
+    struct Mesh *mesh;
+    VkBuffer (*buffers)[2];
 
     VkDescriptorSetLayout objectLayout;
 };

@@ -3,6 +3,8 @@
 #include "modelBuilder.h"
 #include "instanceBuffer.h"
 
+#include "actualModel.h"
+
 struct Model createModels(struct ModelBuilder builder, struct GraphicsSetup *vulkan) {
     struct Model result = { 0 };
 
@@ -21,11 +23,12 @@ struct Model createModels(struct ModelBuilder builder, struct GraphicsSetup *vul
     result.texturePointer = builder.texturePointer;
     result.texturesQuantity = builder.texturesQuantity;
 
-    result.actualModel = builder.modelData;
+    result.meshQuantity = builder.meshQuantity;
+    result.mesh = builder.mesh;
 
     result.graphics.object.descriptorPool = createObjectDescriptorPool(vulkan->device);
     createDescriptorSets(result.graphics.object.descriptorSets, vulkan->device, result.graphics.object.descriptorPool, builder.objectLayout);
-    bindObjectBuffersToDescriptorSets(result.graphics.object.descriptorSets, vulkan->device, result, result.actualModel);
+    bindObjectBuffersToDescriptorSets(result.graphics.object.descriptorSets, vulkan->device, result, result.meshQuantity, builder.buffers);
 
     return result;
 }

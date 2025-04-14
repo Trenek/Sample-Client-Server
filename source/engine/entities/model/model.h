@@ -14,7 +14,8 @@ struct Model {
     uint32_t texturePointer;
     uint32_t texturesQuantity;
 
-    struct actualModel *actualModel;
+    uint32_t meshQuantity;
+    struct Mesh *mesh;
 
     struct ModelGraphics {
         struct buffer uniformModel;

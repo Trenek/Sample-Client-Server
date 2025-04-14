@@ -5,6 +5,8 @@
 
 #include "model.h"
 #include "modelBuilder.h"
+#include "stringEntity.h"
+#include "stringBuilder.h"
 #include "instanceBuffer.h"
 
 #include "graphicsPipelineObj.h"
@@ -75,14 +77,18 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .instanceCount = 1,
             .texturesQuantity = 1,
             .texturePointer = 0,
-            .modelData = &actualModel[1],
+            .meshQuantity = actualModel[1].meshQuantity,
+            .mesh = actualModel[1].mesh,
+            .buffers = &actualModel[1].localMesh.buffers,
             .objectLayout = pipe[0].objectLayout,
         }, &vulkan->graphics),
         /*players*/ createModels((struct ModelBuilder) {
             .instanceCount = 2,
             .texturesQuantity = 1,
             .texturePointer = 0,
-            .modelData = &actualModel[2],
+            .meshQuantity = actualModel[2].meshQuantity,
+            .mesh = actualModel[2].mesh,
+            .buffers = &actualModel[2].localMesh.buffers,
             .objectLayout = pipe[0].objectLayout,
         }, &vulkan->graphics),
     };
@@ -95,7 +101,9 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .instanceCount = 1,
             .texturesQuantity = 1,
             .texturePointer = 0,
-            .modelData = &actualModel[0],
+            .meshQuantity = actualModel[0].meshQuantity,
+            .mesh = actualModel[0].mesh,
+            .buffers = &actualModel[0].localMesh.buffers,
             .objectLayout = pipe[2].objectLayout,
         }, &vulkan->graphics),
     };
@@ -104,10 +112,9 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     pipe[2].model = model2;
 
     struct Model model3[] = {
-        /*comma*/ createModels((struct ModelBuilder) {
+        /*comma*/ createString((struct StringBuilder) {
             .instanceCount = 1,
-            .texturesQuantity = 1,
-            .texturePointer = 0,
+            .string = "Z",
             .modelData = &actualModel[3],
             .objectLayout = pipe[1].objectLayout,
         }, &vulkan->graphics),

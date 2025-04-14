@@ -326,8 +326,8 @@ static struct contour createContour(FT_GlyphSlot slot, size_t start_point, size_
 
         new.vertices[i][0] = (struct FontVertex) {
             .pos = {
-                onLine[i][0] / slot->metrics.height,
-                onLine[i][1] / slot->metrics.height,
+                onLine[i][0] / 1'000'000'0 * slot->metrics.height,
+                onLine[i][1] / 1'000'000'0 * slot->metrics.height,
             },
             .color = { 0.0, 0.0, 0.0 },
             .bezzier = { i & 1, i & 1 },
@@ -335,8 +335,8 @@ static struct contour createContour(FT_GlyphSlot slot, size_t start_point, size_
         };
         new.vertices[i][1] = (struct FontVertex) {
             .pos = {
-                offLine[i][0] / slot->metrics.height,
-                offLine[i][1] / slot->metrics.height,
+                offLine[i][0] / 1'000'000'0 * slot->metrics.height,
+                offLine[i][1] / 1'000'000'0 * slot->metrics.height,
             },
             .color = { 0.0, 0.0, 0.0 },
             .bezzier = { 0.5f, 0.0f },
@@ -575,18 +575,21 @@ static void loadCharacter(FT_Face face, struct Mesh *mesh, char character) {
     }
 }
 
+#define F 'A'
+#define L 'Z'
+
 void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     FT_Library library;
     FT_Face face;
 
-    model->meshQuantity = 'Z' - 'A' + 1;
+    model->meshQuantity = L - F + 1;
     model->mesh = malloc(sizeof(struct Mesh) * model->meshQuantity);
 
     IF (0 == FT_Init_FreeType(&library), "No Library")
     IF (0 == FT_New_Face(library, objectPath, 0, &face), "No Face")
-    IF (0 == FT_Set_Pixel_Sizes(face, 1000, 1000), "Size Error") {
-        for (char i = 'A'; i <= 'Z'; i += 1) {
-            loadCharacter(face, &model->mesh[i - 'A'], i);
+    IF (0 == FT_Set_Pixel_Sizes(face, 100, 100), "Size Error") {
+        for (char i = F; i <= L; i += 1) {
+            loadCharacter(face, &model->mesh[i - F], i);
         }
     }
 

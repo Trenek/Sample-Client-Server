@@ -88,12 +88,12 @@ static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swa
                 vulkan->graphics.cameraDescriptorSet[currentFrame]
             };
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe[i].pipelineLayout, 0, 3, sets, 0, NULL);
-            for (uint32_t k = 0; k < pipe[i].model[j].actualModel->meshQuantity; k += 1) {
-                vkCmdBindVertexBuffers(commandBuffer, 0, 1, &pipe[i].model[j].actualModel->mesh[k].vertexBuffer, (VkDeviceSize[]){ 0 });
-                vkCmdBindIndexBuffer(commandBuffer, pipe[i].model[j].actualModel->mesh[k].indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+            for (uint32_t k = 0; k < pipe[i].model[j].meshQuantity; k += 1) {
+                vkCmdBindVertexBuffers(commandBuffer, 0, 1, &pipe[i].model[j].mesh[k].vertexBuffer, (VkDeviceSize[]){ 0 });
+                vkCmdBindIndexBuffer(commandBuffer, pipe[i].model[j].mesh[k].indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
                 vkCmdPushConstants(commandBuffer, pipe[i].pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(struct MeshPushConstants), &(struct MeshPushConstants) { .meshID = k });
-                vkCmdDrawIndexed(commandBuffer, pipe[i].model[j].actualModel->mesh[k].indicesQuantity, pipe[i].model[j].instanceCount, 0, 0, 0);
+                vkCmdDrawIndexed(commandBuffer, pipe[i].model[j].mesh[k].indicesQuantity, pipe[i].model[j].instanceCount, 0, 0, 0);
             }
         }
     }
