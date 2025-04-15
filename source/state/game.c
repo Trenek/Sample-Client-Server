@@ -47,7 +47,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .attributeDescription = vertexAttributeDescriptions
         }, &vulkan->graphics),
         createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
-            .vertexShader = "shaders/textV.spv",
+            .vertexShader = "shaders/text2dV.spv",
             .fragmentShader = "shaders/textF.spv",
             .minDepth = 0.0f,
             .maxDepth = 1.0f,
@@ -126,6 +126,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     *floor = (struct instance){
         .pos = { 0.0f, 0.0f, -50.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { glm_rad(90), 0.0f, 0.0f },
         .scale = { 10000.0f, 100.0f, 10000.0f },
         .textureIndex = 0
     };
@@ -133,6 +134,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     player[0] = (struct instance){
         .pos = { 0.0f, -1.0f, 1.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { glm_rad(90), 0.0f, 0.0f },
         .scale = { 1.0f, 1.0f, 1.0f },
         .textureIndex = 0
     };
@@ -140,6 +142,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     player[1] = (struct instance){
         .pos = { 0.0f, 1.0f, 1.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { glm_rad(90), 0.0f, 0.0f },
         .scale = { 1.0f, 1.0f, 1.0f },
         .textureIndex = 0
     };
@@ -147,16 +150,17 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     *background = (struct instance){
         .pos = { 0.0f, 0.0f, 0.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { glm_rad(90), 0.0f, 0.0f },
         .scale = { 1.0f, 1.0f, 1.0f },
         .textureIndex = 0,
         .shadow = false
     };
 
     *text = (struct instance){
-        .pos = { 0.0f, 0.0f, 2.0f },
+        .pos = { -0.2f, -0.5f, 0.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
-        .fixedRotation = { glm_rad(-90), 0.0f, glm_rad(90) },
-        .scale = { 0.3f, 0.3f, 0.3f },
+        .fixedRotation = { 0.0f, 0.0f, 0.0f },
+        .scale = { 0.1f, 0.1f, 0.1f },
         .textureIndex = 0,
         .shadow = false
     };

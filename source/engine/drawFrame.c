@@ -109,9 +109,15 @@ static void update(struct graphicsPipeline pipe, uint32_t currentFrame) {
             glm_mat4_identity(model->instanceBuffer[j].modelMatrix);
 
             glm_translate(model->instanceBuffer[j].modelMatrix, model->instance[j].pos);
-            glm_rotate(model->instanceBuffer[j].modelMatrix, glm_rad(90) + model->instance[j].fixedRotation[0] + time * model->instance[j].rotation[0], (vec3) { 1, 0, 0 });
-            glm_rotate(model->instanceBuffer[j].modelMatrix,               model->instance[j].fixedRotation[1] + time * model->instance[j].rotation[1], (vec3) { 0, 1, 0 });
-            glm_rotate(model->instanceBuffer[j].modelMatrix,               model->instance[j].fixedRotation[2] + time * model->instance[j].rotation[2], (vec3) { 0, 0, 1 });
+            glm_rotate(model->instanceBuffer[j].modelMatrix, 
+                model->instance[j].fixedRotation[0] + time * model->instance[j].rotation[0], 
+            (vec3) { 1, 0, 0 });
+            glm_rotate(model->instanceBuffer[j].modelMatrix,
+                model->instance[j].fixedRotation[1] + time * model->instance[j].rotation[1], 
+            (vec3) { 0, 1, 0 });
+            glm_rotate(model->instanceBuffer[j].modelMatrix,
+                model->instance[j].fixedRotation[2] + time * model->instance[j].rotation[2],
+            (vec3) { 0, 0, 1 });
             glm_scale(model->instanceBuffer[j].modelMatrix, model->instance[j].scale);
             model->instanceBuffer[j].textureIndex = model->texturePointer + model->instance[j].textureIndex + model->instance[j].textureInc;
             model->instanceBuffer[j].shadow = model->instance[j].shadow;
