@@ -8,6 +8,8 @@
 #include "swapChainSupportDetails.h"
 #include "queueFamilyIndices.h"
 
+#include <stdio.h>
+
 const char *const deviceExtensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
@@ -63,6 +65,10 @@ static int isDevicePreferable(VkPhysicalDevice device, VkSurfaceKHR surface) {
         (deviceFeatures.geometryShader ? 1 : 0);
 }
 
+void printLogical(bool a) {
+    printf("%s\n", a ? "Tak" : "Nie");
+}
+
 static bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
     VkPhysicalDeviceProperties deviceProperties;
     VkPhysicalDeviceFeatures deviceFeatures;
@@ -76,9 +82,9 @@ static bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
     vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
     freeSwapChainSupportDetails(&swapChainSupport);
-
+    
     return
-        deviceFeatures.depthBounds &&
+//      deviceFeatures.depthBounds &&
         deviceFeatures.samplerAnisotropy &&
         checkDeviceExtensionSupport(device) &&
         swapChainAdequate &&
@@ -118,7 +124,7 @@ VkPhysicalDevice pickPhysicalDevice(VkSampleCountFlagBits *msaaSamples, VkInstan
     while (i < deviceCount) {
         if (isDeviceSuitable(devices[i], surface)) {
             currentScore = isDevicePreferable(devices[i], surface);
-            if (currentScore > preferableScore) {
+            if (currentScore >= preferableScore) {
                 preferableScore = currentScore;
                 physicalDevice = devices[i];
             }

@@ -61,7 +61,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
             .vertexShader = "shaders/vert2d.spv",
             .fragmentShader = "shaders/frag2d.spv",
-            .minDepth = 1.0f,
+            .minDepth = 0.0f,
             .maxDepth = 1.0f,
             .texture = &texture.descriptor,
             .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
@@ -102,7 +102,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         }, &vulkan->graphics),
     };
 
-    pipe[2].modelQuantity = sizeof(model2) / sizeof(struct Entity);
+    pipe[2].modelQuantity = 0;// sizeof(model2) / sizeof(struct Entity);
     pipe[2].model = model2;
 
     struct Entity model3[] = {
