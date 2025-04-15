@@ -3,7 +3,8 @@
 struct GraphicsSetup;
 
 struct Mesh {
-    struct Vertex *vertices;
+    void *vertices;
+    size_t sizeOfVertex;
     uint16_t *indices;
     size_t verticesQuantity;
     size_t indicesQuantity;

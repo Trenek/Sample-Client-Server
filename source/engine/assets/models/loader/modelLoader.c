@@ -5,6 +5,8 @@
 
 #include "bufferOperations.h"
 
+#include "MY_ASSERT.h"
+
 void loadModel(const char *filePath, struct actualModel *model, struct GraphicsSetup *vulkan) {
     void (*fun)(const char *, struct actualModel *, VkDevice, VkPhysicalDevice, VkSurfaceKHR) =
         NULL != strstr(filePath, ".obj") ? objLoadModel : 
@@ -17,8 +19,8 @@ void loadModel(const char *filePath, struct actualModel *model, struct GraphicsS
     fun(filePath, model, vulkan->device, vulkan->physicalDevice, vulkan->surface);
 
     for (uint32_t i = 0; i < model->meshQuantity; i += 1) {
-        model->mesh[i].vertexBuffer = createVertexBuffer(&model->mesh[i].vertexBufferMemory, vulkan->device, vulkan->physicalDevice, vulkan->surface, vulkan->commandPool, vulkan->transferQueue, model->mesh[i].verticesQuantity, model->mesh[i].vertices);
-        model->mesh[i].indexBuffer = createIndexBuffer(&model->mesh[i].indexBufferMemory, vulkan->device, vulkan->physicalDevice, vulkan->surface, vulkan->commandPool, vulkan->transferQueue, model->mesh[i].verticesQuantity, model->mesh[i].indicesQuantity, model->mesh[i].indices);
+        model->mesh[i].vertexBuffer = createVertexBuffer(&model->mesh[i].vertexBufferMemory, vulkan->device, vulkan->physicalDevice, vulkan->surface, vulkan->commandPool, vulkan->transferQueue, model->mesh[i].verticesQuantity, model->mesh[i].vertices, model->mesh[i].sizeOfVertex);
+        model->mesh[i].indexBuffer = createIndexBuffer(&model->mesh[i].indexBufferMemory, vulkan->device, vulkan->physicalDevice, vulkan->surface, vulkan->commandPool, vulkan->transferQueue, model->mesh[i].verticesQuantity, model->mesh[i].indicesQuantity, model->mesh[i].indices, model->mesh[i].sizeOfVertex);
     }
 }
 
@@ -26,11 +28,6 @@ void loadModels(size_t quantity, struct actualModel model[quantity], const char 
     for (size_t i = 0; i < quantity; i += 1) {
         loadModel(modelPath[i], &model[i], vulkan);
     }
-}
-
-static void unloadMesh(struct Vertex *vertices, uint16_t *indices) {
-    free(vertices);
-    free(indices);
 }
 
 void destroyActualModels(VkDevice device, uint32_t modelQuantity, struct actualModel *model) {
@@ -41,7 +38,8 @@ void destroyActualModels(VkDevice device, uint32_t modelQuantity, struct actualM
         }
 
         for (uint32_t j = 0; j < model[i].meshQuantity; j += 1) {
-            unloadMesh(model[i].mesh[j].vertices, model[i].mesh[j].indices);
+            free(model[i].mesh[j].vertices);
+            free(model[i].mesh[j].indices);
         }
         free(model[i].mesh);
 

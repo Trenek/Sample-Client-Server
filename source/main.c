@@ -5,7 +5,7 @@
 
 #include "state.h"
 
-int main(void) {
+int main() {
     struct VulkanTools vulkan = setup();
     void (* const state[])(struct VulkanTools *vulkan, enum state *state) = {
         [GAME] = game

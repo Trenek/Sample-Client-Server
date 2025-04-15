@@ -5,7 +5,7 @@
 
 #include "definitions.h"
 
-struct Model;
+struct Entity;
 struct actualModel;
 
 struct descriptor {
@@ -20,7 +20,7 @@ void bindCameraBuffersToDescriptorSets(VkDescriptorSet descriptorSets[], VkDevic
 
 VkDescriptorSetLayout createObjectDescriptorSetLayout(VkDevice device);
 VkDescriptorPool createObjectDescriptorPool(VkDevice device);
-void bindObjectBuffersToDescriptorSets(VkDescriptorSet descriptorSets[], VkDevice device, struct Model model, struct actualModel *actualModel);
+void bindObjectBuffersToDescriptorSets(VkDescriptorSet descriptorSets[], VkDevice device, struct Entity model, uint32_t meshQuantity, VkBuffer (*buffers)[MAX_FRAMES_IN_FLIGHT]);
 
 void createDescriptorSets(VkDescriptorSet descriptorSets[], VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout);
 

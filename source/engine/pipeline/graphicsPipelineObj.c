@@ -10,7 +10,7 @@ struct graphicsPipeline createObjGraphicsPipeline(struct graphicsPipelineBuilder
     };
 
     graphics.pipelineLayout = createPipelineLayout(vulkan->device, graphics.objectLayout, builder.texture->descriptorSetLayout, vulkan->cameraDescriptorSetLayout);
-    graphics.pipeline = createGraphicsPipeline(builder.vertexShader, builder.fragmentShader, builder.minDepth, builder.maxDepth, vulkan->device, vulkan->renderPass, graphics.pipelineLayout, vulkan->msaaSamples, builder.topology);
+    graphics.pipeline = createGraphicsPipeline(builder.vertexShader, builder.fragmentShader, builder.minDepth, builder.maxDepth, vulkan->device, vulkan->renderPass, graphics.pipelineLayout, vulkan->msaaSamples, builder.topology, builder.sizeOfVertex, builder.numOfAttributes, builder.attributeDescription);
 
     return graphics;
 }
