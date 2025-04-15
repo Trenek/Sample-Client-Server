@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 
 struct actualModel;
+struct GraphicsSetup;
 
 struct StringBuilder {
     uint32_t instanceCount;
@@ -12,5 +13,7 @@ struct StringBuilder {
 
     VkDescriptorSetLayout objectLayout;
 };
+
+struct Entity createString(struct StringBuilder builder, struct GraphicsSetup *vulkan);
 
 #endif

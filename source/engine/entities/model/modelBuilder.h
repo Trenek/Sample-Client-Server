@@ -5,6 +5,7 @@
 #include "definitions.h"
 
 struct actualModel;
+struct GraphicsSetup;
 
 struct ModelBuilder {
     uint32_t texturePointer;
@@ -12,14 +13,11 @@ struct ModelBuilder {
 
     uint32_t instanceCount;
 
-    uint32_t meshQuantity;
-    struct Mesh *mesh;
-    VkBuffer (*buffers)[MAX_FRAMES_IN_FLIGHT];
+    struct actualModel *modelData;
 
     VkDescriptorSetLayout objectLayout;
-
-    void *additional;
-    void (*cleanup)(void *);
 };
+
+struct Entity createModel(struct ModelBuilder builder, struct GraphicsSetup *vulkan);
 
 #endif

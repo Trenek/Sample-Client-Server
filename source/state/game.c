@@ -3,9 +3,9 @@
 
 #include "asset.h"
 
-#include "model.h"
+#include "entity.h"
+#include "entityBuilder.h"
 #include "modelBuilder.h"
-#include "stringEntity.h"
 #include "stringBuilder.h"
 #include "instanceBuffer.h"
 
@@ -72,46 +72,40 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         }, &vulkan->graphics),
     };
 
-    struct Model model1[] = {
-        /*floor*/ createModels((struct ModelBuilder) {
+    struct Entity model1[] = {
+        /*floor*/ createModel((struct ModelBuilder) {
             .instanceCount = 1,
             .texturesQuantity = 1,
             .texturePointer = 0,
-            .meshQuantity = actualModel[1].meshQuantity,
-            .mesh = actualModel[1].mesh,
-            .buffers = &actualModel[1].localMesh.buffers,
+            .modelData = &actualModel[1],
             .objectLayout = pipe[0].objectLayout,
         }, &vulkan->graphics),
-        /*players*/ createModels((struct ModelBuilder) {
+        /*players*/ createModel((struct ModelBuilder) {
             .instanceCount = 2,
             .texturesQuantity = 1,
             .texturePointer = 0,
-            .meshQuantity = actualModel[2].meshQuantity,
-            .mesh = actualModel[2].mesh,
-            .buffers = &actualModel[2].localMesh.buffers,
+            .modelData = &actualModel[2],
             .objectLayout = pipe[0].objectLayout,
         }, &vulkan->graphics),
     };
 
-    pipe[0].modelQuantity = sizeof(model1) / sizeof(struct Model);
+    pipe[0].modelQuantity = sizeof(model1) / sizeof(struct Entity);
     pipe[0].model = model1;
     
-    struct Model model2[] = {
-        /*background*/ createModels((struct ModelBuilder) {
+    struct Entity model2[] = {
+        /*background*/ createModel((struct ModelBuilder) {
             .instanceCount = 1,
             .texturesQuantity = 1,
             .texturePointer = 0,
-            .meshQuantity = actualModel[0].meshQuantity,
-            .mesh = actualModel[0].mesh,
-            .buffers = &actualModel[0].localMesh.buffers,
+            .modelData = &actualModel[0],
             .objectLayout = pipe[2].objectLayout,
         }, &vulkan->graphics),
     };
 
-    pipe[2].modelQuantity = sizeof(model2) / sizeof(struct Model);
+    pipe[2].modelQuantity = sizeof(model2) / sizeof(struct Entity);
     pipe[2].model = model2;
 
-    struct Model model3[] = {
+    struct Entity model3[] = {
         /*text*/ createString((struct StringBuilder) {
             .instanceCount = 1,
             .string = "Hello World!",
@@ -120,7 +114,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         }, &vulkan->graphics),
     };
 
-    pipe[1].modelQuantity = sizeof(model3) / sizeof(struct Model);
+    pipe[1].modelQuantity = sizeof(model3) / sizeof(struct Entity);
     pipe[1].model = model3;
 
     struct instance *floor = pipe[0].model[0].instance;
@@ -192,9 +186,9 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         destroyObjGraphicsPipeline(vulkan->graphics.device, pipe[i]);
     }
 
-    destroyModelArray(sizeof(model1) / sizeof(struct Model), model1, &vulkan->graphics);
-    destroyModelArray(sizeof(model2) / sizeof(struct Model), model2, &vulkan->graphics);
-    destroyModelArray(sizeof(model3) / sizeof(struct Model), model3, &vulkan->graphics);
+    destroyEntityArray(sizeof(model1) / sizeof(struct Entity), model1, &vulkan->graphics);
+    destroyEntityArray(sizeof(model2) / sizeof(struct Entity), model2, &vulkan->graphics);
+    destroyEntityArray(sizeof(model3) / sizeof(struct Entity), model3, &vulkan->graphics);
 
     destroyActualModels(vulkan->graphics.device, modelQuantity, actualModel);
     unloadTextures(vulkan->graphics.device, texture);

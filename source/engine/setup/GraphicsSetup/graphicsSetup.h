@@ -6,7 +6,7 @@
 #include "definitions.h"
 #include "swapChain.h"
 
-#include "model.h"
+#include "entity.h"
 
 struct GraphicsSetup {
     VkInstance instance;

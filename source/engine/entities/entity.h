@@ -1,13 +1,13 @@
-#ifndef MODEL_H
-#define MODEL_H
+#ifndef ENTITY_H
+#define ENTITY_H
 
 #include <vulkan/vulkan.h>
 
 #include "descriptor.h"
 #include "buffer.h"
-#include "modelBuilder.h"
+#include "entityBuilder.h"
 
-struct Model {
+struct Entity {
     uint32_t instanceCount;
     struct instance *instance;
     struct instanceBuffer *instanceBuffer;
@@ -30,9 +30,9 @@ struct Model {
 };
 
 struct GraphicsSetup;
-struct ModelBuilder;
+struct EntityBuilder;
 
-struct Model createModels(struct ModelBuilder modelBuilder, struct GraphicsSetup *vulkan);
-void destroyModelArray(uint16_t num, struct Model modelArray[num], struct GraphicsSetup *graphics);
+struct Entity createEntity(struct EntityBuilder modelBuilder, struct GraphicsSetup *vulkan);
+void destroyEntityArray(uint16_t num, struct Entity modelArray[num], struct GraphicsSetup *graphics);
 
 #endif

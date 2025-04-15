@@ -23,6 +23,7 @@ set(SOURCE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}/engine/setup/deltaTime"
             "${CMAKE_CURRENT_SOURCE_DIR}/engine/setup/windowControl"
         "${CMAKE_CURRENT_SOURCE_DIR}/engine/pipeline"
+        "${CMAKE_CURRENT_SOURCE_DIR}/engine/entities"
         "${CMAKE_CURRENT_SOURCE_DIR}/engine/entities/string"
         "${CMAKE_CURRENT_SOURCE_DIR}/engine/entities/model"
             "${CMAKE_CURRENT_SOURCE_DIR}/engine/pipeline/functions"

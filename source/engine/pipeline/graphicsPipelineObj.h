@@ -30,7 +30,7 @@ struct graphicsPipeline {
     VkPipeline pipeline;
 
     size_t modelQuantity;
-    struct Model *model;
+    struct Entity *model;
 };
 
 struct graphicsPipeline createObjGraphicsPipeline(struct graphicsPipelineBuilder builder, struct GraphicsSetup *vulkan);

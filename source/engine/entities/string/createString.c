@@ -6,8 +6,8 @@
 #include "graphicsSetup.h"
 
 #include "stringBuilder.h"
-#include "model.h"
-#include "modelBuilder.h"
+#include "entity.h"
+#include "entityBuilder.h"
 
 #include "actualModel.h"
 
@@ -43,7 +43,7 @@ void cleanupFont(void *toCleanArg) {
     free(toClean);
 }
 
-struct Model createString(struct StringBuilder builder, struct GraphicsSetup *vulkan) {
+struct Entity createString(struct StringBuilder builder, struct GraphicsSetup *vulkan) {
     uint32_t meshQuantity = count(builder.string);
 
     struct toCleanup *info = malloc(sizeof(struct toCleanup));
@@ -87,7 +87,7 @@ struct Model createString(struct StringBuilder builder, struct GraphicsSetup *vu
         buffer += 1;
     }
 
-    return createModels((struct ModelBuilder) {
+    return createEntity((struct EntityBuilder) {
         .meshQuantity = meshQuantity,
         .mesh = info->mesh,
         .buffers = &info->localMesh.buffers,

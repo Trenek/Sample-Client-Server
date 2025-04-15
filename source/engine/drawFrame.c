@@ -103,7 +103,7 @@ static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swa
 
 static void update(struct graphicsPipeline pipe, uint32_t currentFrame) {
     for (uint32_t i = 0; i < pipe.modelQuantity; i += 1) {
-        struct Model *model = &pipe.model[i];
+        struct Entity *model = &pipe.model[i];
         for (uint32_t j = 0; j < model->instanceCount; j += 1) {
             double time = clock() / (double)CLOCKS_PER_SEC;
             glm_mat4_identity(model->instanceBuffer[j].modelMatrix);
