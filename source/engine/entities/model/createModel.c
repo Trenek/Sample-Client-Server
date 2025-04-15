@@ -6,7 +6,10 @@
 #include "actualModel.h"
 
 struct Model createModels(struct ModelBuilder builder, struct GraphicsSetup *vulkan) {
-    struct Model result = { 0 };
+    struct Model result = {
+        .additional = builder.additional,
+        .cleanup = builder.cleanup
+    };
 
     createStorageBuffer(builder.instanceCount * sizeof(struct instanceBuffer), result.graphics.uniformModel.buffers, result.graphics.uniformModel.buffersMemory, result.graphics.uniformModel.buffersMapped, vulkan->device, vulkan->physicalDevice, vulkan->surface);
     result.instanceBuffer = malloc(builder.instanceCount * sizeof(struct instanceBuffer));
@@ -35,6 +38,10 @@ struct Model createModels(struct ModelBuilder builder, struct GraphicsSetup *vul
 }
 
 static void destroyModels(VkDevice device, struct Model model) {
+    if (model.cleanup != NULL) {
+        model.cleanup(model.additional);
+    }
+
     free(model.instance);
 
     destroyStorageBuffer(device, model.graphics.uniformModel.buffers, model.graphics.uniformModel.buffersMemory);

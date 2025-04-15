@@ -25,20 +25,39 @@ size_t count(const char *buffer) {
     return i;
 }
 
-struct Model createString(struct StringBuilder builder, struct GraphicsSetup *vulkan) {
-    uint32_t meshQuantity = count(builder.string);
-    struct Mesh *mesh = malloc(sizeof(struct Mesh) * meshQuantity);
+struct toCleanup {
+    VkDevice device;
+
+    struct Mesh *mesh;
 
     struct buffer localMesh;
+};
 
-    createStorageBuffer(meshQuantity * sizeof(mat4), localMesh.buffers, localMesh.buffersMemory, localMesh.buffersMapped, vulkan->device, vulkan->physicalDevice, vulkan->surface);
+void cleanupFont(void *toCleanArg) {
+    struct toCleanup *toClean = toCleanArg;
 
-    mat4 **thisBuffer = (void *)localMesh.buffersMapped;
+    destroyStorageBuffer(toClean->device, toClean->localMesh.buffers, toClean->localMesh.buffersMemory);
+
+    free(toClean->mesh);
+
+    free(toClean);
+}
+
+struct Model createString(struct StringBuilder builder, struct GraphicsSetup *vulkan) {
+    uint32_t meshQuantity = count(builder.string);
+
+    struct toCleanup *info = malloc(sizeof(struct toCleanup));
+    info->device = vulkan->device;
+    info->mesh = malloc(sizeof(struct Mesh) * meshQuantity);
+
+    createStorageBuffer(meshQuantity * sizeof(mat4), info->localMesh.buffers, info->localMesh.buffersMemory, info->localMesh.buffersMapped, vulkan->device, vulkan->physicalDevice, vulkan->surface);
+
+    mat4 **thisBuffer = (void *)info->localMesh.buffersMapped;
     mat4 **transform = (void *)builder.modelData->localMesh.buffersMapped;
 
     uint32_t i = 0;
     const char *buffer = builder.string;
-    char aaa;
+    char prev = 0;
     mat4 space; {
         glm_mat4_identity(space);
     }
@@ -47,21 +66,20 @@ struct Model createString(struct StringBuilder builder, struct GraphicsSetup *vu
             glm_mat4_mul(space, transform[0][getGlyphID(' ')], space);
         }
         else {
-            mesh[i] = builder.modelData->mesh[getGlyphID(*buffer)];
+            info->mesh[i] = builder.modelData->mesh[getGlyphID(*buffer)];
 
             for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {
                 if (i == 0) {
                     glm_mat4_identity(thisBuffer[k][i]);
                 }
                 else { 
-                    glm_mat4_mul(thisBuffer[k][i - 1], transform[k][getGlyphID(aaa)], thisBuffer[k][i]);
+                    glm_mat4_mul(thisBuffer[k][i - 1], transform[k][getGlyphID(prev)], thisBuffer[k][i]);
                     glm_mat4_mul(space, thisBuffer[k][i], thisBuffer[k][i]);
                 }
-
             }
 
             glm_mat4_identity(space);
-            aaa = *buffer;
+            prev = *buffer;
 
             i += 1;
         }
@@ -71,11 +89,13 @@ struct Model createString(struct StringBuilder builder, struct GraphicsSetup *vu
 
     return createModels((struct ModelBuilder) {
         .meshQuantity = meshQuantity,
-        .mesh = mesh,
-        .buffers = &localMesh.buffers,
+        .mesh = info->mesh,
+        .buffers = &info->localMesh.buffers,
         .instanceCount = builder.instanceCount,
         .objectLayout = builder.objectLayout,
         .texturePointer = 0,
-        .texturesQuantity = 1
+        .texturesQuantity = 1,
+        .additional = info,
+        .cleanup = cleanupFont
     }, vulkan);
 }

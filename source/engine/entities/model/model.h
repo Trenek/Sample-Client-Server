@@ -24,6 +24,9 @@ struct Model {
 
         struct descriptor object;
     } graphics;
+
+    void *additional;
+    void (*cleanup)(void *);
 };
 
 struct GraphicsSetup;

@@ -17,6 +17,9 @@ struct ModelBuilder {
     VkBuffer (*buffers)[MAX_FRAMES_IN_FLIGHT];
 
     VkDescriptorSetLayout objectLayout;
+
+    void *additional;
+    void (*cleanup)(void *);
 };
 
 #endif
