@@ -594,7 +594,7 @@ static float loadSpaceOffset(FT_Face face) {
 
 const char *buffer =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    "abcdefghijlmnopqrstuvwxyz"
+    "abcdefghijklmnopqrstuvwxyz"
     "0123456789"
     "!?"
 ;
