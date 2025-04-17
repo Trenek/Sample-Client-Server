@@ -566,7 +566,9 @@ static void loadCharacter(FT_Face face, struct Mesh *mesh, char character, float
 
         *space = (float)(slot->advance.x) / face->max_advance_width;
 
-        struct contour contours[outline->n_contours] = {};
+        struct contour contours[outline->n_contours]; {
+            memset(contours, 0, sizeof(struct contour) * outline->n_contours);
+        }
         struct contour *tree = contours;
 
         tree = loadBezier(face, mesh, contours, &qOnlinePoints);
