@@ -13,6 +13,12 @@
 
 #include "Vertex.h"
 
+void moving([[maybe_unused]] vec3 *player, vec3 *enemies[]) {
+    (*enemies[0])[0] = 2;
+    (*enemies[0])[1] = 2;
+    (*enemies[0])[2] = 1;
+}
+
 void game(struct VulkanTools *vulkan, enum state *state) {
     const char *texturePaths[] = {
         "textures/texture.jpg"
@@ -184,6 +190,12 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         if (isHClicked) player[0].pos[1] -= 3e00 * vulkan->deltaTime.deltaTime;
 
         if (isMClicked) text->shadow = !text->shadow;
+
+        vec3 *entities[] = {
+            &player[1].pos
+        };
+
+        moving(&player[0].pos, entities);
     }
 
     for (size_t i = 0; i < sizeof(pipe) / sizeof(struct graphicsPipeline); i += 1) {
