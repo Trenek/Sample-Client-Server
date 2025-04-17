@@ -12,6 +12,6 @@ static void moveEnemy(vec3 player, vec3 enemy, float deltaTime) {
 
 void moveEnemies(vec3 player, size_t qEnemies, vec3 *enemies[qEnemies], float deltaTime) {
     while (qEnemies --> 0) {
-        moveEnemy(player, (*enemies)[qEnemies], deltaTime);
+        moveEnemy(player, *enemies[qEnemies], deltaTime);
     }
 }
