@@ -1,5 +1,6 @@
 set(SOURCE_DIRECTORIES
     "${CMAKE_CURRENT_SOURCE_DIR}/camera"
+    "${CMAKE_CURRENT_SOURCE_DIR}/pathfinding"
     "${CMAKE_CURRENT_SOURCE_DIR}/engine"
         "${CMAKE_CURRENT_SOURCE_DIR}/engine/assets"
             "${CMAKE_CURRENT_SOURCE_DIR}/engine/assets/models"
@@ -23,10 +24,10 @@ set(SOURCE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}/engine/setup/deltaTime"
             "${CMAKE_CURRENT_SOURCE_DIR}/engine/setup/windowControl"
         "${CMAKE_CURRENT_SOURCE_DIR}/engine/pipeline"
-        "${CMAKE_CURRENT_SOURCE_DIR}/engine/entities"
-        "${CMAKE_CURRENT_SOURCE_DIR}/engine/entities/string"
-        "${CMAKE_CURRENT_SOURCE_DIR}/engine/entities/model"
             "${CMAKE_CURRENT_SOURCE_DIR}/engine/pipeline/functions"
+        "${CMAKE_CURRENT_SOURCE_DIR}/engine/entities"
+            "${CMAKE_CURRENT_SOURCE_DIR}/engine/entities/string"
+            "${CMAKE_CURRENT_SOURCE_DIR}/engine/entities/model"
     "${CMAKE_CURRENT_SOURCE_DIR}/basicThings"
     "${CMAKE_CURRENT_SOURCE_DIR}/state"
 )

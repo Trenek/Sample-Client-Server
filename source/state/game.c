@@ -11,13 +11,9 @@
 
 #include "graphicsPipelineObj.h"
 
-#include "Vertex.h"
+#include "pathfinding.h"
 
-void moving([[maybe_unused]] vec3 *player, vec3 *enemies[]) {
-    (*enemies[0])[0] = 2;
-    (*enemies[0])[1] = 2;
-    (*enemies[0])[2] = 1;
-}
+#include "Vertex.h"
 
 void game(struct VulkanTools *vulkan, enum state *state) {
     const char *texturePaths[] = {
@@ -191,11 +187,11 @@ void game(struct VulkanTools *vulkan, enum state *state) {
 
         if (isMClicked) text->shadow = !text->shadow;
 
-        vec3 *entities[] = {
+        vec3 *enemies[] = {
             &player[1].pos
         };
 
-        moving(&player[0].pos, entities);
+        moveEnemies(player[0].pos, sizeof(enemies) / sizeof(vec3 *), enemies, vulkan->deltaTime.deltaTime);
     }
 
     for (size_t i = 0; i < sizeof(pipe) / sizeof(struct graphicsPipeline); i += 1) {
