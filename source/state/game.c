@@ -13,6 +13,10 @@
 
 #include "Vertex.h"
 
+#include <cglm.h>
+#include <string.h>
+
+struct Textures loadCubeMaps(struct GraphicsSetup *vulkan, const char *texturePath[6]);
 void game(struct VulkanTools *vulkan, enum state *state) {
     const char *texturePaths[] = {
         "textures/texture.jpg"
@@ -20,13 +24,24 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     size_t texturesQuantity = sizeof(texturePaths) / sizeof(const char *);
 
     struct Textures texture = loadTextures(&vulkan->graphics, texturesQuantity, texturePaths);
+    
+    struct Textures cubeMap = loadCubeMaps(&vulkan->graphics, (const char *[]) {
+        "textures/CubeMaps/xpos.png",
+        "textures/CubeMaps/xneg.png",
+        "textures/CubeMaps/ypos.png",
+        "textures/CubeMaps/yneg.png",
+        "textures/CubeMaps/zpos.png",
+        "textures/CubeMaps/zneg.png",
+    });
 
     const char *modelPath[] = {
         "models/my_model2d.obj",
         "models/my_floor.obj",
         "models/cylinder.glb",
         "fonts/c.ttf",
+        "models/my_skybox.obj"
     };
+
     size_t modelQuantity = sizeof(modelPath) / sizeof(const char *);
 
     struct actualModel actualModel[modelQuantity]; {
@@ -44,7 +59,8 @@ void game(struct VulkanTools *vulkan, enum state *state) {
 
             .sizeOfVertex = sizeof(struct Vertex),
             .numOfAttributes = sizeof(vertexAttributeDescriptions) / sizeof(*vertexAttributeDescriptions),
-            .attributeDescription = vertexAttributeDescriptions
+            .attributeDescription = vertexAttributeDescriptions,
+            .operation = VK_COMPARE_OP_LESS
         }, &vulkan->graphics),
         createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
             .vertexShader = "shaders/text2dV.spv",
@@ -56,21 +72,24 @@ void game(struct VulkanTools *vulkan, enum state *state) {
 
             .sizeOfVertex = sizeof(struct FontVertex),
             .numOfAttributes = sizeof(fontVertexAttributeDescriptions) / sizeof(*fontVertexAttributeDescriptions),
-            .attributeDescription = fontVertexAttributeDescriptions
+            .attributeDescription = fontVertexAttributeDescriptions,
+            .operation = VK_COMPARE_OP_LESS
         }, &vulkan->graphics),
         createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
-            .vertexShader = "shaders/vert2d.spv",
-            .fragmentShader = "shaders/frag2d.spv",
+            .vertexShader = "shaders/skyboxV.spv",
+            .fragmentShader = "shaders/skyboxF.spv",
             .minDepth = 0.0f,
             .maxDepth = 1.0f,
-            .texture = &texture.descriptor,
+            .texture = &cubeMap.descriptor,
             .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 
             .sizeOfVertex = sizeof(struct Vertex),
             .numOfAttributes = sizeof(vertexAttributeDescriptions) / sizeof(*vertexAttributeDescriptions),
-            .attributeDescription = vertexAttributeDescriptions
+            .attributeDescription = vertexAttributeDescriptions,
+            .operation = VK_COMPARE_OP_LESS_OR_EQUAL
         }, &vulkan->graphics),
     };
+    size_t qPipe = sizeof(pipe) / sizeof(struct graphicsPipeline);
 
     struct Entity model1[] = {
         /*floor*/ createModel((struct ModelBuilder) {
@@ -97,12 +116,12 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .instanceCount = 1,
             .texturesQuantity = 1,
             .texturePointer = 0,
-            .modelData = &actualModel[0],
+            .modelData = &actualModel[4],
             .objectLayout = pipe[2].objectLayout,
         }, &vulkan->graphics),
     };
 
-    pipe[2].modelQuantity = 0;// sizeof(model2) / sizeof(struct Entity);
+    pipe[2].modelQuantity = sizeof(model2) / sizeof(struct Entity);
     pipe[2].model = model2;
 
     struct Entity model3[] = {
@@ -149,7 +168,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
 
     *background = (struct instance){
         .pos = { 0.0f, 0.0f, 0.0f },
-        .rotation = { 0.0f, 0.0f, 0.0f },
+        .rotation = { 0.0f, glm_rad(1), 0.0f },
         .fixedRotation = { glm_rad(90), 0.0f, 0.0f },
         .scale = { 1.0f, 1.0f, 1.0f },
         .textureIndex = 0,
@@ -157,10 +176,10 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     };
 
     *text = (struct instance){
-        .pos = { -0.2f, -0.5f, 0.0f },
+        .pos = { -0.1f, 0.3f, 0.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
         .fixedRotation = { 0.0f, 0.0f, 0.0f },
-        .scale = { 0.1f, 0.1f, 0.1f },
+        .scale = { 4 * 10e-3, 4 * 10e-3, 4 * 10e-3 },
         .textureIndex = 0,
         .shadow = false
     };
@@ -169,8 +188,10 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     while (GAME == *state && !glfwWindowShouldClose(vulkan->window)) {
         glfwPollEvents();
 
-        drawFrame(vulkan, sizeof(pipe) / sizeof(struct graphicsPipeline), pipe);
+        drawFrame(vulkan, qPipe, pipe);
         moveCamera(vulkan->windowControl, vulkan->window, vulkan->camera.center, vulkan->camera.cameraPos, vulkan->camera.tilt, vulkan->deltaTime.deltaTime / 5.0f);
+
+        memcpy(background->pos, vulkan->camera.cameraPos, sizeof(vec3));
         
         bool isUClicked = KEY_PRESS & getKeyState(vulkan->windowControl, GLFW_KEY_U);
         bool isHClicked = KEY_PRESS & getKeyState(vulkan->windowControl, GLFW_KEY_H);
@@ -186,14 +207,12 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         if (isMClicked) text->shadow = !text->shadow;
     }
 
-    for (size_t i = 0; i < sizeof(pipe) / sizeof(struct graphicsPipeline); i += 1) {
+    for (size_t i = 0; i < qPipe; i += 1) {
+        destroyEntityArray(pipe[i].modelQuantity, pipe[i].model, &vulkan->graphics);
         destroyObjGraphicsPipeline(vulkan->graphics.device, pipe[i]);
     }
 
-    destroyEntityArray(sizeof(model1) / sizeof(struct Entity), model1, &vulkan->graphics);
-    destroyEntityArray(sizeof(model2) / sizeof(struct Entity), model2, &vulkan->graphics);
-    destroyEntityArray(sizeof(model3) / sizeof(struct Entity), model3, &vulkan->graphics);
-
     destroyActualModels(vulkan->graphics.device, modelQuantity, actualModel);
     unloadTextures(vulkan->graphics.device, texture);
+    unloadTextures(vulkan->graphics.device, cubeMap);
 }

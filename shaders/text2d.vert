@@ -35,11 +35,12 @@ layout(push_constant) uniform constants {
 
 void main() {
     //gl_Position = mesh.localModel[PushConstants.meshID] * vec4(inPosition, 1.0);
-    gl_Position = 
+    gl_Position = vec4((
+        ubo.proj *
         instance.objects[gl_InstanceIndex].model * 
-        mesh.localModel[PushConstants.meshID] * vec4(
-        inPosition.x, -inPosition.y, 0.0, 1.0
-    );
+        mesh.localModel[PushConstants.meshID] * 
+        vec4(inPosition.xy, 0.0, 1.0)
+    ).xy, 0.0, 1.0);
 
     fragColor = inColor;
     fragBezzier = inBezzier;

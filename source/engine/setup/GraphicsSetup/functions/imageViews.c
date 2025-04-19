@@ -10,7 +10,7 @@ VkImageView *createImageViews(VkDevice device, struct swapChain swapChain) {
     uint32_t i = 0;
 
     while (i < swapChain.imagesCount) {
-        swapChainImageViews[i] = createImageView(device, swapChain.images[i], swapChain.imageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+        swapChainImageViews[i] = createImageView(device, swapChain.images[i], swapChain.imageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1, VK_IMAGE_VIEW_TYPE_2D, 1);
 
         i += 1;
     }

@@ -1,10 +1,7 @@
-#include <time.h>
-
 #include <GLFW/glfw3.h>
 #include <cglm.h>
 
 #include "VulkanTools.h"
-#include "uniformBufferObject.h"
 
 struct camera initCamera() {
     struct camera result = {
@@ -47,7 +44,7 @@ void moveCamera(struct windowControl *windowControl, GLFWwindow *window, vec3 di
 
             glfwGetWindowSize(window, &width, &height);
 
-            glfwSetCursorPos(window, width / 2, height / 2);
+            glfwSetCursorPos(window, 0.5 * width, 0.5 * height);
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             glfwGetCursorPos(window, &prevXPos, &prevYPos);
         }

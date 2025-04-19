@@ -3,7 +3,7 @@
 #include "commonOperations.h"
 #include "MY_ASSERT.h"
 
-VkImage createImage(VkDevice device, int width, int height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage) {
+VkImage createImage(VkDevice device, int width, int height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, uint32_t arrayLayers, VkImageCreateFlags flag) {
     VkImage image = NULL;
 
     VkImageCreateInfo imageInfo = {
@@ -15,14 +15,14 @@ VkImage createImage(VkDevice device, int width, int height, uint32_t mipLevels, 
             .depth = 1
         },
         .mipLevels = mipLevels,
-        .arrayLayers = 1,
+        .arrayLayers = arrayLayers,
         .format = format,
         .tiling = tiling,
         .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
         .usage = usage,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
         .samples = numSamples,
-        .flags = 0
+        .flags = flag
     };
 
     MY_ASSERT(VK_SUCCESS == vkCreateImage(device, &imageInfo, NULL, &image));
@@ -52,7 +52,7 @@ static bool hasStencilComponent(VkFormat format) {
            format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void transitionImageLayout(VkImage image, [[maybe_unused]] VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, VkDevice device, VkCommandPool commandPool, VkQueue queue) {
+void transitionImageLayout(VkImage image, [[maybe_unused]] VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, VkDevice device, VkCommandPool commandPool, VkQueue queue, uint32_t layerCount) {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
 
     VkImageMemoryBarrier barrier = {
@@ -67,7 +67,7 @@ void transitionImageLayout(VkImage image, [[maybe_unused]] VkFormat format, VkIm
             .baseMipLevel = 0,
             .levelCount = mipLevels,
             .baseArrayLayer = 0,
-            .layerCount = 1
+            .layerCount = layerCount
         },
         .srcAccessMask = 0,
         .dstAccessMask = 0
@@ -121,7 +121,7 @@ void transitionImageLayout(VkImage image, [[maybe_unused]] VkFormat format, VkIm
     endSingleTimeCOmmands(commandBuffer, device, commandPool, queue);
 }
 
-void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, VkDevice device, VkCommandPool commandPool, VkQueue queue) {
+void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height, VkDevice device, VkCommandPool commandPool, VkQueue queue, uint32_t layerCount) {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
 
     VkBufferImageCopy region = {
@@ -132,7 +132,7 @@ void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t 
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
             .mipLevel = 0,
             .baseArrayLayer = 0,
-            .layerCount = 1
+            .layerCount = layerCount
         },
         .imageOffset = {
             .x = 0,
@@ -263,13 +263,13 @@ void generateMipmaps(VkImage image, VkFormat imageFormat, int32_t width, int32_t
     endSingleTimeCOmmands(commandBuffer, device, commandPool, queue);
 }
 
-VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels) {
+VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels, VkImageViewType viewType, uint32_t layerCount) {
     VkImageView imageView = NULL;
 
     VkImageViewCreateInfo viewInfo = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .image = image,
-        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+        .viewType = viewType,
         .format = format,
         .components = {
             .r = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -282,7 +282,7 @@ VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkI
             .baseMipLevel = 0,
             .levelCount = mipLevels,
             .baseArrayLayer = 0,
-            .layerCount = 1
+            .layerCount = layerCount
         }
     };
 

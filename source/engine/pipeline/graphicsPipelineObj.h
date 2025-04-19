@@ -19,6 +19,8 @@ struct graphicsPipelineBuilder {
     const size_t sizeOfVertex;
     const size_t numOfAttributes;
     VkVertexInputAttributeDescription *attributeDescription;
+
+    VkCompareOp operation;
 };
 
 struct graphicsPipeline {

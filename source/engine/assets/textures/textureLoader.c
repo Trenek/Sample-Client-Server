@@ -4,6 +4,38 @@
 #include "textureFunctions.h"
 #include "descriptor.h"
 
+VkImage createCubeMapTexture(VkDeviceMemory *textureImageMemory, uint32_t *mipLevels, const char *texturePath[6], VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkCommandPool commandPool, VkQueue queue);
+
+VkImageView createCubeMapImageView(VkDevice device, VkImage image, uint32_t mipmap);
+static struct Data loadCubeMap(const char *texturePath[6], VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkCommandPool commandPool, VkQueue queue) {
+    struct Data result = { 0 };
+
+    result.image = createCubeMapTexture(&result.imageMemory, &result.mipLevels, texturePath, device, physicalDevice, surface, commandPool, queue);
+    result.imageView = createCubeMapImageView(device, result.image, result.mipLevels);
+    result.sampler = createTextureSampler(device, physicalDevice, result.mipLevels);
+
+    return result;
+}
+
+struct Textures loadCubeMaps(struct GraphicsSetup *vulkan, const char *texturePath[6]) {
+    struct Textures texture = {
+        .data = malloc(sizeof(struct Data)),
+        .quantity = 1,
+        .descriptor = {
+            .descriptorSetLayout = createTextureDescriptorSetLayout(vulkan->device, 1),
+            .descriptorPool = createTextureDescriptorPool(vulkan->device, 1)
+        }
+    };
+    struct descriptor *desc = &texture.descriptor;
+
+    texture.data[0] = loadCubeMap(texturePath, vulkan->device, vulkan->physicalDevice, vulkan->surface, vulkan->commandPool, vulkan->transferQueue);
+
+    createDescriptorSets(desc->descriptorSets, vulkan->device, desc->descriptorPool, desc->descriptorSetLayout);
+    bindTextureBuffersToDescriptorSets(desc->descriptorSets, vulkan->device, 1, &texture);
+
+    return texture;
+}
+
 static struct Data loadTexture(const char *texturePath, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkCommandPool commandPool, VkQueue queue) {
     struct Data result = { 0 };
 

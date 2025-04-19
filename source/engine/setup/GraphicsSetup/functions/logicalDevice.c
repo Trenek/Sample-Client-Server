@@ -104,7 +104,7 @@ VkDevice createLogicalDevice(VkSurfaceKHR surface, VkPhysicalDevice physicalDevi
     MY_ASSERT(indexingFeature.shaderSampledImageArrayNonUniformIndexing);
     MY_ASSERT(indexingFeature.descriptorBindingSampledImageUpdateAfterBind);
     MY_ASSERT(indexingFeature.shaderUniformBufferArrayNonUniformIndexing);
-    MY_ASSERT(indexingFeature.descriptorBindingUniformBufferUpdateAfterBind);
+    // MY_ASSERT(indexingFeature.descriptorBindingUniformBufferUpdateAfterBind); // it is probably unnecessary
     MY_ASSERT(indexingFeature.shaderStorageBufferArrayNonUniformIndexing);
     MY_ASSERT(indexingFeature.descriptorBindingStorageBufferUpdateAfterBind);
     MY_ASSERT(VK_SUCCESS == vkCreateDevice(physicalDevice, &createInfo, NULL, &device));

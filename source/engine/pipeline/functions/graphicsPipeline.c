@@ -49,7 +49,7 @@ static VkShaderModule createShaderModule(VkDevice device, const char *filename) 
     return shaderModule;
 }
 
-VkPipeline createGraphicsPipeline(const char *vertexShader, const char *fragmentShader, float minDepth, float maxDepth, VkDevice device, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology, size_t sizeOfVertex, size_t qAttribute, VkVertexInputAttributeDescription attributeDescriptions[qAttribute]) {
+VkPipeline createGraphicsPipeline(const char *vertexShader, const char *fragmentShader, float minDepth, float maxDepth, VkDevice device, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology, size_t sizeOfVertex, size_t qAttribute, VkVertexInputAttributeDescription attributeDescriptions[qAttribute], VkCompareOp compareOp) {
     VkPipeline graphicsPipeline = NULL;
 
     VkShaderModule vertShaderModule = createShaderModule(device, vertexShader);
@@ -175,7 +175,7 @@ VkPipeline createGraphicsPipeline(const char *vertexShader, const char *fragment
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         .depthTestEnable = VK_TRUE,
         .depthWriteEnable = VK_TRUE,
-        .depthCompareOp = VK_COMPARE_OP_LESS,
+        .depthCompareOp = compareOp,
         .depthBoundsTestEnable = VK_FALSE,
         .minDepthBounds = minDepth,
         .maxDepthBounds = maxDepth,
