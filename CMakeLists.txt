@@ -9,6 +9,7 @@ set(CMAKE_C_STANDARD_REQUIRED TRUE)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_subdirectory(source)
+add_subdirectory(networking)
 
 add_executable(Test
     ${SOURCE_FILES} 
