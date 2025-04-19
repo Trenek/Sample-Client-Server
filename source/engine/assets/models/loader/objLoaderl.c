@@ -4,6 +4,10 @@
 #include "actualModel.h"
 #include "myMalloc.h"
 
+#include "Vertex.h"
+
+#define BFR(x) ((struct Vertex *)(x))
+
 //#define GOOD_OLD
 #ifdef GOOD_OLD
     //#define ORIGINAL
@@ -150,6 +154,7 @@ void objLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
 
     model->meshQuantity = 1;
     model->mesh = malloc(sizeof(struct Mesh) * model->meshQuantity);
+    model->mesh[0].sizeOfVertex = sizeof(struct Vertex);
     model->mesh[0].vertices = malloc(sizeof(struct Vertex) * attrib.num_vertices);
     model->mesh[0].indices = malloc(sizeof(uint16_t) * attrib.num_faces);
     model->mesh[0].verticesQuantity = attrib.num_vertices;
@@ -183,7 +188,7 @@ void objLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
     }
 #else
     for (size_t i = 0; i < attrib.num_vertices; i += 1) {
-        model->mesh[0].vertices[i] = (struct Vertex){
+        BFR(model->mesh[0].vertices)[i] = (struct Vertex){
             .pos = {
                 attribVertices[i][0],
                 attribVertices[i][1],
@@ -203,8 +208,8 @@ void objLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
     }
     
     for (size_t i = 0; i < attrib.num_faces; i += 1) {
-        model->mesh[0].vertices[attrib.faces[i].v_idx].texCoord[0] = 0.0f + attribTexcoords[attrib.faces[i].vt_idx][0];
-        model->mesh[0].vertices[attrib.faces[i].v_idx].texCoord[1] = 1.0f - attribTexcoords[attrib.faces[i].vt_idx][1];
+        BFR(model->mesh[0].vertices)[attrib.faces[i].v_idx].texCoord[0] = 0.0f + attribTexcoords[attrib.faces[i].vt_idx][0];
+        BFR(model->mesh[0].vertices)[attrib.faces[i].v_idx].texCoord[1] = 1.0f - attribTexcoords[attrib.faces[i].vt_idx][1];
 
         model->mesh[0].indices[i] = attrib.faces[i].v_idx;
     }

@@ -4,7 +4,7 @@
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 
-#include "model.h"
+#include "entity.h"
 #include "definitions.h"
 
 #include "windowControl.h"

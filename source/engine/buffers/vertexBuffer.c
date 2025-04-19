@@ -3,20 +3,16 @@
 #include <vulkan/vulkan.h>
 
 #include "MY_ASSERT.h"
-#include "Vertex.h"
-
 #include "bufferOperations.h"
 
-#include "definitions.h"
-
-VkBuffer createVertexBuffer(VkDeviceMemory *vertexBufferMemory, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkCommandPool transferCommandPool, VkQueue transferQueue, uint32_t vertexQuantity, struct Vertex vertices[static vertexQuantity]) {
+VkBuffer createVertexBuffer(VkDeviceMemory *vertexBufferMemory, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkCommandPool transferCommandPool, VkQueue transferQueue, uint32_t vertexQuantity, void *vertices, size_t sizeOfBuffer) {
     VkBuffer vertexBuffer = NULL;
 
     VkBuffer stagingBuffer = createBuffer(
         device,
         physicalDevice,
         surface,
-        vertexQuantity * sizeof(struct Vertex),
+        vertexQuantity * sizeOfBuffer,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT
     );
     VkDeviceMemory stagingBufferMemory = createBufferMemory(
@@ -28,15 +24,15 @@ VkBuffer createVertexBuffer(VkDeviceMemory *vertexBufferMemory, VkDevice device,
 
     void *data = NULL;
 
-    vkMapMemory(device, stagingBufferMemory, 0, /*bufferInfo.size*/ vertexQuantity * sizeof(struct Vertex), 0, &data);
-    memcpy(data, vertices, /*bufferInfo.size*/ vertexQuantity * sizeof(struct Vertex));
+    vkMapMemory(device, stagingBufferMemory, 0, /*bufferInfo.size*/ vertexQuantity * sizeOfBuffer, 0, &data);
+    memcpy(data, vertices, /*bufferInfo.size*/ vertexQuantity * sizeOfBuffer);
     vkUnmapMemory(device, stagingBufferMemory);
 
     vertexBuffer = createBuffer(
         device,
         physicalDevice,
         surface,
-        vertexQuantity * sizeof(struct Vertex),
+        vertexQuantity * sizeOfBuffer,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
     );
     *vertexBufferMemory = createBufferMemory(
@@ -46,7 +42,7 @@ VkBuffer createVertexBuffer(VkDeviceMemory *vertexBufferMemory, VkDevice device,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
     );
 
-    copyBuffer(stagingBuffer, vertexBuffer, vertexQuantity * sizeof(struct Vertex), device, transferCommandPool, transferQueue);
+    copyBuffer(stagingBuffer, vertexBuffer, vertexQuantity * sizeOfBuffer, device, transferCommandPool, transferQueue);
 
     vkDestroyBuffer(device, stagingBuffer, NULL);
     vkFreeMemory(device, stagingBufferMemory, NULL);
@@ -54,14 +50,14 @@ VkBuffer createVertexBuffer(VkDeviceMemory *vertexBufferMemory, VkDevice device,
     return vertexBuffer;
 }
 
-VkBuffer createIndexBuffer(VkDeviceMemory *indexBufferMemory, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkCommandPool transferCommandPool, VkQueue transferQueue, uint32_t vertexQuantity, uint32_t indicesQuantity, uint16_t indices[static indicesQuantity]) {
+VkBuffer createIndexBuffer(VkDeviceMemory *indexBufferMemory, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkCommandPool transferCommandPool, VkQueue transferQueue, uint32_t vertexQuantity, uint32_t indicesQuantity, uint16_t indices[static indicesQuantity], size_t sizeOfVertexBuffer) {
     VkBuffer indexBuffer = NULL;
 
     VkBuffer stagingBuffer = createBuffer(
         device,
         physicalDevice,
         surface,
-        vertexQuantity * sizeof(struct Vertex),
+        vertexQuantity * sizeOfVertexBuffer,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT
     );
     VkDeviceMemory stagingBufferMemory = createBufferMemory(
@@ -81,7 +77,7 @@ VkBuffer createIndexBuffer(VkDeviceMemory *indexBufferMemory, VkDevice device, V
         device,
         physicalDevice,
         surface,
-        vertexQuantity * sizeof(struct Vertex),
+        vertexQuantity * sizeOfVertexBuffer,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT
     );
     *indexBufferMemory = createBufferMemory(

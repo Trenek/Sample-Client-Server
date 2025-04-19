@@ -1,6 +1,5 @@
 #include "bufferOperations.h"
 
-#include "Vertex.h"
 #include "definitions.h"
 
 // setup

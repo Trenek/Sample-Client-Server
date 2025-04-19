@@ -5,8 +5,6 @@
 #include <vulkan/vulkan.h>
 
 #include "MY_ASSERT.h"
-#include "Vertex.h"
-#include "vulkan/vulkan_core.h"
 
 #define UNUSED_RETVAL(x) if (x) {}
 
@@ -51,7 +49,7 @@ static VkShaderModule createShaderModule(VkDevice device, const char *filename) 
     return shaderModule;
 }
 
-VkPipeline createGraphicsPipeline(const char *vertexShader, const char *fragmentShader, float minDepth, float maxDepth, VkDevice device, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology) {
+VkPipeline createGraphicsPipeline(const char *vertexShader, const char *fragmentShader, float minDepth, float maxDepth, VkDevice device, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology, size_t sizeOfVertex, size_t qAttribute, VkVertexInputAttributeDescription attributeDescriptions[qAttribute]) {
     VkPipeline graphicsPipeline = NULL;
 
     VkShaderModule vertShaderModule = createShaderModule(device, vertexShader);
@@ -103,36 +101,15 @@ VkPipeline createGraphicsPipeline(const char *vertexShader, const char *fragment
 
     VkVertexInputBindingDescription bindingDescription = {
         .binding = 0,
-        .stride = sizeof(struct Vertex),
+        .stride = sizeOfVertex,
         .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-    };
-
-    VkVertexInputAttributeDescription attributeDescriptions[] = {
-        [0] = {
-            .binding = 0,
-            .location = 0,
-            .format = VK_FORMAT_R32G32B32_SFLOAT,
-            .offset = offsetof(struct Vertex, pos)
-        },
-        [1] = {
-            .binding = 0,
-            .location = 1,
-            .format = VK_FORMAT_R32G32B32_SFLOAT,
-            .offset = offsetof(struct Vertex, color)
-        },
-        [2] = {
-            .binding = 0,
-            .location = 2,
-            .format = VK_FORMAT_R32G32_SFLOAT,
-            .offset = offsetof(struct Vertex, texCoord)
-        }
     };
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
         .vertexBindingDescriptionCount = 1,
         .pVertexBindingDescriptions = &bindingDescription,
-        .vertexAttributeDescriptionCount = sizeof(attributeDescriptions) / sizeof(VkVertexInputAttributeDescription),
+        .vertexAttributeDescriptionCount = qAttribute,
         .pVertexAttributeDescriptions = attributeDescriptions
     };
 
