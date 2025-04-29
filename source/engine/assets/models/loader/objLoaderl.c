@@ -6,7 +6,7 @@
 
 #include "Vertex.h"
 
-#define BFR(x) ((struct Vertex *)(x))
+#define BFR(x) ((struct AnimVertex *)(x))
 
 //#define GOOD_OLD
 #ifdef GOOD_OLD
@@ -154,8 +154,8 @@ void objLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
 
     model->meshQuantity = 1;
     model->mesh = malloc(sizeof(struct Mesh) * model->meshQuantity);
-    model->mesh[0].sizeOfVertex = sizeof(struct Vertex);
-    model->mesh[0].vertices = malloc(sizeof(struct Vertex) * attrib.num_vertices);
+    model->mesh[0].sizeOfVertex = sizeof(struct AnimVertex);
+    model->mesh[0].vertices = malloc(sizeof(struct AnimVertex) * attrib.num_vertices);
     model->mesh[0].indices = malloc(sizeof(uint16_t) * attrib.num_faces);
     model->mesh[0].verticesQuantity = attrib.num_vertices;
     model->mesh[0].indicesQuantity = attrib.num_faces;
@@ -188,12 +188,14 @@ void objLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
     }
 #else
     for (size_t i = 0; i < attrib.num_vertices; i += 1) {
-        BFR(model->mesh[0].vertices)[i] = (struct Vertex){
+        BFR(model->mesh[0].vertices)[i] = (struct AnimVertex){
             .pos = {
                 attribVertices[i][0],
                 attribVertices[i][1],
                 attribVertices[i][2]
             },
+            .weights = { 0.0f, 0.0f, 0.0f, 0.0f },
+            .bone = { 0, 0, 0, 0 },
             .texCoord = { 0.0f, 0.0f },
             #ifdef GOOD_OLD
             .color = {

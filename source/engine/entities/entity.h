@@ -9,15 +9,18 @@
 
 struct Entity {
     uint32_t instanceCount;
-    struct instance *instance;
-    struct instanceBuffer *instanceBuffer;
+    void *instance;
 
-    uint32_t texturePointer;
-    uint32_t texturesQuantity;
+    void **buffer;
+
+    size_t bufferSize;
+    void *(**mapp)[MAX_FRAMES_IN_FLIGHT];
+    size_t *range;
 
     uint32_t meshQuantity;
     struct Mesh *mesh;
-    VkBuffer (*buffer)[MAX_FRAMES_IN_FLIGHT];
+
+    size_t qBuff;
 
     struct ModelGraphics {
         struct buffer uniformModel;
@@ -32,7 +35,7 @@ struct Entity {
 struct GraphicsSetup;
 struct EntityBuilder;
 
-struct Entity createEntity(struct EntityBuilder modelBuilder, struct GraphicsSetup *vulkan);
-void destroyEntityArray(uint16_t num, struct Entity modelArray[num], struct GraphicsSetup *graphics);
+struct Entity *createEntity(struct EntityBuilder modelBuilder, struct GraphicsSetup *vulkan);
+void destroyEntityArray(uint16_t num, struct Entity *modelArray[num], struct GraphicsSetup *graphics);
 
 #endif

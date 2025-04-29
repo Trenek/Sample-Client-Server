@@ -6,6 +6,8 @@
 struct GraphicsSetup;
 
 struct graphicsPipelineBuilder {
+    VkDescriptorSetLayout objectLayout;
+
     struct descriptor *texture;
 
     const char *vertexShader;
@@ -24,15 +26,13 @@ struct graphicsPipelineBuilder {
 };
 
 struct graphicsPipeline {
-    VkDescriptorSetLayout objectLayout;
-
     struct descriptor *texture;
 
     VkPipelineLayout pipelineLayout;
     VkPipeline pipeline;
 
     size_t modelQuantity;
-    struct Entity *model;
+    struct Entity **model;
 };
 
 struct graphicsPipeline createObjGraphicsPipeline(struct graphicsPipelineBuilder builder, struct GraphicsSetup *vulkan);

@@ -7,16 +7,21 @@
 struct actualModel;
 
 struct EntityBuilder {
-    uint32_t texturePointer;
-    uint32_t texturesQuantity;
-
     uint32_t instanceCount;
 
     uint32_t meshQuantity;
     struct Mesh *mesh;
-    VkBuffer (*buffers)[MAX_FRAMES_IN_FLIGHT];
+
+    VkBuffer (**buff)[MAX_FRAMES_IN_FLIGHT];
+    void *(**mapp)[MAX_FRAMES_IN_FLIGHT];
+    bool *isChangable;
+    size_t *range;
+    size_t qBuff;
 
     VkDescriptorSetLayout objectLayout;
+
+    size_t instanceSize;
+    size_t instanceBufferSize;
 
     void *additional;
     void (*cleanup)(void *);

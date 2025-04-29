@@ -6,6 +6,8 @@
 
 #include "MY_ASSERT.h"
 
+#include "graphicsPipelineObj.h"
+
 #define UNUSED_RETVAL(x) if (x) {}
 
 static char *loadFile(const char *filename, int *fileCount) {
@@ -49,11 +51,11 @@ static VkShaderModule createShaderModule(VkDevice device, const char *filename) 
     return shaderModule;
 }
 
-VkPipeline createGraphicsPipeline(const char *vertexShader, const char *fragmentShader, float minDepth, float maxDepth, VkDevice device, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology, size_t sizeOfVertex, size_t qAttribute, VkVertexInputAttributeDescription attributeDescriptions[qAttribute], VkCompareOp compareOp) {
+VkPipeline createGraphicsPipeline(struct graphicsPipelineBuilder builder, VkDevice device, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkSampleCountFlagBits msaaSamples) {
     VkPipeline graphicsPipeline = NULL;
 
-    VkShaderModule vertShaderModule = createShaderModule(device, vertexShader);
-    VkShaderModule fragShaderModule = createShaderModule(device, fragmentShader);
+    VkShaderModule vertShaderModule = createShaderModule(device, builder.vertexShader);
+    VkShaderModule fragShaderModule = createShaderModule(device, builder.fragmentShader);
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -101,7 +103,7 @@ VkPipeline createGraphicsPipeline(const char *vertexShader, const char *fragment
 
     VkVertexInputBindingDescription bindingDescription = {
         .binding = 0,
-        .stride = sizeOfVertex,
+        .stride = builder.sizeOfVertex,
         .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
     };
 
@@ -109,13 +111,13 @@ VkPipeline createGraphicsPipeline(const char *vertexShader, const char *fragment
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
         .vertexBindingDescriptionCount = 1,
         .pVertexBindingDescriptions = &bindingDescription,
-        .vertexAttributeDescriptionCount = qAttribute,
-        .pVertexAttributeDescriptions = attributeDescriptions
+        .vertexAttributeDescriptionCount = builder.numOfAttributes,
+        .pVertexAttributeDescriptions = builder.attributeDescription
     };
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-        .topology = topology,
+        .topology = builder.topology,
         .primitiveRestartEnable = VK_FALSE
     };
 
@@ -175,10 +177,10 @@ VkPipeline createGraphicsPipeline(const char *vertexShader, const char *fragment
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         .depthTestEnable = VK_TRUE,
         .depthWriteEnable = VK_TRUE,
-        .depthCompareOp = compareOp,
+        .depthCompareOp = builder.operation,
         .depthBoundsTestEnable = VK_FALSE,
-        .minDepthBounds = minDepth,
-        .maxDepthBounds = maxDepth,
+        .minDepthBounds = builder.minDepth,
+        .maxDepthBounds = builder.maxDepth,
         .stencilTestEnable = VK_FALSE,
         .front = { 0 }, // optional
         .back = { 0 }, // optional

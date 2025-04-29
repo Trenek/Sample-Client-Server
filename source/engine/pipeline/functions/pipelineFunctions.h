@@ -1,4 +1,6 @@
 #include <vulkan/vulkan_core.h>
 
-VkPipelineLayout createPipelineLayout(VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSetLayout descriptorSetLayout2, VkDescriptorSetLayout descriptorSetLayout3);
-VkPipeline createGraphicsPipeline(const char *vertexShader, const char *fragmentShader, float minDepth, float maxDepth, VkDevice device, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkSampleCountFlagBits msaaSamples, VkPrimitiveTopology topology, size_t sizeOfVertex, size_t qAttribute, VkVertexInputAttributeDescription attributeDescriptions[qAttribute], VkCompareOp compareOp);
+struct graphicsPipelineBuilder;
+
+VkPipelineLayout createPipelineLayout(VkDevice device, size_t qDescriptorLayout, VkDescriptorSetLayout descriptorSetLayout[qDescriptorLayout]);
+VkPipeline createGraphicsPipeline(struct graphicsPipelineBuilder builder, VkDevice device, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, VkSampleCountFlagBits msaaSamples);

@@ -34,6 +34,48 @@ static VkVertexInputAttributeDescription vertexAttributeDescriptions[] = {
     }
 };
 
+struct AnimVertex {
+    vec3 pos;
+    vec3 color;
+    vec2 texCoord;
+    int bone[4];
+    vec4 weights;
+};
+
+[[maybe_unused]]
+static VkVertexInputAttributeDescription animVertexAttributeDescriptions[] = {
+    [0] = {
+        .binding = 0,
+        .location = 0,
+        .format = VK_FORMAT_R32G32B32_SFLOAT,
+        .offset = offsetof(struct AnimVertex, pos)
+    },
+    [1] = {
+        .binding = 0,
+        .location = 1,
+        .format = VK_FORMAT_R32G32B32_SFLOAT,
+        .offset = offsetof(struct AnimVertex, color)
+    },
+    [2] = {
+        .binding = 0,
+        .location = 2,
+        .format = VK_FORMAT_R32G32_SFLOAT,
+        .offset = offsetof(struct AnimVertex, texCoord)
+    },
+    [3] = {
+        .binding = 0,
+        .location = 3,
+        .format = VK_FORMAT_R32G32B32A32_SINT,
+        .offset = offsetof(struct AnimVertex, bone)
+    },
+    [4] = {
+        .binding = 0,
+        .location = 4,
+        .format = VK_FORMAT_R32G32B32A32_SFLOAT,
+        .offset = offsetof(struct AnimVertex, weights)
+    },
+};
+
 struct FontVertex {
     vec2 pos;
     vec3 color;

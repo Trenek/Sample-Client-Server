@@ -4,13 +4,19 @@
 #include "graphicsSetup.h"
 
 struct graphicsPipeline createObjGraphicsPipeline(struct graphicsPipelineBuilder builder, struct GraphicsSetup *vulkan) {
+    VkDescriptorSetLayout descriptorSetLayout[] = {
+        builder.objectLayout,
+        builder.texture->descriptorSetLayout,
+        vulkan->cameraDescriptorSetLayout,
+    };
+    size_t qDescriptorSetLayout = sizeof(descriptorSetLayout) / sizeof(VkDescriptorSetLayout);
+
     struct graphicsPipeline graphics = {
-        .objectLayout = createObjectDescriptorSetLayout(vulkan->device),
-        .texture = builder.texture
+        .texture = builder.texture,
+        .pipelineLayout = createPipelineLayout(vulkan->device, qDescriptorSetLayout, descriptorSetLayout)
     };
 
-    graphics.pipelineLayout = createPipelineLayout(vulkan->device, graphics.objectLayout, builder.texture->descriptorSetLayout, vulkan->cameraDescriptorSetLayout);
-    graphics.pipeline = createGraphicsPipeline(builder.vertexShader, builder.fragmentShader, builder.minDepth, builder.maxDepth, vulkan->device, vulkan->renderPass, graphics.pipelineLayout, vulkan->msaaSamples, builder.topology, builder.sizeOfVertex, builder.numOfAttributes, builder.attributeDescription, builder.operation);
+    graphics.pipeline = createGraphicsPipeline(builder, vulkan->device, vulkan->renderPass, graphics.pipelineLayout, vulkan->msaaSamples);
 
     return graphics;
 }
@@ -20,6 +26,4 @@ void destroyObjGraphicsPipeline(VkDevice device, struct graphicsPipeline pipe) {
 
     vkDestroyPipeline(device, pipe.pipeline, NULL);
     vkDestroyPipelineLayout(device, pipe.pipelineLayout, NULL);
-
-    vkDestroyDescriptorSetLayout(device, pipe.objectLayout, NULL);
 }

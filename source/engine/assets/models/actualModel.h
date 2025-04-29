@@ -1,3 +1,5 @@
+#include <cglm.h>
+
 #include "buffer.h"
 
 struct GraphicsSetup;
@@ -16,8 +18,31 @@ struct Mesh {
     VkDeviceMemory indexBufferMemory;
 };
 
+struct timeFrame {
+    size_t qData;
+    size_t qValues;
+    int interpolationType;
+
+    struct {
+        float time;
+        float *values;
+    } *data;
+};
+
+struct jointData {
+    struct timeFrame t[3];
+
+    mat4 inverseMatrix;
+    int16_t father;
+    int16_t isJoint;
+};
+
 struct actualModel {
     struct buffer localMesh;
+
+    size_t qAnim;
+    size_t qJoint;
+    void *anim;
 
     uint32_t meshQuantity;
     struct Mesh *mesh;

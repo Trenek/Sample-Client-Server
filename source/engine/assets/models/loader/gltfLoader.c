@@ -1,6 +1,7 @@
 #define CGLTF_IMPLEMENTATION
 
 #include <vulkan/vulkan.h>
+#include <cglm.h>
 #include <cgltf.h>
 #include <string.h>
 
@@ -8,7 +9,7 @@
 
 #include "Vertex.h"
 
-#define BFR(x) ((struct Vertex *)(x))
+#define BFR(x) ((struct AnimVertex *)(x))
 
 static void *getBufferOffset(cgltf_buffer_view *bufferView) {
     return (uint8_t *)bufferView->buffer->data + bufferView->offset;
@@ -65,16 +66,18 @@ static void loadFromAccessor(cgltf_accessor *accessor, void *local, size_t size,
 
 static struct Mesh loadMesh(cgltf_mesh *mesh) {
     struct Mesh result = { 0 };
-    cgltf_primitive* primitive = mesh->primitives;
+    cgltf_primitive *primitive = mesh->primitives;
 
     cgltf_accessor *index_accessor = primitive->indices;
     cgltf_accessor *vertex_accessor = getAccessor(cgltf_attribute_type_position, primitive);
     cgltf_accessor *texture_accessor = getAccessor(cgltf_attribute_type_texcoord, primitive);
     cgltf_accessor *color_accessor = getAccessor(cgltf_attribute_type_color, primitive);
+    cgltf_accessor *joint_accessor = getAccessor(cgltf_attribute_type_joints, primitive);
+    cgltf_accessor *weight_accessor = getAccessor(cgltf_attribute_type_weights, primitive);
 
     result.indicesQuantity = index_accessor->count;
     result.verticesQuantity = vertex_accessor->count;
-    result.vertices = malloc(sizeof(struct Vertex) * result.verticesQuantity);
+    result.vertices = malloc(sizeof(struct AnimVertex) * result.verticesQuantity);
     result.indices = malloc(sizeof(uint16_t) * result.indicesQuantity);
 
     float localPosition[result.verticesQuantity][3];
@@ -87,7 +90,14 @@ static struct Mesh loadMesh(cgltf_mesh *mesh) {
     loadFromAccessor(color_accessor, localColor, sizeof(float[3]), result.verticesQuantity);
 
     for (size_t i = 0; i < result.verticesQuantity; i += 1) {
-        BFR(result.vertices)[i] = (struct Vertex) {
+        cgltf_uint joints[4] = {};
+        cgltf_float weights[4] = {};
+        if (joint_accessor && weight_accessor) {
+            cgltf_accessor_read_uint(joint_accessor, i, joints, 4);
+            cgltf_accessor_read_float(weight_accessor, i, weights, 4);
+        }
+
+        BFR(result.vertices)[i] = (struct AnimVertex) {
             .pos = {
                 [0] = vertex_accessor == NULL ? 0.0f : localPosition[i][0],
                 [1] = vertex_accessor == NULL ? 0.0f : localPosition[i][1],
@@ -101,7 +111,9 @@ static struct Mesh loadMesh(cgltf_mesh *mesh) {
                 [0] = color_accessor == NULL ? 1.0f : localColor[i][0],
                 [1] = color_accessor == NULL ? 1.0f : localColor[i][1],
                 [2] = color_accessor == NULL ? 1.0f : localColor[i][2]
-            }
+            },
+            .bone = { joints[0], joints[1], joints[2], joints[3] },
+            .weights = { weights[0], weights[1], weights[2], weights[4] }
         };
     }
 
@@ -134,6 +146,81 @@ static void loadTransformations(mat4 transformations, cgltf_node *node) {
     }
 }
 
+int getNodeID(cgltf_data *data, cgltf_node *node) {
+    int result = 0;
+
+    while (node != data->skins->joints[result]) result += 1;
+
+    return result;
+}
+
+struct timeFrame importantThings(cgltf_animation_sampler *sampler) {
+    struct timeFrame result = {};
+
+    cgltf_accessor *input = sampler->input;
+    cgltf_accessor *output = sampler->output;
+
+    cgltf_size num_components = cgltf_num_components(output->type);
+
+    result.qData = input->count;
+    result.qValues = num_components;
+    result.interpolationType = sampler->interpolation;
+
+    result.data = malloc(sizeof(struct { float a; float * b; }) * input->count);
+    result.data->values = malloc(sizeof(float) * input->count * num_components);
+
+    for (cgltf_size k = 0; k < input->count; k++) {
+        result.data[k].values = result.data->values + k * num_components;
+
+        assert(cgltf_accessor_read_float(input, k, &result.data[k].time, 1));
+        assert(cgltf_accessor_read_float(output, k, result.data[k].values, num_components));
+    }
+
+    return result;
+}
+
+void loadAnimation(cgltf_data *data, struct jointData foo2[data->animations_count][data->skins->joints_count]) {
+    for (cgltf_size i = 0; i < data->animations_count; i++) {
+        cgltf_animation *animation = &data->animations[i];
+        cgltf_accessor *accessor = data->skins->inverse_bind_matrices;
+        mat4 inverseMatrix[data->skins->joints_count];
+
+        loadFromAccessor(accessor, inverseMatrix, sizeof(mat4), data->skins->joints_count);
+
+        for (cgltf_size j = 0; j < animation->channels_count; j++) {
+            cgltf_animation_channel *channel = &animation->channels[j];
+            cgltf_node *node = channel->target_node;
+
+            cgltf_size k = getNodeID(data, node);
+
+            foo2[i][k].isJoint = true;
+            foo2[i][k].t[channel->target_path - 1] = importantThings(channel->sampler);
+
+            if (channel->target_path == cgltf_animation_path_type_rotation &&
+                foo2[i][k].t[channel->target_path - 1].interpolationType == cgltf_interpolation_type_linear) {
+                foo2[i][k].t[channel->target_path - 1].interpolationType = 3;
+            }
+        }
+
+        for (cgltf_size j = 0; j < data->skins->joints_count; j += 1) {
+            memcpy(foo2[i][j].inverseMatrix, inverseMatrix[j], sizeof(mat4));
+
+            foo2[i][j].father = -1;
+        }
+
+        for (cgltf_size j = 0; j < data->skins->joints_count; j += 1) {
+            if (foo2[i][j].isJoint)
+            for (cgltf_size k = 0; k < data->skins->joints[j]->children_count; k += 1) {
+                cgltf_size z = getNodeID(data, data->skins->joints[j]->children[k]);
+
+                if (foo2[i][z].isJoint) {
+                    foo2[i][z].father = j;
+                }
+            }
+        }
+    }
+}
+
 void gltfLoadModel(const char *filePath, struct actualModel *model, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     cgltf_options options = { 0 };
     cgltf_data *data = NULL;
@@ -142,13 +229,16 @@ void gltfLoadModel(const char *filePath, struct actualModel *model, VkDevice dev
     if (cgltf_result_success == cgltf_load_buffers(&options, data, filePath)) {
         model->meshQuantity = countMeshes(data->nodes_count, data->nodes);
         model->mesh = malloc(sizeof(struct Mesh) * model->meshQuantity);
+        model->qAnim = 0;
+        model->qJoint = 0;
+        model->anim = NULL;
 
         createStorageBuffer(model->meshQuantity * sizeof(mat4), model->localMesh.buffers, model->localMesh.buffersMemory, model->localMesh.buffersMapped, device, physicalDevice, surface);
 
         int i = 0;
         for (uint32_t j = 0; j < data->nodes_count; j += 1) if (data->nodes[j].mesh != NULL) {
             model->mesh[i] = loadMesh(data->nodes[j].mesh);
-            model->mesh[i].sizeOfVertex = sizeof(struct Vertex);
+            model->mesh[i].sizeOfVertex = sizeof(struct AnimVertex);
 
             for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {
                 loadTransformations(((mat4 **)model->localMesh.buffersMapped)[k][i], &data->nodes[j]);
@@ -157,24 +247,13 @@ void gltfLoadModel(const char *filePath, struct actualModel *model, VkDevice dev
             i += 1;
         }
 
-        /*
-        cgltf_accessor *time_accessor = data->animations[0].channels[0].sampler->input;
-        cgltf_accessor *rotation_accessor = data->animations[0].channels[0].sampler->output;
+        if (data->animations_count != 0) {
+            model->qAnim = data->animations_count;
+            model->qJoint = data->skins->joints_count;
+            model->anim = calloc(model->qAnim * model->qJoint, sizeof(struct jointData));
 
-        uint16_t timeCount = time_accessor->count;
-        uint16_t rotationCount = rotation_accessor->count;
-
-        float *time = getAccessorOffset(time_accessor);
-        float (*rotation)[4] = getAccessorOffset(rotation_accessor);
-
-        for (uint16_t i = 0; i < timeCount; i += 1) {
-            printf("%f\n", time[i]);
+            loadAnimation(data, model->anim);
         }
-
-        for (uint16_t i = 0; i < rotationCount; i += 1) {
-            printf("%f %f %f %f\n", rotation[i][0], rotation[i][1], rotation[i][2], rotation[i][3]);
-        }
-        */
 
         cgltf_free(data);
     }

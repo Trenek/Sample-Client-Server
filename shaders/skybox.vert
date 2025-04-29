@@ -21,17 +21,9 @@ layout(std140, set = 0, binding = 0) readonly buffer ObjectBuffer{
 	ObjectData objects[];
 } instance;
 
-layout(std140, set = 0, binding = 1) readonly buffer MeshBuffer{
-	mat4 localModel[];
-} mesh;
-
-layout(push_constant) uniform constants {
-	int meshID;
-} PushConstants;
-
 void main() {
     fragTexCoords = inPosition;
 
-    gl_Position = (ubo.proj * ubo.view * instance.objects[gl_InstanceIndex].model *vec4(inPosition, 1.0)).xyww;
+    gl_Position = (ubo.proj * ubo.view * instance.objects[gl_InstanceIndex].model * vec4(inPosition, 1.0)).xyww;
 }  
 

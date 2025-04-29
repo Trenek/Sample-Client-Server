@@ -3,8 +3,10 @@
 
 #include <cglm.h>
 
+#include "affine-pre.h"
 #include "graphicsSetup.h"
 
+#include "mat4.h"
 #include "stringBuilder.h"
 #include "entity.h"
 #include "entityBuilder.h"
@@ -43,7 +45,7 @@ void cleanupFont(void *toCleanArg) {
     free(toClean);
 }
 
-struct Entity createString(struct StringBuilder builder, struct GraphicsSetup *vulkan) {
+struct Entity *createString(struct StringBuilder builder, struct GraphicsSetup *vulkan) {
     uint32_t meshQuantity = count(builder.string);
 
     struct toCleanup *info = malloc(sizeof(struct toCleanup));
@@ -86,15 +88,46 @@ struct Entity createString(struct StringBuilder builder, struct GraphicsSetup *v
 
         buffer += 1;
     }
+    for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {
+        for (uint32_t j = 0; j < meshQuantity; j += 1) {
+            mat4 temp;
+            glm_mat4_identity(temp);
+            glm_translate(temp, (vec4) { thisBuffer[k][meshQuantity - 1][3][0] * -0.5, 0, 0, 1 });
+            glm_mat4_mul(thisBuffer[k][j], temp, thisBuffer[k][j]);
+        }
+    }
+
+    VkBuffer (*buff[])[MAX_FRAMES_IN_FLIGHT] = {
+        &info->localMesh.buffers
+    };
+
+    bool isChangable[] = {
+        false,
+    };
+
+    void *(*mapp[])[MAX_FRAMES_IN_FLIGHT] = {
+        &info->localMesh.buffersMapped,
+    };
+
+    size_t range[] = {
+        meshQuantity * sizeof(mat4),
+    };
 
     return createEntity((struct EntityBuilder) {
         .meshQuantity = meshQuantity,
         .mesh = info->mesh,
-        .buffers = &info->localMesh.buffers,
+
+        .buff = buff,
+        .mapp = mapp,
+        .isChangable = isChangable,
+        .range = range,
+        .qBuff = 1,
+
         .instanceCount = builder.instanceCount,
         .objectLayout = builder.objectLayout,
-        .texturePointer = 0,
-        .texturesQuantity = 1,
+        .instanceSize = builder.instanceSize,
+        .instanceBufferSize = builder.instanceBufferSize,
+
         .additional = info,
         .cleanup = cleanupFont
     }, vulkan);

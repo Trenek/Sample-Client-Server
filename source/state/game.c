@@ -1,3 +1,7 @@
+#include <cglm.h>
+#include <string.h>
+
+#include "GLFW/glfw3.h"
 #include "VulkanTools.h"
 #include "state.h"
 
@@ -13,18 +17,16 @@
 
 #include "Vertex.h"
 
-#include <cglm.h>
-#include <string.h>
+#include "player.h"
 
-struct Textures loadCubeMaps(struct GraphicsSetup *vulkan, const char *texturePath[6]);
 void game(struct VulkanTools *vulkan, enum state *state) {
     const char *texturePaths[] = {
-        "textures/texture.jpg"
+        "textures/texture.jpg",
+        "models/CesiumMan/CesiumMan_img0.jpg",
     };
     size_t texturesQuantity = sizeof(texturePaths) / sizeof(const char *);
 
     struct Textures texture = loadTextures(&vulkan->graphics, texturesQuantity, texturePaths);
-    
     struct Textures cubeMap = loadCubeMaps(&vulkan->graphics, (const char *[]) {
         "textures/CubeMaps/xpos.png",
         "textures/CubeMaps/xneg.png",
@@ -39,30 +41,89 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         "models/my_floor.obj",
         "models/cylinder.glb",
         "fonts/c.ttf",
-        "models/my_skybox.obj"
+        "models/my_skybox.obj",
+        "models/CesiumMan/CesiumManAnimations.glb",
+        "models/RiggedSimple.glb",
     };
-
     size_t modelQuantity = sizeof(modelPath) / sizeof(const char *);
 
-    struct actualModel actualModel[modelQuantity]; {
+    struct actualModel actualModel[modelQuantity] = {}; {
         loadModels(modelQuantity, actualModel, modelPath, &vulkan->graphics);
     }
 
+    VkDescriptorSetLayout objectLayout = createObjectDescriptorSetLayout(vulkan->graphics.device, 2, (VkDescriptorSetLayoutBinding []) {
+        {
+            .binding = 0,
+            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .pImmutableSamplers = NULL
+        },
+        {
+            .binding = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .pImmutableSamplers = NULL
+        }
+    });
+
+    VkDescriptorSetLayout animLayout = createObjectDescriptorSetLayout(vulkan->graphics.device, 3, (VkDescriptorSetLayoutBinding []) {
+        {
+            .binding = 0,
+            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .pImmutableSamplers = NULL
+        },
+        {
+            .binding = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .pImmutableSamplers = NULL
+        },
+        {
+            .binding = 2,
+            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .pImmutableSamplers = NULL
+        }
+    });
+
     struct graphicsPipeline pipe[] = { 
-        createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
+        /* No Texture Model */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
             .vertexShader = "shaders/vert.spv",
             .fragmentShader = "shaders/frag.spv",
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f,
+            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+
+            .texture = &texture.descriptor,
+            .objectLayout = objectLayout,
+
+            .sizeOfVertex = sizeof(struct AnimVertex),
+            .numOfAttributes = sizeof(animVertexAttributeDescriptions) / sizeof(*animVertexAttributeDescriptions),
+            .attributeDescription = animVertexAttributeDescriptions,
+            .operation = VK_COMPARE_OP_LESS
+        }, &vulkan->graphics),
+        /* Texture Model */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
+            .vertexShader = "shaders/animation.spv",
+            .fragmentShader = "shaders/fragText.spv",
             .minDepth = 0.0f,
             .maxDepth = 1.0f,
             .texture = &texture.descriptor,
             .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 
-            .sizeOfVertex = sizeof(struct Vertex),
-            .numOfAttributes = sizeof(vertexAttributeDescriptions) / sizeof(*vertexAttributeDescriptions),
-            .attributeDescription = vertexAttributeDescriptions,
+            .objectLayout = animLayout,
+
+            .sizeOfVertex = sizeof(struct AnimVertex),
+            .numOfAttributes = sizeof(animVertexAttributeDescriptions) / sizeof(*animVertexAttributeDescriptions),
+            .attributeDescription = animVertexAttributeDescriptions,
             .operation = VK_COMPARE_OP_LESS
         }, &vulkan->graphics),
-        createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
+        /* Text */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
             .vertexShader = "shaders/text2dV.spv",
             .fragmentShader = "shaders/textF.spv",
             .minDepth = 0.0f,
@@ -70,12 +131,14 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .texture = &texture.descriptor,
             .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 
+            .objectLayout = objectLayout,
+
             .sizeOfVertex = sizeof(struct FontVertex),
             .numOfAttributes = sizeof(fontVertexAttributeDescriptions) / sizeof(*fontVertexAttributeDescriptions),
             .attributeDescription = fontVertexAttributeDescriptions,
             .operation = VK_COMPARE_OP_LESS
         }, &vulkan->graphics),
-        createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
+        /* Skybox */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
             .vertexShader = "shaders/skyboxV.spv",
             .fragmentShader = "shaders/skyboxF.spv",
             .minDepth = 0.0f,
@@ -83,100 +146,115 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .texture = &cubeMap.descriptor,
             .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 
-            .sizeOfVertex = sizeof(struct Vertex),
-            .numOfAttributes = sizeof(vertexAttributeDescriptions) / sizeof(*vertexAttributeDescriptions),
-            .attributeDescription = vertexAttributeDescriptions,
+            .objectLayout = objectLayout,
+
+            .sizeOfVertex = sizeof(struct AnimVertex),
+            .numOfAttributes = sizeof(animVertexAttributeDescriptions) / sizeof(*animVertexAttributeDescriptions),
+            .attributeDescription = animVertexAttributeDescriptions,
             .operation = VK_COMPARE_OP_LESS_OR_EQUAL
         }, &vulkan->graphics),
     };
     size_t qPipe = sizeof(pipe) / sizeof(struct graphicsPipeline);
 
-    struct Entity model1[] = {
+    struct Entity *model[] = {
         /*floor*/ createModel((struct ModelBuilder) {
             .instanceCount = 1,
-            .texturesQuantity = 1,
-            .texturePointer = 0,
             .modelData = &actualModel[1],
-            .objectLayout = pipe[0].objectLayout,
+            .objectLayout = objectLayout,
+
+            .instanceSize = sizeof(struct instance),
+            .instanceBufferSize = sizeof(struct instanceBuffer)
         }, &vulkan->graphics),
         /*players*/ createModel((struct ModelBuilder) {
             .instanceCount = 2,
-            .texturesQuantity = 1,
-            .texturePointer = 0,
             .modelData = &actualModel[2],
-            .objectLayout = pipe[0].objectLayout,
-        }, &vulkan->graphics),
-    };
+            .objectLayout = objectLayout,
 
-    pipe[0].modelQuantity = sizeof(model1) / sizeof(struct Entity);
-    pipe[0].model = model1;
-    
-    struct Entity model2[] = {
-        /*background*/ createModel((struct ModelBuilder) {
+            .instanceSize = sizeof(struct instance),
+            .instanceBufferSize = sizeof(struct instanceBuffer)
+        }, &vulkan->graphics),
+        /*animation*/ createModel((struct ModelBuilder) {
             .instanceCount = 1,
-            .texturesQuantity = 1,
-            .texturePointer = 0,
-            .modelData = &actualModel[4],
-            .objectLayout = pipe[2].objectLayout,
+            .modelData = &actualModel[5],
+            .objectLayout = animLayout,
+
+            .instanceSize = sizeof(struct instance),
+            .instanceBufferSize = sizeof(struct instanceBuffer)
         }, &vulkan->graphics),
-    };
-
-    pipe[2].modelQuantity = sizeof(model2) / sizeof(struct Entity);
-    pipe[2].model = model2;
-
-    struct Entity model3[] = {
         /*text*/ createString((struct StringBuilder) {
             .instanceCount = 1,
-            .string = "Hello World!",
+            .string = "Hello Animation World!",
             .modelData = &actualModel[3],
-            .objectLayout = pipe[1].objectLayout,
+            .objectLayout = objectLayout,
+
+            .instanceSize = sizeof(struct instance),
+            .instanceBufferSize = sizeof(struct instanceBuffer)
+        }, &vulkan->graphics),
+        /*background*/ createModel((struct ModelBuilder) {
+            .instanceCount = 1,
+            .modelData = &actualModel[4],
+            .objectLayout = objectLayout,
+
+            .instanceSize = sizeof(struct instance),
+            .instanceBufferSize = sizeof(struct instanceBuffer)
         }, &vulkan->graphics),
     };
 
-    pipe[1].modelQuantity = sizeof(model3) / sizeof(struct Entity);
-    pipe[1].model = model3;
+    pipe[0].modelQuantity = 2;
+    pipe[1].modelQuantity = 1;
+    pipe[2].modelQuantity = 1;
+    pipe[3].modelQuantity = 1;
 
-    struct instance *floor = pipe[0].model[0].instance;
-    struct instance *player = pipe[0].model[1].instance;
-    struct instance *background = pipe[2].model[0].instance;
+    pipe[0].model = model;
+    for (size_t i = 1; i < qPipe; i += 1) {
+        pipe[i].model = pipe[i - 1].model + pipe[i - 1].modelQuantity;
+    }
 
-    struct instance *text = pipe[1].model[0].instance;
+    struct instance *floor = pipe[0].model[0]->instance;
+    struct instance *enemy = pipe[0].model[1]->instance;
+    struct instance *player = pipe[1].model[0]->instance;
+    struct instance *text = pipe[2].model[0]->instance;
+    struct instance *background = pipe[3].model[0]->instance;
 
-    *floor = (struct instance){
-        .pos = { 0.0f, 0.0f, -50.0f },
+    struct player playerData = {
+        .model = model[2],
+        .actualModel = &actualModel[5]
+    };
+
+    floor[0] = (struct instance){
+        .pos = { 0.0f, 0.0f, -5.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
         .fixedRotation = { glm_rad(90), 0.0f, 0.0f },
-        .scale = { 10000.0f, 100.0f, 10000.0f },
+        .scale = { 10000.0f, 10.0f, 10000.0f },
+        .textureIndex = 0
+    };
+
+    enemy[0] = (struct instance){
+        .pos = { 0.0f, -1.0f, 0.5f },
+        .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { glm_rad(90), 0.0f, 0.0f },
+        .scale = { 1.0f, 1.0f, 1.0f },
+        .textureIndex = 0
+    };
+
+    enemy[1] = (struct instance){
+        .pos = { 0.0f, 1.0f, 0.5f },
+        .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { glm_rad(90), 0.0f, 0.0f },
+        .scale = { 1.0f, 1.0f, 1.0f },
         .textureIndex = 0
     };
 
     player[0] = (struct instance){
-        .pos = { 0.0f, -1.0f, 1.0f },
-        .rotation = { 0.0f, 0.0f, 0.0f },
-        .fixedRotation = { glm_rad(90), 0.0f, 0.0f },
-        .scale = { 1.0f, 1.0f, 1.0f },
-        .textureIndex = 0
-    };
-
-    player[1] = (struct instance){
-        .pos = { 0.0f, 1.0f, 1.0f },
-        .rotation = { 0.0f, 0.0f, 0.0f },
-        .fixedRotation = { glm_rad(90), 0.0f, 0.0f },
-        .scale = { 1.0f, 1.0f, 1.0f },
-        .textureIndex = 0
-    };
-
-    *background = (struct instance){
         .pos = { 0.0f, 0.0f, 0.0f },
-        .rotation = { 0.0f, glm_rad(1), 0.0f },
-        .fixedRotation = { glm_rad(90), 0.0f, 0.0f },
-        .scale = { 1.0f, 1.0f, 1.0f },
-        .textureIndex = 0,
-        .shadow = false
+        .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { 0.0f, 0.0f, 0.0f },
+        .scale = { 4 * 10e-3, 4 * -10e-3, 4 * -10e-3 },
+        .textureIndex = 1
     };
 
-    *text = (struct instance){
-        .pos = { -0.1f, 0.3f, 0.0f },
+    text[0] = (struct instance){
+        .pos = { 0.0f, 0.3f, 0.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
         .fixedRotation = { 0.0f, 0.0f, 0.0f },
         .scale = { 4 * 10e-3, 4 * 10e-3, 4 * 10e-3 },
@@ -184,25 +262,30 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         .shadow = false
     };
 
+    background[0] = (struct instance){
+        .pos = { 0.0f, 0.0f, 0.0f },
+        .rotation = { 0.0f, glm_rad(0.3), 0.0f },
+        .fixedRotation = { glm_rad(90), 0.0f, 0.0f },
+        .scale = { 1.0f, 1.0f, 1.0f },
+        .textureIndex = 0,
+        .shadow = false
+    };
+
     vulkan->camera = initCamera();
+
     while (GAME == *state && !glfwWindowShouldClose(vulkan->window)) {
         glfwPollEvents();
+
+        updateInstances(model, sizeof(model) / sizeof(struct Entity *), vulkan->deltaTime.deltaTime);
+
+        movePlayer(&playerData, vulkan->windowControl, vulkan->deltaTime.deltaTime);
 
         drawFrame(vulkan, qPipe, pipe);
         moveCamera(vulkan->windowControl, vulkan->window, vulkan->camera.center, vulkan->camera.cameraPos, vulkan->camera.tilt, vulkan->deltaTime.deltaTime / 5.0f);
 
         memcpy(background->pos, vulkan->camera.cameraPos, sizeof(vec3));
         
-        bool isUClicked = KEY_PRESS & getKeyState(vulkan->windowControl, GLFW_KEY_U);
-        bool isHClicked = KEY_PRESS & getKeyState(vulkan->windowControl, GLFW_KEY_H);
-        bool isJClicked = KEY_PRESS & getKeyState(vulkan->windowControl, GLFW_KEY_J);
-        bool isKClicked = KEY_PRESS & getKeyState(vulkan->windowControl, GLFW_KEY_K);
         bool isMClicked = (KEY_PRESS | KEY_CHANGE) == getKeyState(vulkan->windowControl, GLFW_KEY_M);
-
-        if (isJClicked) player[0].pos[0] += 3e00 * vulkan->deltaTime.deltaTime;
-        if (isKClicked) player[0].pos[1] += 3e00 * vulkan->deltaTime.deltaTime;
-        if (isUClicked) player[0].pos[0] -= 3e00 * vulkan->deltaTime.deltaTime;
-        if (isHClicked) player[0].pos[1] -= 3e00 * vulkan->deltaTime.deltaTime;
 
         if (isMClicked) text->shadow = !text->shadow;
     }
@@ -211,6 +294,9 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         destroyEntityArray(pipe[i].modelQuantity, pipe[i].model, &vulkan->graphics);
         destroyObjGraphicsPipeline(vulkan->graphics.device, pipe[i]);
     }
+
+    vkDestroyDescriptorSetLayout(vulkan->graphics.device, objectLayout, NULL);
+    vkDestroyDescriptorSetLayout(vulkan->graphics.device, animLayout, NULL);
 
     destroyActualModels(vulkan->graphics.device, modelQuantity, actualModel);
     unloadTextures(vulkan->graphics.device, texture);

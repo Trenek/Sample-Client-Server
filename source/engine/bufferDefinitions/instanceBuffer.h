@@ -18,5 +18,8 @@ struct instance {
     vec3 scale;
     bool shadow;
 };
+struct Entity;
+
+void updateInstances(struct Entity **model, size_t qModel, float deltaTime);
 
 #endif

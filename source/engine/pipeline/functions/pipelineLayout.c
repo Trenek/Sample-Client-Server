@@ -3,7 +3,7 @@
 #include "MY_ASSERT.h"
 #include "pushConstantsBuffer.h"
 
-VkPipelineLayout createPipelineLayout(VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSetLayout descriptorSetLayout2, VkDescriptorSetLayout descriptorSetLayout3) {
+VkPipelineLayout createPipelineLayout(VkDevice device, size_t qDescriptorLayout, VkDescriptorSetLayout descriptorSetLayout[qDescriptorLayout]) {
     VkPipelineLayout pipelineLayout = NULL;
 
     VkPushConstantRange pushConstant = {
@@ -12,16 +12,10 @@ VkPipelineLayout createPipelineLayout(VkDevice device, VkDescriptorSetLayout des
         .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
     };
 
-    VkDescriptorSetLayout layouts[] = {
-        descriptorSetLayout,
-        descriptorSetLayout2,
-        descriptorSetLayout3
-    };
-
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .setLayoutCount = sizeof(layouts) / sizeof(VkDescriptorSetLayout),
-        .pSetLayouts = layouts,
+        .setLayoutCount = qDescriptorLayout,
+        .pSetLayouts = descriptorSetLayout,
         .pushConstantRangeCount = 1,
         .pPushConstantRanges = &pushConstant
     };
