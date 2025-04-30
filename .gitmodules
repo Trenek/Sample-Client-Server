@@ -16,3 +16,6 @@
 [submodule "dependencies/freetype"]
 	path = dependencies/freetype
 	url = https://github.com/freetype/freetype
+[submodule "dependencies/miniaudio"]
+	path = dependencies/miniaudio
+	url = https://github.com/mackron/miniaudio

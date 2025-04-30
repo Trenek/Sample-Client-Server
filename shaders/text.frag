@@ -18,5 +18,5 @@ void main() {
 
     if (shadow == 0 && false == fill) discard;
 
-    outColor = vec4(fill, 0, !fill, 1);
+    outColor = vec4(fragColor, 1);
 }

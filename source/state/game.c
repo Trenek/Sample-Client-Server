@@ -1,11 +1,13 @@
+#include <asset.h>
+
+#include <GLFW/glfw3.h>
 #include <cglm.h>
 #include <string.h>
 
-#include "GLFW/glfw3.h"
+#include <miniaudio.h>
+
 #include "VulkanTools.h"
 #include "state.h"
-
-#include "asset.h"
 
 #include "entity.h"
 #include "entityBuilder.h"
@@ -20,6 +22,15 @@
 #include "player.h"
 
 void game(struct VulkanTools *vulkan, enum state *state) {
+    ma_engine engine;
+    ma_sound sound; {
+        assert(MA_SUCCESS == ma_engine_init(NULL, &engine));
+        assert(MA_SUCCESS == ma_sound_init_from_file(&engine, "music/music.mp3", 0, NULL, NULL, &sound));
+
+        ma_sound_start(&sound);
+        ma_sound_set_looping(&sound, true);
+    }
+
     const char *texturePaths[] = {
         "textures/texture.jpg",
         "models/CesiumMan/CesiumMan_img0.jpg",
@@ -301,4 +312,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     destroyActualModels(vulkan->graphics.device, modelQuantity, actualModel);
     unloadTextures(vulkan->graphics.device, texture);
     unloadTextures(vulkan->graphics.device, cubeMap);
+
+    ma_sound_uninit(&sound);
+    ma_engine_uninit(&engine);
 }

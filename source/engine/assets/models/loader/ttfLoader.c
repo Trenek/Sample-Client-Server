@@ -1,7 +1,8 @@
-#include <stdint.h>
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
 #include <freetype/freetype.h>
 #include <cglm.h>
+#include <stdint.h>
+#include <assert.h>
 
 #include "actualModel.h"
 #include "myMalloc.h"

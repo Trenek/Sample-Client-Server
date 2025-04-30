@@ -3,6 +3,7 @@ find_package(Vulkan REQUIRED)
 add_subdirectory(glfw EXCLUDE_FROM_ALL)
 add_subdirectory(cglm EXCLUDE_FROM_ALL)
 add_subdirectory(freetype EXCLUDE_FROM_ALL)
+add_subdirectory(miniaudio EXCLUDE_FROM_ALL)
 
 set(INCLUDE_DIRECTORIES
     "${Vulkan_INCLUDE_DIRS}"
@@ -10,6 +11,7 @@ set(INCLUDE_DIRECTORIES
     "${CMAKE_CURRENT_SOURCE_DIR}/tinyobjloader"
     "${CMAKE_CURRENT_SOURCE_DIR}/cgltf"
     "${CMAKE_CURRENT_SOURCE_DIR}/cglm/include/cglm"
+    "${CMAKE_CURRENT_SOURCE_DIR}/miniaudio"
 )
 
 set(LINK_LIBRARIES
@@ -17,12 +19,14 @@ set(LINK_LIBRARIES
     glfw
     cglm
     freetype
+    miniaudio
 )
 
 if (WIN32)
     set(LINK_LIBRARIES
         ${LINK_LIBRARIES}
-        -lucrt
+        -mcrtdll=ucrt
+        msvcrt
     )
 else ()
     set(LINK_LIBRARIES

@@ -113,7 +113,7 @@ static struct Mesh loadMesh(cgltf_mesh *mesh) {
                 [2] = color_accessor == NULL ? 1.0f : localColor[i][2]
             },
             .bone = { joints[0], joints[1], joints[2], joints[3] },
-            .weights = { weights[0], weights[1], weights[2], weights[4] }
+            .weights = { weights[0], weights[1], weights[2], weights[3] }
         };
     }
 
