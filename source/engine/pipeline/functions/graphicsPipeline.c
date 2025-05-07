@@ -127,7 +127,7 @@ VkPipeline createGraphicsPipeline(struct graphicsPipelineBuilder builder, VkDevi
         .rasterizerDiscardEnable = VK_FALSE,
         .polygonMode = VK_POLYGON_MODE_FILL,
         .lineWidth = 1.0f,
-        .cullMode = VK_CULL_MODE_BACK_BIT,
+        .cullMode = builder.cullFlags,
         .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
         .depthBiasEnable = VK_FALSE,
         .depthBiasConstantFactor = 0.0f, // optional
@@ -135,7 +135,7 @@ VkPipeline createGraphicsPipeline(struct graphicsPipelineBuilder builder, VkDevi
         .depthBiasSlopeFactor = 0.0f // optional
     };
 
-    VkPipelineMultisampleStateCreateInfo multisampling = { // for now disabled :(
+    VkPipelineMultisampleStateCreateInfo multisampling = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         .sampleShadingEnable = VK_FALSE,
         .rasterizationSamples = msaaSamples,

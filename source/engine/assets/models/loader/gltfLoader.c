@@ -67,7 +67,7 @@ static void loadFromAccessor(cgltf_accessor *accessor, void *local, size_t size,
 static struct Mesh loadMesh(cgltf_mesh *mesh) {
     struct Mesh result = { 0 };
     cgltf_primitive *primitive = mesh->primitives;
-
+    
     cgltf_accessor *index_accessor = primitive->indices;
     cgltf_accessor *vertex_accessor = getAccessor(cgltf_attribute_type_position, primitive);
     cgltf_accessor *texture_accessor = getAccessor(cgltf_attribute_type_texcoord, primitive);

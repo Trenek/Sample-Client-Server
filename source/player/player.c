@@ -9,7 +9,7 @@
 #include "actualModel.h"
 
 static int walk(struct instance *entity, float deltaTime, struct windowControl *wc) {
-    int isMoving = 0;
+    int isMoving = STANDING;
 
     bool isUClicked = KEY_PRESS & getKeyState(wc, GLFW_KEY_U);
     bool isHClicked = KEY_PRESS & getKeyState(wc, GLFW_KEY_H);
@@ -20,10 +20,7 @@ static int walk(struct instance *entity, float deltaTime, struct windowControl *
     float y = 0;
 
     GLFWgamepadstate state;
-    if (KEY_PRESS & getKeyState(wc, GLFW_KEY_N)) {
-        isMoving = 1;
-    }
-    else if (glfwJoystickIsGamepad(GLFW_JOYSTICK_1) && glfwGetGamepadState(GLFW_JOYSTICK_1, &state)) {
+    if (glfwJoystickIsGamepad(GLFW_JOYSTICK_1) && glfwGetGamepadState(GLFW_JOYSTICK_1, &state)) {
         x = state.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
         y = state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
     }
@@ -41,11 +38,11 @@ static int walk(struct instance *entity, float deltaTime, struct windowControl *
     }
 
     if (sqrtf(x * x + y * y) > 0.1) {
-        isMoving = 4;
+        isMoving = BATTLE_WALK;
         entity->pos[1] += 3e00 * deltaTime * x;
         entity->pos[0] += 3e00 * deltaTime * y;
 
-        entity->fixedRotation[2] = M_PI + atan2f(-y, x);
+        entity->fixedRotation[1] = M_PI + atan2f(-y, x);
     }
 
     return isMoving;
@@ -177,13 +174,26 @@ static void animate(struct Entity *model, struct actualModel *actualModel, size_
 }
 
 void movePlayer(struct player *p, struct windowControl *wc, float deltaTime) {
-    int newState = walk(p->model->instance, deltaTime, wc);
+    int wal = walk(p->model->instance, deltaTime, wc);
 
     p->time += deltaTime;
-    if (newState != p->state) {
-        p->state = newState;
+    wal = 
+        (KEY_PRESS & getKeyState(wc, GLFW_KEY_1)) ? LEFT_HIGH_PUNCH :
+        (KEY_PRESS & getKeyState(wc, GLFW_KEY_2)) ? RIGHT_HIGH_PUNCH :
+        (KEY_PRESS & getKeyState(wc, GLFW_KEY_3)) ? LEFT_LOW_PUNCH :
+        (KEY_PRESS & getKeyState(wc, GLFW_KEY_4)) ? RIGHT_LOW_PUNCH : wal;
+
+    if (wal != p->state) {
+        p->state = wal;
         p->time = 0;
     }
+
+    animate(p->model, p->actualModel, p->state, p->time);
+}
+
+void moveEnemy(struct player *p, struct windowControl *, float deltaTime) {
+    p->state = STANDING;
+    p->time += deltaTime;
 
     animate(p->model, p->actualModel, p->state, p->time);
 }

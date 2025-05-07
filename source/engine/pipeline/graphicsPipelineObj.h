@@ -22,6 +22,8 @@ struct graphicsPipelineBuilder {
     const size_t numOfAttributes;
     VkVertexInputAttributeDescription *attributeDescription;
 
+    VkCullModeFlags cullFlags;
+
     VkCompareOp operation;
 };
 
