@@ -119,8 +119,8 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .cullFlags = VK_CULL_MODE_BACK_BIT,
         }, &vulkan->graphics),
         /* Texture Model */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
-            .vertexShader = "shaders/animation.spv",
-            .fragmentShader = "shaders/frag.spv",
+            .vertexShader = "shaders/playerAnimation.spv",
+            .fragmentShader = "shaders/playerFrag.spv",
             .minDepth = 0.0f,
             .maxDepth = 1.0f,
             .texture = &texture.descriptor,
@@ -176,23 +176,26 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .objectLayout = objectLayout,
 
             .instanceSize = sizeof(struct instance),
-            .instanceBufferSize = sizeof(struct instanceBuffer)
+            .instanceBufferSize = sizeof(struct instanceBuffer),
+            .instanceUpdater = updateInstance
         }, &vulkan->graphics),
         /*player*/ createModel((struct ModelBuilder) {
             .instanceCount = 1,
             .modelData = &actualModel[5],
             .objectLayout = animLayout,
 
-            .instanceSize = sizeof(struct instance),
-            .instanceBufferSize = sizeof(struct instanceBuffer)
+            .instanceSize = sizeof(struct playerInstance),
+            .instanceBufferSize = sizeof(struct playerInstanceBuffer),
+            .instanceUpdater = updatePlayerInstance,
         }, &vulkan->graphics),
         /*enemy*/ createModel((struct ModelBuilder) {
             .instanceCount = 1,
             .modelData = &actualModel[5],
             .objectLayout = animLayout,
 
-            .instanceSize = sizeof(struct instance),
-            .instanceBufferSize = sizeof(struct instanceBuffer)
+            .instanceSize = sizeof(struct playerInstance),
+            .instanceBufferSize = sizeof(struct playerInstanceBuffer),
+            .instanceUpdater = updatePlayerInstance,
         }, &vulkan->graphics),
         /*text*/ createString((struct StringBuilder) {
             .instanceCount = 1,
@@ -201,7 +204,8 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .objectLayout = objectLayout,
 
             .instanceSize = sizeof(struct instance),
-            .instanceBufferSize = sizeof(struct instanceBuffer)
+            .instanceBufferSize = sizeof(struct instanceBuffer),
+            .instanceUpdater = updateInstance,
         }, &vulkan->graphics),
         /*background*/ createModel((struct ModelBuilder) {
             .instanceCount = 1,
@@ -209,7 +213,8 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .objectLayout = objectLayout,
 
             .instanceSize = sizeof(struct instance),
-            .instanceBufferSize = sizeof(struct instanceBuffer)
+            .instanceBufferSize = sizeof(struct instanceBuffer),
+            .instanceUpdater = updateInstance,
         }, &vulkan->graphics),
     };
 
@@ -224,8 +229,8 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     }
 
     struct instance *floor = pipe[0].model[0]->instance;
-    struct instance *player = pipe[1].model[0]->instance;
-    struct instance *enemy = pipe[1].model[1]->instance;
+    struct playerInstance *player = pipe[1].model[0]->instance;
+    struct playerInstance *enemy = pipe[1].model[1]->instance;
     struct instance *text = pipe[2].model[0]->instance;
     struct instance *background = pipe[3].model[0]->instance;
 
@@ -248,20 +253,22 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         .textureIndex = 0
     };
 
-    player[0] = (struct instance){
+    player[0] = (struct playerInstance){
         .pos = { 0.0f, 0.0f, 1.5f },
         .rotation = { 0.0f, 0.0f, 0.0f },
         .fixedRotation = { glm_rad(90), glm_rad(-90), 0.0f },
         .scale = { 1.5 * 10e-2, 1.5 * 10e-2, 1.5 * 10e-2 },
-        .textureIndex = 0
+        .skinColor = { (float)0xff / 0x100, (float)0xad / 0x100, (float)0x5c / 0x100 },
+        .dressColor = { 1, 0, 0 }
     };
 
-    enemy[0] = (struct instance){
+    enemy[0] = (struct playerInstance){
         .pos = { -5.0f, 0.0f, 1.5f },
         .rotation = { 0.0f, 0.0f, 0.0f },
         .fixedRotation = { glm_rad(90), glm_rad(90), 0.0f },
         .scale = { 1.5 * 10e-2, 1.5 * 10e-2, 1.5 * 10e-2 },
-        .textureIndex = 0
+        .skinColor = { (float)0x5c / 0x100, (float)0x2e / 0x100, (float)0x00 / 0x100 },
+        .dressColor = { 0, 1, 0 }
     };
 
     text[0] = (struct instance){

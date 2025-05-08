@@ -10,6 +10,7 @@ struct StringBuilder {
 
     size_t instanceSize;
     size_t instanceBufferSize;
+    void (*instanceUpdater)(void *instancePtr, void *instanceBufferPtr, uint32_t instanceCount, float deltaTime);
 
     const char *string;
     struct actualModel *modelData;

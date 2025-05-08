@@ -127,6 +127,7 @@ struct Entity *createString(struct StringBuilder builder, struct GraphicsSetup *
         .objectLayout = builder.objectLayout,
         .instanceSize = builder.instanceSize,
         .instanceBufferSize = builder.instanceBufferSize,
+        .instanceUpdater = builder.instanceUpdater,
 
         .additional = info,
         .cleanup = cleanupFont

@@ -8,7 +8,7 @@
 #include "windowControl.h"
 #include "actualModel.h"
 
-static int walk(struct instance *entity, float deltaTime, struct windowControl *wc) {
+static int walk(struct playerInstance *entity, float deltaTime, struct windowControl *wc) {
     int isMoving = STANDING;
 
     bool isUClicked = KEY_PRESS & getKeyState(wc, GLFW_KEY_U);

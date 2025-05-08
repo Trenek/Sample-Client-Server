@@ -77,6 +77,7 @@ struct Entity *createModel(struct ModelBuilder builder, struct GraphicsSetup *vu
 
         .instanceSize = builder.instanceSize,
         .instanceBufferSize = builder.instanceBufferSize,
+        .instanceUpdater = builder.instanceUpdater,
 
         .additional = anim,
         .cleanup = cleanupAnim,

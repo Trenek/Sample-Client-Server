@@ -10,6 +10,7 @@
 struct Entity {
     uint32_t instanceCount;
     void *instance;
+    void (*instanceUpdater)(void *instancePtr, void *instanceBufferPtr, uint32_t instanceCount, float deltaTime);
 
     void **buffer;
 

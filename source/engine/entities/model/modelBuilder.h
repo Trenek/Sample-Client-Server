@@ -12,6 +12,7 @@ struct ModelBuilder {
 
     size_t instanceSize;
     size_t instanceBufferSize;
+    void (*instanceUpdater)(void *instancePtr, void *instanceBufferPtr, uint32_t instanceCount, float deltaTime);
 
     struct actualModel *modelData;
 
