@@ -254,7 +254,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     };
 
     player[0] = (struct playerInstance){
-        .pos = { 0.0f, 0.0f, 1.5f },
+        .pos = { 0.0f, 0.0f, 0.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
         .fixedRotation = { glm_rad(90), glm_rad(-90), 0.0f },
         .scale = { 1.5 * 10e-2, 1.5 * 10e-2, 1.5 * 10e-2 },
@@ -263,7 +263,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     };
 
     enemy[0] = (struct playerInstance){
-        .pos = { -5.0f, 0.0f, 1.5f },
+        .pos = { -5.0f, 0.0f, 0.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
         .fixedRotation = { glm_rad(90), glm_rad(90), 0.0f },
         .scale = { 1.5 * 10e-2, 1.5 * 10e-2, 1.5 * 10e-2 },
