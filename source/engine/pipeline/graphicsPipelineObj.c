@@ -7,7 +7,7 @@ struct graphicsPipeline createObjGraphicsPipeline(struct graphicsPipelineBuilder
     VkDescriptorSetLayout descriptorSetLayout[] = {
         builder.objectLayout,
         builder.texture->descriptorSetLayout,
-        vulkan->cameraDescriptorSetLayout,
+        builder.cameraLayout,
     };
     size_t qDescriptorSetLayout = sizeof(descriptorSetLayout) / sizeof(VkDescriptorSetLayout);
 
