@@ -102,6 +102,8 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         }
     });
 
+    VkDescriptorSetLayout cameraLayout = createCameraDescriptorSetLayout(vulkan->graphics.device);
+
     struct graphicsPipeline pipe[] = { 
         /* No Texture Model */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
             .vertexShader = "shaders/vert.spv",
@@ -119,7 +121,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .operation = VK_COMPARE_OP_LESS,
             .cullFlags = VK_CULL_MODE_BACK_BIT,
 
-            .cameraLayout = createCameraDescriptorSetLayout(vulkan->graphics.device)
+            .cameraLayout = cameraLayout
         }, &vulkan->graphics),
         /* Texture Model */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
             .vertexShader = "shaders/playerAnimation.spv",
@@ -136,7 +138,8 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .attributeDescription = animVertexAttributeDescriptions,
             .operation = VK_COMPARE_OP_LESS,
             .cullFlags = VK_CULL_MODE_NONE,
-            .cameraLayout = createCameraDescriptorSetLayout(vulkan->graphics.device)
+
+            .cameraLayout = cameraLayout
         }, &vulkan->graphics),
         /* Text */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
             .vertexShader = "shaders/text2dV.spv",
@@ -153,7 +156,8 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .attributeDescription = fontVertexAttributeDescriptions,
             .operation = VK_COMPARE_OP_LESS,
             .cullFlags = VK_CULL_MODE_BACK_BIT,
-            .cameraLayout = createCameraDescriptorSetLayout(vulkan->graphics.device)
+
+            .cameraLayout = cameraLayout
         }, &vulkan->graphics),
         /* Skybox */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
             .vertexShader = "shaders/skyboxV.spv",
@@ -170,7 +174,8 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .attributeDescription = animVertexAttributeDescriptions,
             .operation = VK_COMPARE_OP_LESS_OR_EQUAL,
             .cullFlags = VK_CULL_MODE_BACK_BIT,
-            .cameraLayout = createCameraDescriptorSetLayout(vulkan->graphics.device)
+
+            .cameraLayout = cameraLayout
         }, &vulkan->graphics),
     };
     size_t qPipe = sizeof(pipe) / sizeof(struct graphicsPipeline);
@@ -401,6 +406,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
 
     vkDestroyDescriptorSetLayout(vulkan->graphics.device, objectLayout, NULL);
     vkDestroyDescriptorSetLayout(vulkan->graphics.device, animLayout, NULL);
+    vkDestroyDescriptorSetLayout(vulkan->graphics.device, cameraLayout, NULL);
 
     destroyActualModels(vulkan->graphics.device, modelQuantity, actualModel);
     unloadTextures(vulkan->graphics.device, texture);
