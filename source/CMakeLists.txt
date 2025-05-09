@@ -1,5 +1,4 @@
 set(SOURCE_DIRECTORIES
-    "${CMAKE_CURRENT_SOURCE_DIR}/camera"
     "${CMAKE_CURRENT_SOURCE_DIR}/player"
     "${CMAKE_CURRENT_SOURCE_DIR}/engine"
         "${CMAKE_CURRENT_SOURCE_DIR}/engine/assets"
@@ -26,6 +25,7 @@ set(SOURCE_DIRECTORIES
         "${CMAKE_CURRENT_SOURCE_DIR}/engine/pipeline"
         "${CMAKE_CURRENT_SOURCE_DIR}/engine/entities"
         "${CMAKE_CURRENT_SOURCE_DIR}/engine/renderPass"
+            "${CMAKE_CURRENT_SOURCE_DIR}/engine/renderPass/camera"
         "${CMAKE_CURRENT_SOURCE_DIR}/engine/entities/string"
         "${CMAKE_CURRENT_SOURCE_DIR}/engine/entities/model"
             "${CMAKE_CURRENT_SOURCE_DIR}/engine/pipeline/functions"

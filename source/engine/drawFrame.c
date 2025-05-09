@@ -11,18 +11,6 @@
 
 #include "MY_ASSERT.h"
 
-void updateCameraBuffer(void *uniformBuffersMapped, VkExtent2D swapChainExtent, vec3 cameraPos, vec3 center) {
-    struct UniformBufferObject ubo;
-
-    glm_look_rh_no(cameraPos, center, (vec3) { 0.0f, 0.0f, 1.0f }, ubo.view);
-
-    glm_perspective(glm_rad(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10000.0f, ubo.proj);
-
-    ubo.proj[1][1] *= -1;
-
-    memcpy(uniformBuffersMapped, &ubo, sizeof(ubo));
-}
-
 static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swapChainFramebuffer, VkExtent2D swapChainExtent, struct VulkanTools *vulkan, uint32_t currentFrame, uint16_t qRenderPass, struct renderPass renderPass[qRenderPass]) {
     VkCommandBufferBeginInfo beginInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -107,7 +95,19 @@ static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swa
     MY_ASSERT(VK_SUCCESS == vkEndCommandBuffer(commandBuffer));
 }
 
-void updateModelBuffer(size_t currentFrame, struct Entity *model) {
+static void updateCameraBuffer(void *uniformBuffersMapped, VkExtent2D swapChainExtent, vec3 cameraPos, vec3 center) {
+    struct UniformBufferObject ubo;
+
+    glm_look_rh_no(cameraPos, center, (vec3) { 0.0f, 0.0f, 1.0f }, ubo.view);
+
+    glm_perspective(glm_rad(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10000.0f, ubo.proj);
+
+    ubo.proj[1][1] *= -1;
+
+    memcpy(uniformBuffersMapped, &ubo, sizeof(ubo));
+}
+
+static void updateModelBuffer(size_t currentFrame, struct Entity *model) {
     for (uint32_t k = 0; k < model->qBuff; k += 1) {
         if (model->buffer[k]) {
             memcpy((*model->mapp[k])[currentFrame], model->buffer[k], model->range[k]);
@@ -115,7 +115,7 @@ void updateModelBuffer(size_t currentFrame, struct Entity *model) {
     }
 }
 
-void updateBuffers(size_t currentFrame, size_t qRenderPass, struct renderPass renderPass[qRenderPass], struct VulkanTools *vulkan) {
+static void updateBuffers(size_t currentFrame, size_t qRenderPass, struct renderPass renderPass[qRenderPass], struct VulkanTools *vulkan) {
     for (uint32_t i = 0; i < qRenderPass; i += 1) {
         updateCameraBuffer(renderPass[i].cameraBufferMapped[currentFrame], (VkExtent2D) { 
             .width = renderPass[i].p[2] * vulkan->graphics.swapChain.extent.width,
