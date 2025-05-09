@@ -6,7 +6,6 @@
 #include "actualModel.h"
 #include "renderPass.h"
 #include "graphicsPipelineObj.h"
-#include "uniformBufferObject.h"
 #include "pushConstantsBuffer.h"
 
 #include "MY_ASSERT.h"
@@ -95,18 +94,6 @@ static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swa
     MY_ASSERT(VK_SUCCESS == vkEndCommandBuffer(commandBuffer));
 }
 
-static void updateCameraBuffer(void *uniformBuffersMapped, VkExtent2D swapChainExtent, vec3 cameraPos, vec3 center) {
-    struct UniformBufferObject ubo;
-
-    glm_look_rh_no(cameraPos, center, (vec3) { 0.0f, 0.0f, 1.0f }, ubo.view);
-
-    glm_perspective(glm_rad(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10000.0f, ubo.proj);
-
-    ubo.proj[1][1] *= -1;
-
-    memcpy(uniformBuffersMapped, &ubo, sizeof(ubo));
-}
-
 static void updateModelBuffer(size_t currentFrame, struct Entity *model) {
     for (uint32_t k = 0; k < model->qBuff; k += 1) {
         if (model->buffer[k]) {
@@ -115,11 +102,11 @@ static void updateModelBuffer(size_t currentFrame, struct Entity *model) {
     }
 }
 
-static void updateBuffers(size_t currentFrame, size_t qRenderPass, struct renderPass renderPass[qRenderPass], struct VulkanTools *vulkan) {
+static void updateBuffers(size_t currentFrame, size_t qRenderPass, struct renderPass renderPass[qRenderPass], VkExtent2D swapChainExtent) {
     for (uint32_t i = 0; i < qRenderPass; i += 1) {
         updateCameraBuffer(renderPass[i].cameraBufferMapped[currentFrame], (VkExtent2D) { 
-            .width = renderPass[i].p[2] * vulkan->graphics.swapChain.extent.width,
-            .height = renderPass[i].p[3] * vulkan->graphics.swapChain.extent.height,
+            .width = renderPass[i].p[2] * swapChainExtent.width,
+            .height = renderPass[i].p[3] * swapChainExtent.height,
         }, renderPass[i].camera.cameraPos, renderPass[i].camera.center);
         for (uint32_t j = 0; j < renderPass[i].qData; j += 1) {
             for (uint32_t k = 0; k < renderPass[i].data[j].qEntity; k += 1) {
@@ -176,7 +163,7 @@ static VkResult localDrawFrame(struct VulkanTools *vulkan, uint16_t qRenderPass,
 
     result = vkAcquireNextImageKHR(vulkan->graphics.device, vulkan->graphics.swapChain.this, UINT64_MAX, vulkan->graphics.imageAvailableSemaphore[currentFrame], VK_NULL_HANDLE, &imageIndex);
     if (VK_SUCCESS == result) {
-        updateBuffers(currentFrame, qRenderPass, renderPass, vulkan);
+        updateBuffers(currentFrame, qRenderPass, renderPass, vulkan->graphics.swapChain.extent);
 
         vkResetFences(vulkan->graphics.device, 1, &vulkan->graphics.inFlightFence[currentFrame]);
 

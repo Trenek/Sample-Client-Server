@@ -230,7 +230,6 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     };
     size_t qEntity = sizeof(entity) / sizeof(struct Entity *);
 
-
     struct renderPass renderPass[] = {
         createRenderPassObj((struct renderPassBuilder){
             .p = { 0.0, 0.0, 0.5, 1.0 },

@@ -7,9 +7,6 @@
 #include "GraphicsSetup.h"
 #include "definitions.h"
 
-void createUniformBuffers(VkBuffer uniformBuffers[], VkDeviceMemory uniformBuffersMemory[], void *uniformBuffersMapped[], VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
-void destroyUniformBuffers(VkDevice device, VkBuffer uniformBuffers[], VkDeviceMemory uniformBuffersMemory[]);
-
 struct renderPass createRenderPassObj(struct renderPassBuilder builder, struct GraphicsSetup *vulkan) {
     struct renderPass result = {
         .data = builder.data,
