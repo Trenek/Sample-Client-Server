@@ -3,7 +3,7 @@
 
 #define GLM_FORCE_RADIANS
 #include <cglm.h>
-struct UniformBufferObject {
+struct CameraBuffer {
     alignas(16) mat4 view;
     alignas(16) mat4 proj;
 };

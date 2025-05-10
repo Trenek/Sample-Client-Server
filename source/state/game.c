@@ -21,6 +21,7 @@
 #include "Vertex.h"
 
 #include "player.h"
+#include "vec2.h"
 
 void game(struct VulkanTools *vulkan, enum state *state) {
     ma_engine engine;
@@ -251,7 +252,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
                 },
             },
             .qData = 3,
-            .camera = initCamera()
+            .updateCameraBuffer = updateThirdPersonCameraBuffer
         }, &vulkan->graphics),
         createRenderPassObj((struct renderPassBuilder){
             .p = { 0.5, 0.0, 0.5, 1.0 },
@@ -273,7 +274,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
                 },
             },
             .qData = 3,
-            .camera = initCamera()
+            .updateCameraBuffer = updateThirdPersonCameraBuffer
         }, &vulkan->graphics),
         createRenderPassObj((struct renderPassBuilder){
             .p = { 1.0 / 8, 1.0 / 8, 1.0 / 8, 1.0 / 8 },
@@ -285,7 +286,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
                 },
             },
             .qData = 1,
-            .camera = initCamera()
+            .updateCameraBuffer = updateThirdPersonCameraBuffer
         }, &vulkan->graphics),
         createRenderPassObj((struct renderPassBuilder){
             .p = { 6.0 / 8, 1.0 / 8, 1.0 / 8, 1.0 / 8 },
@@ -297,7 +298,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
                 },
             },
             .qData = 1,
-            .camera = initCamera()
+            .updateCameraBuffer = updateThirdPersonCameraBuffer
         }, &vulkan->graphics),
         createRenderPassObj((struct renderPassBuilder){
             .p = { 0.0, 0.0, 1.0, 1.0 },
@@ -309,7 +310,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
                 },
             },
             .qData = 1,
-            .camera = initCamera()
+            .updateCameraBuffer = updateFirstPersonCameraBuffer
         }, &vulkan->graphics),
     };
     size_t qRenderPass = sizeof(renderPass) / sizeof(struct renderPass);
@@ -323,11 +324,27 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     struct player playerData[2] = {
         {
             .model = entity[1],
-            .actualModel = &actualModel[5]
+            .actualModel = &actualModel[5],
+            .enemy = &playerData[1],
+            .playerKeys = {
+                GLFW_KEY_W,
+                GLFW_KEY_A,
+                GLFW_KEY_S,
+                GLFW_KEY_D
+            },
+            .playerJoystick = GLFW_JOYSTICK_1
         },
         {
             .model = entity[2],
-            .actualModel = &actualModel[5]
+            .actualModel = &actualModel[5],
+            .enemy = &playerData[0],
+            .playerKeys = {
+                GLFW_KEY_UP,
+                GLFW_KEY_LEFT,
+                GLFW_KEY_DOWN,
+                GLFW_KEY_RIGHT
+            },
+            .playerJoystick = GLFW_JOYSTICK_2
         },
     };
 
@@ -367,7 +384,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     };
 
     background[0] = (struct instance){
-        .pos = { 0.0f, 0.0f, 0.0f },
+        .pos = { 0.0f, 0.0f, 0.0f }, 
         .rotation = { 0.0f, glm_rad(0.3), 0.0f },
         .fixedRotation = { glm_rad(90), 0.0f, 0.0f },
         .scale = { 1.0f, 1.0f, 1.0f },
@@ -375,22 +392,80 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         .shadow = false
     };
 
-    moveCamera(vulkan->windowControl, vulkan->window, renderPass[1].camera.center, renderPass[1].camera.cameraPos, renderPass[1].camera.tilt, vulkan->deltaTime.deltaTime / 5.0f);
-    moveCamera(vulkan->windowControl, vulkan->window, renderPass[2].camera.center, renderPass[2].camera.cameraPos, renderPass[2].camera.tilt, vulkan->deltaTime.deltaTime / 5.0f);
-    moveCamera(vulkan->windowControl, vulkan->window, renderPass[3].camera.center, renderPass[3].camera.cameraPos, renderPass[3].camera.tilt, vulkan->deltaTime.deltaTime / 5.0f);
     while (GAME == *state && !glfwWindowShouldClose(vulkan->window)) {
+        if (GLFW_PRESS == glfwGetKey(vulkan->window, GLFW_KEY_END)) {
+            glfwSetWindowShouldClose(vulkan->window, GLFW_TRUE);
+        }
         glfwPollEvents();
 
-        updateInstances(entity, sizeof(entity) / sizeof(struct Entity *), vulkan->deltaTime.deltaTime);
+        updateInstances(entity, qEntity, vulkan->deltaTime.deltaTime);
 
         movePlayer(&playerData[0], vulkan->windowControl, vulkan->deltaTime.deltaTime);
-        moveEnemy(&playerData[1], vulkan->windowControl, vulkan->deltaTime.deltaTime);
+        movePlayer(&playerData[1], vulkan->windowControl, vulkan->deltaTime.deltaTime);
 
+        vec2 diff;
+        glm_vec2_sub(player->pos, enemy->pos, diff);
+        glm_vec2_normalize(diff);
+        renderPass[0].camera = (struct camera) {
+            .pos = {
+                [0] = player->pos[0] + 2 * diff[0] - 0.5 * diff[1],
+                [1] = player->pos[1] + 2 * diff[1] + 0.5 * diff[0],
+                [2] = player->pos[2] + 2.5,
+            },
+
+            .direction = {
+                [0] = enemy->pos[0],
+                [1] = enemy->pos[1],
+                [2] = enemy->pos[2] + 1
+            }
+        };
+
+        glm_vec2_sub(enemy->pos, player->pos, diff);
+        glm_vec2_normalize(diff);
+        renderPass[1].camera = (struct camera) {
+            .pos = {
+                [0] = enemy->pos[0] + 2 * diff[0] + 0.5 * diff[1],
+                [1] = enemy->pos[1] + 2 * diff[1] - 0.5 * diff[0],
+                [2] = enemy->pos[2] + 2.5,
+            },
+
+            .direction = {
+                [0] = player->pos[0],
+                [1] = player->pos[1],
+                [2] = player->pos[2] + 1
+            }
+        };
+
+        renderPass[2].camera = (struct camera) {
+            .pos = {
+                [0] = player->pos[0] - 1,
+                [1] = player->pos[1] + 0.4,
+                [2] = player->pos[2] + 2,
+            },
+
+            .direction = {
+                [0] = player->pos[0],
+                [1] = player->pos[1],
+                [2] = player->pos[2] + 2.3
+            }
+        };
+
+        renderPass[3].camera = (struct camera) {
+            .pos = {
+                [0] = enemy->pos[0] + 1,
+                [1] = enemy->pos[1] + 0.4,
+                [2] = enemy->pos[2] + 2,
+            },
+
+            .direction = {
+                [0] = enemy->pos[0],
+                [1] = enemy->pos[1],
+                [2] = enemy->pos[2] + 2.3
+            }
+        };
+        
         drawFrame(vulkan, qRenderPass, renderPass);
 
-        moveCamera(vulkan->windowControl, vulkan->window, renderPass[0].camera.center, renderPass[0].camera.cameraPos, renderPass[0].camera.tilt, vulkan->deltaTime.deltaTime / 5.0f);
-        memcpy(background->pos, renderPass[0].camera.cameraPos, sizeof(vec3));
-        
         bool isMClicked = (KEY_PRESS | KEY_CHANGE) == getKeyState(vulkan->windowControl, GLFW_KEY_M);
 
         if (isMClicked) text->shadow = !text->shadow;

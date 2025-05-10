@@ -19,7 +19,7 @@ struct pipelineConnection {
 struct renderPassBuilder {
     double p[4];
     
-    struct camera camera;
+    void (*updateCameraBuffer)(void *buffersMapped, VkExtent2D swapChainExtent, vec3 cameraPos, vec3 direction);
 
     struct pipelineConnection *data;
     size_t qData;
@@ -29,6 +29,7 @@ struct renderPass {
     double p[4];
     
     struct camera camera;
+    void (*updateCameraBuffer)(void *buffersMapped, VkExtent2D swapChainExtent, vec3 cameraPos, vec3 direction);
 
     struct pipelineConnection *data;
     size_t qData;

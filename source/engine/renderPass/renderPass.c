@@ -13,7 +13,7 @@ struct renderPass createRenderPassObj(struct renderPassBuilder builder, struct G
         .qData = builder.qData,
         .cameraDescriptorPool = createCameraDescriptorPool(vulkan->device),
         .cameraDescriptorSetLayout = createCameraDescriptorSetLayout(vulkan->device),
-        .camera = builder.camera,
+        .updateCameraBuffer = builder.updateCameraBuffer
     };
 
     memcpy(result.p, builder.p, sizeof(double[4]));

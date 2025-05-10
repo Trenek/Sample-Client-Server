@@ -24,6 +24,11 @@ layout(std140, set = 0, binding = 0) readonly buffer ObjectBuffer{
 void main() {
     fragTexCoords = inPosition;
 
-    gl_Position = (ubo.proj * ubo.view * instance.objects[gl_InstanceIndex].model * vec4(inPosition, 1.0)).xyww;
+    mat4 view = ubo.view;
+    view[3][0] = 0;
+    view[3][1] = 0;
+    view[3][2] = 0;
+
+    gl_Position = (ubo.proj * view * instance.objects[gl_InstanceIndex].model * vec4(inPosition, 1.0)).xyww;
 }  
 

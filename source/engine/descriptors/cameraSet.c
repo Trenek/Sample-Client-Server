@@ -58,7 +58,7 @@ void bindCameraBuffersToDescriptorSets(VkDescriptorSet descriptorSets[], VkDevic
         VkDescriptorBufferInfo bufferInfo = {
             .buffer = uniformBuffers[i],
             .offset = 0,
-            .range = sizeof(struct UniformBufferObject)
+            .range = sizeof(struct CameraBuffer)
         };
 
         VkWriteDescriptorSet descriptorWrites[] = {

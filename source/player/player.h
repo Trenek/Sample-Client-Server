@@ -1,6 +1,11 @@
 struct player {
+    struct player *enemy;
+
     struct Entity *model;
     struct actualModel *actualModel;
+
+    int playerKeys[4];
+    int playerJoystick;
 
     float time;
     int state;

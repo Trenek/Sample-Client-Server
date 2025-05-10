@@ -104,10 +104,10 @@ static void updateModelBuffer(size_t currentFrame, struct Entity *model) {
 
 static void updateBuffers(size_t currentFrame, size_t qRenderPass, struct renderPass renderPass[qRenderPass], VkExtent2D swapChainExtent) {
     for (uint32_t i = 0; i < qRenderPass; i += 1) {
-        updateCameraBuffer(renderPass[i].cameraBufferMapped[currentFrame], (VkExtent2D) { 
+        renderPass[i].updateCameraBuffer(renderPass[i].cameraBufferMapped[currentFrame], (VkExtent2D) { 
             .width = renderPass[i].p[2] * swapChainExtent.width,
             .height = renderPass[i].p[3] * swapChainExtent.height,
-        }, renderPass[i].camera.cameraPos, renderPass[i].camera.center);
+        }, renderPass[i].camera.pos, renderPass[i].camera.direction);
         for (uint32_t j = 0; j < renderPass[i].qData; j += 1) {
             for (uint32_t k = 0; k < renderPass[i].data[j].qEntity; k += 1) {
                 updateModelBuffer(currentFrame, renderPass[i].data[j].entity[k]);
