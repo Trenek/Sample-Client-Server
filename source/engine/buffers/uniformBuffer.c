@@ -6,7 +6,7 @@
 #include "definitions.h"
 
 void createUniformBuffers(VkBuffer uniformBuffers[], VkDeviceMemory uniformBuffersMemory[], void *uniformBuffersMapped[], VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
-    VkDeviceSize bufferSize = sizeof(struct UniformBufferObject);
+    VkDeviceSize bufferSize = sizeof(struct CameraBuffer);
 
     size_t i = 0;
 

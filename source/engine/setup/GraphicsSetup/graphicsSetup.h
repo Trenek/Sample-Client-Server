@@ -29,10 +29,6 @@ struct GraphicsSetup {
     VkCommandBuffer commandBuffer[MAX_FRAMES_IN_FLIGHT];
     VkCommandPool transferCommandPool;
 
-    VkBuffer uniformBuffers[MAX_FRAMES_IN_FLIGHT];
-    VkDeviceMemory uniformBuffersMemory[MAX_FRAMES_IN_FLIGHT];
-    void *uniformBuffersMapped[MAX_FRAMES_IN_FLIGHT];
-
     VkSemaphore imageAvailableSemaphore[MAX_FRAMES_IN_FLIGHT];
     VkSemaphore renderFinishedSemaphore[MAX_FRAMES_IN_FLIGHT];
     VkFence inFlightFence[MAX_FRAMES_IN_FLIGHT];
@@ -46,10 +42,6 @@ struct GraphicsSetup {
     VkImage colorImage;
     VkDeviceMemory colorImageMemory;
     VkImageView colorImageView;
-
-    VkDescriptorSetLayout cameraDescriptorSetLayout;
-    VkDescriptorPool cameraDescriptorPool;
-    VkDescriptorSet cameraDescriptorSet[MAX_FRAMES_IN_FLIGHT];
 
     struct descriptor textureDescriptor;
 };

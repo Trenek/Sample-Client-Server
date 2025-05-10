@@ -2,31 +2,30 @@
 #include <assert.h>
 
 #include "player.h"
+#include "GLFW/glfw3.h"
 #include "entity.h"
 
 #include "instanceBuffer.h"
 #include "windowControl.h"
 #include "actualModel.h"
 
-static int walk(struct instance *entity, float deltaTime, struct windowControl *wc) {
-    int isMoving = STANDING;
-
-    bool isUClicked = KEY_PRESS & getKeyState(wc, GLFW_KEY_U);
-    bool isHClicked = KEY_PRESS & getKeyState(wc, GLFW_KEY_H);
-    bool isJClicked = KEY_PRESS & getKeyState(wc, GLFW_KEY_J);
-    bool isKClicked = KEY_PRESS & getKeyState(wc, GLFW_KEY_K);
+static void walk(struct windowControl *wc, int key[4], int joystick, vec2 deltaPos) {
+    bool isUpClicked = KEY_PRESS & getKeyState(wc, key[0]);
+    bool isLeftClicked = KEY_PRESS & getKeyState(wc, key[1]);
+    bool isDownClicked = KEY_PRESS & getKeyState(wc, key[2]);
+    bool isRightClicked = KEY_PRESS & getKeyState(wc, key[3]);
 
     float x = 0;
     float y = 0;
 
     GLFWgamepadstate state;
-    if (glfwJoystickIsGamepad(GLFW_JOYSTICK_1) && glfwGetGamepadState(GLFW_JOYSTICK_1, &state)) {
+    if (glfwJoystickIsGamepad(joystick) && glfwGetGamepadState(joystick, &state)) {
         x = state.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
         y = state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
     }
     else {
-        int ly = isUClicked - isJClicked;
-        int lx = isHClicked - isKClicked;
+        int ly = isUpClicked - isDownClicked;
+        int lx = isLeftClicked - isRightClicked;
 
         x = ((lx == -1) - (lx == 1));
         y = ((ly == -1) - (ly == 1));
@@ -38,14 +37,9 @@ static int walk(struct instance *entity, float deltaTime, struct windowControl *
     }
 
     if (sqrtf(x * x + y * y) > 0.1) {
-        isMoving = BATTLE_WALK;
-        entity->pos[1] += 3e00 * deltaTime * x;
-        entity->pos[0] += 3e00 * deltaTime * y;
-
-        entity->fixedRotation[1] = M_PI + atan2f(-y, x);
+        deltaPos[0] = y;
+        deltaPos[1] = x;
     }
-
-    return isMoving;
 }
 
 void stepInterpolation(struct timeFrame *frames, size_t pID, float, float *out) {
@@ -174,7 +168,27 @@ static void animate(struct Entity *model, struct actualModel *actualModel, size_
 }
 
 void movePlayer(struct player *p, struct windowControl *wc, float deltaTime) {
-    int wal = walk(p->model->instance, deltaTime, wc);
+    int wal = STANDING;
+
+    vec2 deltaPos = { 0 };
+    walk(wc, p->playerKeys, p->playerJoystick, deltaPos);
+    struct playerInstance *instance = p->model->instance;
+    struct playerInstance *enemy = p->enemy->model->instance;
+    vec2 delta;
+    glm_vec2_sub(enemy->pos, instance->pos, delta);
+    glm_vec2_normalize(delta);
+
+    vec2 a = {
+        + deltaPos[1] * delta[1] - deltaPos[0] * delta[0],
+        - deltaPos[1] * delta[0] - deltaPos[0] * delta[1]
+    };
+
+    if (sqrtf(a[0] * a[0] + a[1] * a[1]) > 0.1) {
+        wal = BATTLE_WALK;
+        instance->pos[0] += deltaTime * a[0];
+        instance->pos[1] += deltaTime * a[1];
+        instance->fixedRotation[1] = M_PI + atan2f(-a[0], a[1]);
+    }
 
     p->time += deltaTime;
     wal = 
@@ -190,11 +204,3 @@ void movePlayer(struct player *p, struct windowControl *wc, float deltaTime) {
 
     animate(p->model, p->actualModel, p->state, p->time);
 }
-
-void moveEnemy(struct player *p, struct windowControl *, float deltaTime) {
-    p->state = STANDING;
-    p->time += deltaTime;
-
-    animate(p->model, p->actualModel, p->state, p->time);
-}
-

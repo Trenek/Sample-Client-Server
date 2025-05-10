@@ -7,6 +7,7 @@ struct GraphicsSetup;
 
 struct graphicsPipelineBuilder {
     VkDescriptorSetLayout objectLayout;
+    VkDescriptorSetLayout cameraLayout;
 
     struct descriptor *texture;
 
@@ -32,9 +33,6 @@ struct graphicsPipeline {
 
     VkPipelineLayout pipelineLayout;
     VkPipeline pipeline;
-
-    size_t modelQuantity;
-    struct Entity **model;
 };
 
 struct graphicsPipeline createObjGraphicsPipeline(struct graphicsPipelineBuilder builder, struct GraphicsSetup *vulkan);

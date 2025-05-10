@@ -8,6 +8,7 @@ struct actualModel;
 
 struct EntityBuilder {
     uint32_t instanceCount;
+    void (*instanceUpdater)(void *instancePtr, void *instanceBufferPtr, uint32_t instanceCount, float deltaTime);
 
     uint32_t meshQuantity;
     struct Mesh *mesh;

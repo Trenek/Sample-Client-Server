@@ -18,8 +18,24 @@ struct instance {
     vec3 scale;
     bool shadow;
 };
+
+struct playerInstanceBuffer {
+    mat4 modelMatrix;
+    vec4 dressColor;
+    vec4 skinColor;
+};
+
+struct playerInstance {
+    vec3 pos;
+    vec3 rotation;
+    vec3 fixedRotation;
+    vec3 scale;
+    vec3 dressColor;
+    vec3 skinColor;
+};
+
 struct Entity;
-
 void updateInstances(struct Entity **model, size_t qModel, float deltaTime);
-
+void updatePlayerInstance(void *instancePtr, void *instanceBufferPtr, uint32_t instanceCount, float deltaTime);
+void updateInstance(void *instancePtr, void *instanceBufferPtr, uint32_t instanceCount, float deltaTime);
 #endif

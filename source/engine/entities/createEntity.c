@@ -14,6 +14,7 @@ struct Entity *createEntity(struct EntityBuilder builder, struct GraphicsSetup *
 
         .instanceCount = builder.instanceCount,
         .instance = malloc(builder.instanceSize * builder.instanceCount),
+        .instanceUpdater = builder.instanceUpdater,
 
         .buffer = malloc(sizeof(void *) * (builder.qBuff + 1)),
         .range = malloc(sizeof(size_t) * (builder.qBuff + 1)),

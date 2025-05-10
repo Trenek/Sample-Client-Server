@@ -146,14 +146,6 @@ static void loadTransformations(mat4 transformations, cgltf_node *node) {
     }
 }
 
-int getNodeID(cgltf_data *data, cgltf_node *node) {
-    int result = 0;
-
-    while (node != data->skins->joints[result]) result += 1;
-
-    return result;
-}
-
 struct timeFrame importantThings(cgltf_animation_sampler *sampler) {
     struct timeFrame result = {};
 
@@ -179,6 +171,14 @@ struct timeFrame importantThings(cgltf_animation_sampler *sampler) {
     return result;
 }
 
+static cgltf_size getNodeID(cgltf_data *data, cgltf_node *node) {
+    cgltf_size result = 0;
+
+    while (result < data->skins->joints_count && node != data->skins->joints[result]) result += 1;
+
+    return (result < data->skins->joints_count) ? result : SIZE_MAX;
+}
+
 void loadAnimation(cgltf_data *data, struct jointData foo2[data->animations_count][data->skins->joints_count]) {
     for (cgltf_size i = 0; i < data->animations_count; i++) {
         cgltf_animation *animation = &data->animations[i];
@@ -192,13 +192,14 @@ void loadAnimation(cgltf_data *data, struct jointData foo2[data->animations_coun
             cgltf_node *node = channel->target_node;
 
             cgltf_size k = getNodeID(data, node);
+            if (k != SIZE_MAX) {
+                foo2[i][k].isJoint = true;
+                foo2[i][k].t[channel->target_path - 1] = importantThings(channel->sampler);
 
-            foo2[i][k].isJoint = true;
-            foo2[i][k].t[channel->target_path - 1] = importantThings(channel->sampler);
-
-            if (channel->target_path == cgltf_animation_path_type_rotation &&
-                foo2[i][k].t[channel->target_path - 1].interpolationType == cgltf_interpolation_type_linear) {
-                foo2[i][k].t[channel->target_path - 1].interpolationType = 3;
+                if (channel->target_path == cgltf_animation_path_type_rotation &&
+                    foo2[i][k].t[channel->target_path - 1].interpolationType == cgltf_interpolation_type_linear) {
+                    foo2[i][k].t[channel->target_path - 1].interpolationType = 3;
+                }
             }
         }
 
@@ -213,8 +214,10 @@ void loadAnimation(cgltf_data *data, struct jointData foo2[data->animations_coun
             for (cgltf_size k = 0; k < data->skins->joints[j]->children_count; k += 1) {
                 cgltf_size z = getNodeID(data, data->skins->joints[j]->children[k]);
 
-                if (foo2[i][z].isJoint) {
-                    foo2[i][z].father = j;
+                if (z != SIZE_MAX) {
+                    if (foo2[i][z].isJoint) {
+                        foo2[i][z].father = j;
+                    }
                 }
             }
         }

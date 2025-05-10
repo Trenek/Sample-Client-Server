@@ -4,25 +4,13 @@
 #include "VulkanTools.h"
 
 #include "actualModel.h"
+#include "renderPass.h"
 #include "graphicsPipelineObj.h"
-#include "uniformBufferObject.h"
 #include "pushConstantsBuffer.h"
 
 #include "MY_ASSERT.h"
 
-void updateUniformBuffer(void *uniformBuffersMapped, VkExtent2D swapChainExtent, vec3 cameraPos, vec3 center) {
-    struct UniformBufferObject ubo;
-
-    glm_look_rh_no(cameraPos, center, (vec3) { 0.0f, 0.0f, 1.0f }, ubo.view);
-
-    glm_perspective(glm_rad(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10000.0f, ubo.proj);
-
-    ubo.proj[1][1] *= -1;
-
-    memcpy(uniformBuffersMapped, &ubo, sizeof(ubo));
-}
-
-static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swapChainFramebuffer, VkExtent2D swapChainExtent, struct VulkanTools *vulkan, uint32_t currentFrame, uint16_t modelQuantity, struct graphicsPipeline pipe[modelQuantity]) {
+static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swapChainFramebuffer, VkExtent2D swapChainExtent, struct VulkanTools *vulkan, uint32_t currentFrame, uint16_t qRenderPass, struct renderPass renderPass[qRenderPass]) {
     VkCommandBufferBeginInfo beginInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = 0,
@@ -43,63 +31,92 @@ static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swa
         }
     };
 
-    VkRenderPassBeginInfo renderPassInfo = {
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        .renderPass = vulkan->graphics.renderPass,
-        .framebuffer = swapChainFramebuffer,
-        .renderArea = {
+    VkRect2D renderArena[qRenderPass];
+    VkRenderPassBeginInfo renderPassInfo[qRenderPass];
+    VkViewport viewport[qRenderPass];
+
+    for (size_t i = 0; i < qRenderPass; i += 1) {
+        renderArena[i] = (VkRect2D) {
             .offset = {
-                .x = 0,
-                .y = 0
+                .x = (int32_t)(renderPass[i].p[0] * swapChainExtent.width),
+                .y = (int32_t)(renderPass[i].p[1] * swapChainExtent.height)
             },
-            .extent = swapChainExtent
-        },
-        .clearValueCount = sizeof(clearValues) / sizeof(VkClearValue),
-        .pClearValues = clearValues
-    };
-
-    VkViewport viewport = {
-        .x = 0.0f,
-        .y = 0.0f,
-        .width = (float)swapChainExtent.width,
-        .height = (float)swapChainExtent.height,
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f
-    };
-
-    VkRect2D scissor = {
-        .offset = { 0, 0 },
-        .extent = swapChainExtent
-    };
+            .extent = {
+                .width = (uint32_t)(renderPass[i].p[2] * swapChainExtent.width),
+                .height = (uint32_t)(renderPass[i].p[3] * swapChainExtent.height)
+            }
+        };
+        renderPassInfo[i] = (VkRenderPassBeginInfo){
+            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+            .renderPass = vulkan->graphics.renderPass,
+            .framebuffer = swapChainFramebuffer,
+            .renderArea = renderArena[i],
+            .clearValueCount = sizeof(clearValues) / sizeof(VkClearValue),
+            .pClearValues = clearValues
+        };
+        viewport[i] = (VkViewport){
+            .x = renderArena[i].offset.x,
+            .y = renderArena[i].offset.y,
+            .width = renderArena[i].extent.width,
+            .height = renderArena[i].extent.height,
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f
+        };
+    }
 
     MY_ASSERT(VK_SUCCESS == vkBeginCommandBuffer(commandBuffer, &beginInfo));
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-    for (uint32_t i = 0; i < modelQuantity; i += 1) {
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe[i].pipeline);
-        for (uint32_t j = 0; j < pipe[i].modelQuantity; j += 1) {
-            VkDescriptorSet sets[] = {
-                pipe[i].model[j]->graphics.object.descriptorSets[currentFrame],
-                pipe[i].texture->descriptorSets[currentFrame],
-                vulkan->graphics.cameraDescriptorSet[currentFrame],
-            };
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipe[i].pipelineLayout, 0, 3, sets, 0, NULL);
-            for (uint32_t k = 0; k < pipe[i].model[j]->meshQuantity; k += 1) {
-                vkCmdBindVertexBuffers(commandBuffer, 0, 1, &pipe[i].model[j]->mesh[k].vertexBuffer, (VkDeviceSize[]){ 0 });
-                vkCmdBindIndexBuffer(commandBuffer, pipe[i].model[j]->mesh[k].indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+    for (size_t i = 0; i < qRenderPass; i += 1) {
+        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo[i], VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport[i]);
+        vkCmdSetScissor(commandBuffer, 0, 1, &renderArena[i]);
 
-                vkCmdPushConstants(commandBuffer, pipe[i].pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(struct MeshPushConstants), &(struct MeshPushConstants) { .meshID = k });
-                vkCmdDrawIndexed(commandBuffer, pipe[i].model[j]->mesh[k].indicesQuantity, pipe[i].model[j]->instanceCount, 0, 0, 0);
+        for (uint32_t j = 0; j < renderPass[i].qData; j += 1) {
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPass[i].data[j].pipe->pipeline);
+            for (uint32_t k = 0; k < renderPass[i].data[j].qEntity; k += 1) {
+                VkDescriptorSet sets[] = {
+                    renderPass[i].data[j].entity[k]->graphics.object.descriptorSets[currentFrame],
+                    renderPass[i].data[j].pipe->texture->descriptorSets[currentFrame],
+                    renderPass[i].cameraDescriptorSet[currentFrame],
+                };
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPass[i].data[j].pipe->pipelineLayout, 0, 3, sets, 0, NULL);
+                for (uint32_t l = 0; l < renderPass[i].data[j].entity[k]->meshQuantity; l += 1) {
+                    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &renderPass[i].data[j].entity[k]->mesh[l].vertexBuffer, (VkDeviceSize[]){ 0 });
+                    vkCmdBindIndexBuffer(commandBuffer, renderPass[i].data[j].entity[k]->mesh[l].indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+                    vkCmdPushConstants(commandBuffer, renderPass[i].data[j].pipe->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(struct MeshPushConstants), &(struct MeshPushConstants) { .meshID = l });
+                    vkCmdDrawIndexed(commandBuffer, renderPass[i].data[j].entity[k]->mesh[l].indicesQuantity, renderPass[i].data[j].entity[k]->instanceCount, 0, 0, 0);
+                }
             }
         }
+        vkCmdEndRenderPass(commandBuffer);
     }
-    vkCmdEndRenderPass(commandBuffer);
     MY_ASSERT(VK_SUCCESS == vkEndCommandBuffer(commandBuffer));
 }
 
-static VkResult localDrawFrame(struct VulkanTools *vulkan, uint16_t modelQuantity, struct graphicsPipeline pipe[modelQuantity]) {
+static void updateModelBuffer(size_t currentFrame, struct Entity *model) {
+    for (uint32_t k = 0; k < model->qBuff; k += 1) {
+        if (model->buffer[k]) {
+            memcpy((*model->mapp[k])[currentFrame], model->buffer[k], model->range[k]);
+        }
+    }
+}
+
+static void updateBuffers(size_t currentFrame, size_t qRenderPass, struct renderPass renderPass[qRenderPass], VkExtent2D swapChainExtent) {
+    for (uint32_t i = 0; i < qRenderPass; i += 1) {
+        renderPass[i].updateCameraBuffer(renderPass[i].cameraBufferMapped[currentFrame], (VkExtent2D) { 
+            .width = renderPass[i].p[2] * swapChainExtent.width,
+            .height = renderPass[i].p[3] * swapChainExtent.height,
+        }, renderPass[i].camera.pos, renderPass[i].camera.direction);
+        for (uint32_t j = 0; j < renderPass[i].qData; j += 1) {
+            for (uint32_t k = 0; k < renderPass[i].data[j].qEntity; k += 1) {
+                updateModelBuffer(currentFrame, renderPass[i].data[j].entity[k]);
+            }
+        }
+    }
+}
+
+static VkResult localDrawFrame(struct VulkanTools *vulkan, uint16_t qRenderPass, struct renderPass renderPass[qRenderPass]) {
     VkResult result = VK_TRUE;
 
     uint32_t imageIndex = 0;
@@ -146,21 +163,12 @@ static VkResult localDrawFrame(struct VulkanTools *vulkan, uint16_t modelQuantit
 
     result = vkAcquireNextImageKHR(vulkan->graphics.device, vulkan->graphics.swapChain.this, UINT64_MAX, vulkan->graphics.imageAvailableSemaphore[currentFrame], VK_NULL_HANDLE, &imageIndex);
     if (VK_SUCCESS == result) {
-        updateUniformBuffer(vulkan->graphics.uniformBuffersMapped[currentFrame], vulkan->graphics.swapChain.extent, vulkan->camera.cameraPos, vulkan->camera.center);
-        for (uint32_t i = 0; i < modelQuantity; i += 1) {
-            for (uint32_t j = 0; j < pipe[i].modelQuantity; j += 1) {
-                struct Entity *model = pipe[i].model[j];
-                for (uint32_t k = 0; k < model->qBuff; k += 1) {
-                    if (model->buffer[k])
-                    memcpy((*model->mapp[k])[currentFrame], model->buffer[k], model->range[k]);
-                }
-            }
-        }
+        updateBuffers(currentFrame, qRenderPass, renderPass, vulkan->graphics.swapChain.extent);
 
         vkResetFences(vulkan->graphics.device, 1, &vulkan->graphics.inFlightFence[currentFrame]);
 
         vkResetCommandBuffer(vulkan->graphics.commandBuffer[currentFrame], 0);
-        recordCommandBuffer(vulkan->graphics.commandBuffer[currentFrame], vulkan->graphics.swapChainFramebuffers[imageIndex], vulkan->graphics.swapChain.extent, vulkan, currentFrame, modelQuantity, pipe);
+        recordCommandBuffer(vulkan->graphics.commandBuffer[currentFrame], vulkan->graphics.swapChainFramebuffers[imageIndex], vulkan->graphics.swapChain.extent, vulkan, currentFrame, qRenderPass, renderPass);
 
         MY_ASSERT(VK_SUCCESS == vkQueueSubmit(vulkan->graphics.graphicsQueue, 1, &submitInfo, vulkan->graphics.inFlightFence[currentFrame]));
         result = vkQueuePresentKHR(vulkan->graphics.presentQueue, &presentInfo);
@@ -174,7 +182,7 @@ static VkResult localDrawFrame(struct VulkanTools *vulkan, uint16_t modelQuantit
     return result;
 }
 
-void drawFrame(struct VulkanTools *vulkan, uint16_t modelQuantity, struct graphicsPipeline model[modelQuantity]) {
+void drawFrame(struct VulkanTools *vulkan, uint16_t modelQuantity, struct renderPass model[modelQuantity]) {
     updateDeltaTime(&vulkan->deltaTime);
 
     switch (localDrawFrame(vulkan, modelQuantity, model)) {
