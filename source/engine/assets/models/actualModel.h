@@ -37,6 +37,13 @@ struct jointData {
     int16_t isJoint;
 };
 
+struct colisionBox {
+    char *name;
+
+    size_t qVertex;
+    void **vertex;
+};
+
 struct actualModel {
     struct buffer localMesh;
 
@@ -46,6 +53,12 @@ struct actualModel {
 
     uint32_t meshQuantity;
     struct Mesh *mesh;
+
+    size_t qHitbox;
+    size_t qHurtBox;
+
+    struct colisionBox *hitBox;
+    struct colisionBox *hurtBox;
 };
 
 void loadModels(size_t quantity, struct actualModel model[quantity], const char *modelPath[quantity], struct GraphicsSetup *vulkan);

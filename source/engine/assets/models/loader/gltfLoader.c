@@ -224,6 +224,68 @@ void loadAnimation(cgltf_data *data, struct jointData foo2[data->animations_coun
     }
 }
 
+size_t countNames(cgltf_size qNode, cgltf_node node[qNode], const char *buffer, size_t q) {
+    size_t result = 0;
+
+    for (cgltf_size i = 0; i < qNode; i += 1) {
+        result += (node[i].name != NULL) && (0 == strncmp(node[i].name, buffer, q));
+    }
+
+    return result;
+}
+
+size_t countVertex(size_t qVert, struct AnimVertex vert[qVert]) {
+    size_t i = 0;
+    for (size_t k = 0; k < qVert; k += 1) {
+        i += (k == 0 ||
+            vert[k - 1].pos[0] != vert[k].pos[0] ||
+            vert[k - 1].pos[1] != vert[k].pos[1] ||
+            vert[k - 1].pos[2] != vert[k].pos[2]
+        );
+    }
+
+    return i;
+}
+
+void loadPlanes(void **planes, size_t qVert, struct AnimVertex vert[qVert]) {
+    size_t n = 0;
+
+    for (size_t i = 0; i < qVert; i += 1) {
+        if (i == 0 ||
+            vert[i - 1].pos[0] != vert[i].pos[0] ||
+            vert[i - 1].pos[1] != vert[i].pos[1] ||
+            vert[i - 1].pos[2] != vert[i].pos[2]
+        ) {
+            planes[n] = &vert[i];
+            for (size_t j = 0; j < n; j += 1) {
+                if (BFR(planes[n])->pos[1] > BFR(planes[j])->pos[1]) {
+                    void *temp = planes[n];
+                    planes[n] = planes[j];
+                    planes[j] = temp;
+                }
+            }
+
+            n += 1;
+        }
+    }
+}
+
+size_t addColisionBox(struct colisionBox *box, cgltf_node *node, struct Mesh *mesh, const char *name, size_t q) {
+    size_t result = 0;
+    if (0 == strncmp(node->name, name, q)) {
+        box->qVertex = countVertex(mesh->verticesQuantity, mesh->vertices);
+        box->vertex = malloc(sizeof(void *) * box->qVertex);
+        loadPlanes(box->vertex, mesh->verticesQuantity, mesh->vertices);
+
+        box->name = malloc(sizeof(char) * strlen(node->name));
+        strcpy(box->name, node->name);
+
+        result = 1;
+    }
+    
+    return result;
+}
+
 void gltfLoadModel(const char *filePath, struct actualModel *model, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     cgltf_options options = { 0 };
     cgltf_data *data = NULL;
@@ -239,9 +301,21 @@ void gltfLoadModel(const char *filePath, struct actualModel *model, VkDevice dev
         createStorageBuffer(model->meshQuantity * sizeof(mat4), model->localMesh.buffers, model->localMesh.buffersMemory, model->localMesh.buffersMapped, device, physicalDevice, surface);
 
         int i = 0;
+        int z[2] = {};
+
+        model->qHitbox = countNames(data->nodes_count, data->nodes, "Hit", 3);
+        model->qHurtBox = countNames(data->nodes_count, data->nodes, "Hurt", 4);
+
+        model->hitBox = malloc(sizeof(struct colisionBox) * model->qHitbox);
+        model->hurtBox = malloc(sizeof(struct colisionBox) * model->qHurtBox);
         for (uint32_t j = 0; j < data->nodes_count; j += 1) if (data->nodes[j].mesh != NULL) {
             model->mesh[i] = loadMesh(data->nodes[j].mesh);
             model->mesh[i].sizeOfVertex = sizeof(struct AnimVertex);
+
+            if (data->nodes[j].name) {
+                z[0] += addColisionBox(&model->hitBox[z[0]], &data->nodes[j], &model->mesh[i], "Hit", 3);
+                z[1] += addColisionBox(&model->hurtBox[z[1]], &data->nodes[j], &model->mesh[i], "Hurt", 4);
+            }
 
             for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {
                 loadTransformations(((mat4 **)model->localMesh.buffersMapped)[k][i], &data->nodes[j]);

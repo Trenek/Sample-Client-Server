@@ -38,12 +38,12 @@ static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swa
     for (size_t i = 0; i < qRenderPass; i += 1) {
         renderArena[i] = (VkRect2D) {
             .offset = {
-                .x = (int32_t)(renderPass[i].p[0] * swapChainExtent.width),
-                .y = (int32_t)(renderPass[i].p[1] * swapChainExtent.height)
+                .x = (int32_t)(renderPass[i].coordinates[0] * swapChainExtent.width),
+                .y = (int32_t)(renderPass[i].coordinates[1] * swapChainExtent.height)
             },
             .extent = {
-                .width = (uint32_t)(renderPass[i].p[2] * swapChainExtent.width),
-                .height = (uint32_t)(renderPass[i].p[3] * swapChainExtent.height)
+                .width = (uint32_t)(renderPass[i].coordinates[2] * swapChainExtent.width),
+                .height = (uint32_t)(renderPass[i].coordinates[3] * swapChainExtent.height)
             }
         };
         renderPassInfo[i] = (VkRenderPassBeginInfo){
@@ -105,8 +105,8 @@ static void updateModelBuffer(size_t currentFrame, struct Entity *model) {
 static void updateBuffers(size_t currentFrame, size_t qRenderPass, struct renderPass renderPass[qRenderPass], VkExtent2D swapChainExtent) {
     for (uint32_t i = 0; i < qRenderPass; i += 1) {
         renderPass[i].updateCameraBuffer(renderPass[i].cameraBufferMapped[currentFrame], (VkExtent2D) { 
-            .width = renderPass[i].p[2] * swapChainExtent.width,
-            .height = renderPass[i].p[3] * swapChainExtent.height,
+            .width = renderPass[i].coordinates[2] * swapChainExtent.width,
+            .height = renderPass[i].coordinates[3] * swapChainExtent.height,
         }, renderPass[i].camera.pos, renderPass[i].camera.direction);
         for (uint32_t j = 0; j < renderPass[i].qData; j += 1) {
             for (uint32_t k = 0; k < renderPass[i].data[j].qEntity; k += 1) {
@@ -182,10 +182,10 @@ static VkResult localDrawFrame(struct VulkanTools *vulkan, uint16_t qRenderPass,
     return result;
 }
 
-void drawFrame(struct VulkanTools *vulkan, uint16_t modelQuantity, struct renderPass model[modelQuantity]) {
+void drawFrame(struct VulkanTools *vulkan, uint16_t qRenderPass, struct renderPass renderPass[qRenderPass]) {
     updateDeltaTime(&vulkan->deltaTime);
 
-    switch (localDrawFrame(vulkan, modelQuantity, model)) {
+    switch (localDrawFrame(vulkan, qRenderPass, renderPass)) {
         case VK_SUCCESS:
             break;
         case VK_SUBOPTIMAL_KHR:

@@ -1,14 +1,21 @@
+typedef float vec3[3];
+
 struct player {
     struct player *enemy;
 
     struct Entity *model;
     struct actualModel *actualModel;
 
-    int playerKeys[4];
+    int playerKeys[10];
     int playerJoystick;
 
     float time;
     int state;
+
+    struct camera *splitScreen;
+    struct camera *face;
+
+    vec3 relativeFaceCameraPos;
 };
 
 enum animation {

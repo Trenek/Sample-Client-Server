@@ -1,5 +1,3 @@
-#include <asset.h>
-
 #include <GLFW/glfw3.h>
 #include <cglm.h>
 #include <string.h>
@@ -9,6 +7,7 @@
 #include "VulkanTools.h"
 #include "state.h"
 
+#include "asset.h"
 #include "entity.h"
 #include "entityBuilder.h"
 #include "modelBuilder.h"
@@ -21,7 +20,6 @@
 #include "Vertex.h"
 
 #include "player.h"
-#include "vec2.h"
 
 void game(struct VulkanTools *vulkan, enum state *state) {
     ma_engine engine;
@@ -233,7 +231,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
 
     struct renderPass renderPass[] = {
         createRenderPassObj((struct renderPassBuilder){
-            .p = { 0.0, 0.0, 0.5, 1.0 },
+            .coordinates = { 0.0, 0.0, 0.5, 1.0 },
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = &pipe[0],
@@ -255,7 +253,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .updateCameraBuffer = updateThirdPersonCameraBuffer
         }, &vulkan->graphics),
         createRenderPassObj((struct renderPassBuilder){
-            .p = { 0.5, 0.0, 0.5, 1.0 },
+            .coordinates = { 0.5, 0.0, 0.5, 1.0 },
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = &pipe[0],
@@ -277,7 +275,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .updateCameraBuffer = updateThirdPersonCameraBuffer
         }, &vulkan->graphics),
         createRenderPassObj((struct renderPassBuilder){
-            .p = { 1.0 / 8, 1.0 / 8, 1.0 / 8, 1.0 / 8 },
+            .coordinates = { 0.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = &pipe[1],
@@ -289,7 +287,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .updateCameraBuffer = updateThirdPersonCameraBuffer
         }, &vulkan->graphics),
         createRenderPassObj((struct renderPassBuilder){
-            .p = { 6.0 / 8, 1.0 / 8, 1.0 / 8, 1.0 / 8 },
+            .coordinates = { 7.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = &pipe[1],
@@ -301,7 +299,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .updateCameraBuffer = updateThirdPersonCameraBuffer
         }, &vulkan->graphics),
         createRenderPassObj((struct renderPassBuilder){
-            .p = { 0.0, 0.0, 1.0, 1.0 },
+            .coordinates = { 0.0, 0.0, 1.0, 1.0 },
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = &pipe[2],
@@ -315,12 +313,6 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     };
     size_t qRenderPass = sizeof(renderPass) / sizeof(struct renderPass);
 
-    struct instance *floor = entity[0]->instance;
-    struct playerInstance *player = entity[1]->instance;
-    struct playerInstance *enemy = entity[2]->instance;
-    struct instance *text = entity[3]->instance;
-    struct instance *background = entity[4]->instance;
-
     struct player playerData[2] = {
         {
             .model = entity[1],
@@ -330,9 +322,23 @@ void game(struct VulkanTools *vulkan, enum state *state) {
                 GLFW_KEY_W,
                 GLFW_KEY_A,
                 GLFW_KEY_S,
-                GLFW_KEY_D
+                GLFW_KEY_D,
+                GLFW_KEY_1,
+                GLFW_KEY_2,
+                GLFW_KEY_3,
+                GLFW_KEY_4,
+                GLFW_KEY_5,
+                GLFW_KEY_6,
             },
-            .playerJoystick = GLFW_JOYSTICK_1
+            .playerJoystick = GLFW_JOYSTICK_1,
+
+            .splitScreen = &renderPass[0].camera,
+            .face = &renderPass[2].camera,
+            .relativeFaceCameraPos = {
+                -1,
+                0.4,
+                2,
+            }
         },
         {
             .model = entity[2],
@@ -342,11 +348,31 @@ void game(struct VulkanTools *vulkan, enum state *state) {
                 GLFW_KEY_UP,
                 GLFW_KEY_LEFT,
                 GLFW_KEY_DOWN,
-                GLFW_KEY_RIGHT
+                GLFW_KEY_RIGHT,
+                GLFW_KEY_X,
+                GLFW_KEY_C,
+                GLFW_KEY_V,
+                GLFW_KEY_B,
+                GLFW_KEY_N,
+                GLFW_KEY_M
             },
-            .playerJoystick = GLFW_JOYSTICK_2
+            .playerJoystick = GLFW_JOYSTICK_2,
+
+            .splitScreen = &renderPass[1].camera,
+            .face = &renderPass[3].camera,
+            .relativeFaceCameraPos = {
+                1,
+                0.4,
+                2,
+            }
         },
     };
+
+    struct instance *floor = entity[0]->instance;
+    struct playerInstance *player = entity[1]->instance;
+    struct playerInstance *enemy = entity[2]->instance;
+    struct instance *text = entity[3]->instance;
+    struct instance *background = entity[4]->instance;
 
     floor[0] = (struct instance){
         .pos = { 0.0f, 0.0f, -5.0f },
@@ -403,67 +429,6 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         movePlayer(&playerData[0], vulkan->windowControl, vulkan->deltaTime.deltaTime);
         movePlayer(&playerData[1], vulkan->windowControl, vulkan->deltaTime.deltaTime);
 
-        vec2 diff;
-        glm_vec2_sub(player->pos, enemy->pos, diff);
-        glm_vec2_normalize(diff);
-        renderPass[0].camera = (struct camera) {
-            .pos = {
-                [0] = player->pos[0] + 2 * diff[0] - 0.5 * diff[1],
-                [1] = player->pos[1] + 2 * diff[1] + 0.5 * diff[0],
-                [2] = player->pos[2] + 2.5,
-            },
-
-            .direction = {
-                [0] = enemy->pos[0],
-                [1] = enemy->pos[1],
-                [2] = enemy->pos[2] + 1
-            }
-        };
-
-        glm_vec2_sub(enemy->pos, player->pos, diff);
-        glm_vec2_normalize(diff);
-        renderPass[1].camera = (struct camera) {
-            .pos = {
-                [0] = enemy->pos[0] + 2 * diff[0] + 0.5 * diff[1],
-                [1] = enemy->pos[1] + 2 * diff[1] - 0.5 * diff[0],
-                [2] = enemy->pos[2] + 2.5,
-            },
-
-            .direction = {
-                [0] = player->pos[0],
-                [1] = player->pos[1],
-                [2] = player->pos[2] + 1
-            }
-        };
-
-        renderPass[2].camera = (struct camera) {
-            .pos = {
-                [0] = player->pos[0] - 1,
-                [1] = player->pos[1] + 0.4,
-                [2] = player->pos[2] + 2,
-            },
-
-            .direction = {
-                [0] = player->pos[0],
-                [1] = player->pos[1],
-                [2] = player->pos[2] + 2.3
-            }
-        };
-
-        renderPass[3].camera = (struct camera) {
-            .pos = {
-                [0] = enemy->pos[0] + 1,
-                [1] = enemy->pos[1] + 0.4,
-                [2] = enemy->pos[2] + 2,
-            },
-
-            .direction = {
-                [0] = enemy->pos[0],
-                [1] = enemy->pos[1],
-                [2] = enemy->pos[2] + 2.3
-            }
-        };
-        
         drawFrame(vulkan, qRenderPass, renderPass);
 
         bool isMClicked = (KEY_PRESS | KEY_CHANGE) == getKeyState(vulkan->windowControl, GLFW_KEY_M);

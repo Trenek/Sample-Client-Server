@@ -42,10 +42,7 @@ struct GraphicsSetup {
     VkImage colorImage;
     VkDeviceMemory colorImageMemory;
     VkImageView colorImageView;
-
-    struct descriptor textureDescriptor;
 };
-
 
 typedef struct GLFWwindow GLFWwindow;
 

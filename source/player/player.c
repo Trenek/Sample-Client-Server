@@ -1,15 +1,17 @@
 #include <string.h>
-#include <assert.h>
 
 #include "player.h"
-#include "GLFW/glfw3.h"
 #include "entity.h"
+#include "camera.h"
 
+#include "Vertex.h"
 #include "instanceBuffer.h"
 #include "windowControl.h"
 #include "actualModel.h"
 
-static void walk(struct windowControl *wc, int key[4], int joystick, vec2 deltaPos) {
+bool checkCubeCollision(vec3 cube1[8], vec3 cube2[8]);
+
+static void getWalkDirection(struct windowControl *wc, int key[4], int joystick, vec2 deltaPos) {
     bool isUpClicked = KEY_PRESS & getKeyState(wc, key[0]);
     bool isLeftClicked = KEY_PRESS & getKeyState(wc, key[1]);
     bool isDownClicked = KEY_PRESS & getKeyState(wc, key[2]);
@@ -36,17 +38,15 @@ static void walk(struct windowControl *wc, int key[4], int joystick, vec2 deltaP
         }
     }
 
-    if (sqrtf(x * x + y * y) > 0.1) {
-        deltaPos[0] = y;
-        deltaPos[1] = x;
-    }
+    deltaPos[0] = y;
+    deltaPos[1] = x;
 }
 
-void stepInterpolation(struct timeFrame *frames, size_t pID, float, float *out) {
+static void stepInterpolation(struct timeFrame *frames, size_t pID, float, float *out) {
     memcpy(out, frames->data[pID].values, sizeof(float[frames->qValues]));
 }
 
-void linearInterpolation(struct timeFrame *frames, size_t pID, float time, float *out) {
+static void linearInterpolation(struct timeFrame *frames, size_t pID, float time, float *out) {
     float ratio = (
         (time                       - frames->data[pID].time) / 
         (frames->data[pID + 1].time - frames->data[pID].time)
@@ -57,12 +57,12 @@ void linearInterpolation(struct timeFrame *frames, size_t pID, float time, float
     }
 }
 
-void cubicInterpolation(struct timeFrame *frames, size_t pID, float, float *out) {
+static void cubicInterpolation(struct timeFrame *frames, size_t pID, float, float *out) {
     assert(false);
     memcpy(out, frames->data[pID].values, sizeof(float[frames->qValues]));
 }
 
-void sphericalLinearInterpolation(struct timeFrame *frames, size_t pID, float time, float *out) {
+static void sphericalLinearInterpolation(struct timeFrame *frames, size_t pID, float time, float *out) {
     vec4 prevQuat; {
         glm_vec4_dup(frames->data[pID].values, prevQuat);
         glm_quat_normalize(prevQuat);
@@ -167,40 +167,231 @@ static void animate(struct Entity *model, struct actualModel *actualModel, size_
     }
 }
 
-void movePlayer(struct player *p, struct windowControl *wc, float deltaTime) {
-    int wal = STANDING;
-
-    vec2 deltaPos = { 0 };
-    walk(wc, p->playerKeys, p->playerJoystick, deltaPos);
-    struct playerInstance *instance = p->model->instance;
+static struct camera updateSplitScreenCamera(struct player *p) {
+    struct playerInstance *player = p->model->instance;
     struct playerInstance *enemy = p->enemy->model->instance;
-    vec2 delta;
-    glm_vec2_sub(enemy->pos, instance->pos, delta);
-    glm_vec2_normalize(delta);
 
-    vec2 a = {
-        + deltaPos[1] * delta[1] - deltaPos[0] * delta[0],
-        - deltaPos[1] * delta[0] - deltaPos[0] * delta[1]
-    };
-
-    if (sqrtf(a[0] * a[0] + a[1] * a[1]) > 0.1) {
-        wal = BATTLE_WALK;
-        instance->pos[0] += deltaTime * a[0];
-        instance->pos[1] += deltaTime * a[1];
-        instance->fixedRotation[1] = M_PI + atan2f(-a[0], a[1]);
+    vec2 delta; {
+        glm_vec2_sub(player->pos, enemy->pos, delta);
+        glm_vec2_normalize(delta);
     }
 
-    p->time += deltaTime;
-    wal = 
-        (KEY_PRESS & getKeyState(wc, GLFW_KEY_1)) ? LEFT_HIGH_PUNCH :
-        (KEY_PRESS & getKeyState(wc, GLFW_KEY_2)) ? RIGHT_HIGH_PUNCH :
-        (KEY_PRESS & getKeyState(wc, GLFW_KEY_3)) ? LEFT_LOW_PUNCH :
-        (KEY_PRESS & getKeyState(wc, GLFW_KEY_4)) ? RIGHT_LOW_PUNCH : wal;
+    return (struct camera) {
+        .pos = {
+            [0] = player->pos[0] + 2 * delta[0] + 0.5 * delta[1] * p->relativeFaceCameraPos[0],
+            [1] = player->pos[1] + 2 * delta[1] - 0.5 * delta[0] * p->relativeFaceCameraPos[0],
+            [2] = player->pos[2] + 2.5,
+        },
+
+        .direction = {
+            [0] = enemy->pos[0],
+            [1] = enemy->pos[1],
+            [2] = enemy->pos[2] + 1
+        }
+    };
+}
+
+static struct camera updateFaceCamera(struct player *p) {
+    struct playerInstance *player = p->model->instance;
+
+    return (struct camera) {
+        .pos = {
+            [0] = player->pos[0] + p->relativeFaceCameraPos[0],
+            [1] = player->pos[1] + p->relativeFaceCameraPos[1],
+            [2] = player->pos[2] + p->relativeFaceCameraPos[2],
+        },
+
+        .direction = {
+            [0] = player->pos[0],
+            [1] = player->pos[1],
+            [2] = player->pos[2] + 2.3
+        }
+    };
+}
+
+static void getPlayerDisplacement(struct player *p, struct windowControl *wc, vec2 displacement) {
+    struct playerInstance *player = p->model->instance;
+    struct playerInstance *enemy = p->enemy->model->instance;
+
+    vec2 direction; {
+        getWalkDirection(wc, p->playerKeys, p->playerJoystick, direction);
+    }
+    vec2 delta;
+
+    glm_vec2_sub(enemy->pos, player->pos, delta);
+    glm_vec2_normalize(delta);
+
+    displacement[0] = + direction[1] * delta[1] - direction[0] * delta[0];
+    displacement[1] = - direction[1] * delta[0] - direction[0] * delta[1];
+}
+
+static struct colisionBox *find(size_t q, struct colisionBox s[q], const char *name) {
+    size_t i = 0;
+
+    while (i < q && 0 != strcmp(s[i].name, name)) i += 1;
+
+    return i == q ? NULL : &s[i];
+}
+
+static void applyTransformations(struct colisionBox cB, struct Entity *model, vec3 *out) {
+    struct AnimVertex **vert = (void *)cB.vertex;
+    struct playerInstanceBuffer *ins = model->buffer[0];
+    mat4 *mat = model->buffer[2];
+
+    for (size_t i = 0; i < cB.qVertex; i += 1) {
+        glm_mat4_mulv3(mat[vert[i]->bone[0]], vert[i]->pos, 1, out[i]);
+        glm_mat4_mulv3(ins->modelMatrix, out[i], 1, out[i]);
+    }
+}
+
+void add(size_t q, vec3 arr[q], vec3 toAdd) {
+    for (size_t i = 0; i < q; i += 1) {
+        glm_vec3_add(arr[i], toAdd, arr[i]);
+    }
+}
+
+static bool checkCubesColision(struct colisionBox cB1, struct Entity *model1, struct colisionBox cB2, struct Entity *model2, vec3 toAdd) {
+    vec3 transformed1[cB1.qVertex]; {
+        applyTransformations(cB1, model1, transformed1);
+        add(cB1.qVertex, transformed1, toAdd);
+    }
+    vec3 transformed2[cB2.qVertex]; {
+        applyTransformations(cB2, model2, transformed2);
+    }
+
+    bool result = false;
+
+    for (size_t i = 0; result == false && i < cB1.qVertex - 4; i += 4) {
+        for (size_t j = 0; result == false && j < cB2.qVertex - 4; j += 4) {
+            result = checkCubeCollision(transformed1 + i, transformed2 + j);
+        }
+    }
+
+    return result;
+}
+
+static bool checkForColisionToAdd(struct player *p, const char *name, vec3 toAdd) {
+    struct colisionBox *a = find(p->actualModel->qHitbox, p->actualModel->hitBox, name); {
+        if (a == NULL) a = find(p->actualModel->qHurtBox, p->actualModel->hurtBox, name); 
+        assert(a != NULL);
+    }
+    bool result = false;
+
+    for (size_t i = 0; result == false && i < p->enemy->actualModel->qHurtBox; i += 1) {
+        result = checkCubesColision(
+            *a, p->model, 
+            p->enemy->actualModel->hurtBox[i], p->enemy->model,
+            toAdd
+        );
+    }
+
+    return result;
+}
+
+static bool checkForColision(struct player *p, const char *name) {
+    return checkForColisionToAdd(p, name, (vec3){});
+}
+
+void movePlayer(struct player *p, struct windowControl *wc, float deltaTime) {
+    struct playerInstance *player = p->model->instance;
+
+    vec2 displacement; {
+        getPlayerDisplacement(p, wc, displacement);
+    }
+
+    int wal = 
+        (KEY_PRESS & getKeyState(wc, p->playerKeys[4])) ? LEFT_HIGH_PUNCH :
+        (KEY_PRESS & getKeyState(wc, p->playerKeys[5])) ? RIGHT_HIGH_PUNCH :
+        (KEY_PRESS & getKeyState(wc, p->playerKeys[6])) ? LEFT_LOW_PUNCH :
+        (KEY_PRESS & getKeyState(wc, p->playerKeys[7])) ? RIGHT_LOW_PUNCH :
+        (KEY_PRESS & getKeyState(wc, p->playerKeys[8])) ? LEFT_KICK :
+        (KEY_PRESS & getKeyState(wc, p->playerKeys[9])) ? RIGHT_KICK :
+        glm_vec2_norm(displacement) > 0.1 ?               BATTLE_WALK :
+        p->state == DAMAGE_HIT                          ? DAMAGE_HIT :
+        p->state == DAMAGE_KICK                         ? DAMAGE_KICK :
+                                                          STANDING;
 
     if (wal != p->state) {
         p->state = wal;
         p->time = 0;
     }
+    else switch (wal) {
+        case BATTLE_WALK:
+            if (false == checkForColisionToAdd(p, "HurtBox-Torso", (vec3) {
+                deltaTime * displacement[0],
+                deltaTime * displacement[1],
+                0
+            })) {
+                player->pos[0] += deltaTime * displacement[0];
+                player->pos[1] += deltaTime * displacement[1];
+            }
+            else if (false == checkForColisionToAdd(p, "HurtBox-Torso", (vec3) {
+                deltaTime * displacement[0],
+                0,
+                0
+            })) {
+                player->pos[0] += deltaTime * displacement[0];
+            }
+            else if (false == checkForColisionToAdd(p, "HurtBox-Torso", (vec3) {
+                0,
+                deltaTime * displacement[1],
+                0
+            })) {
+                player->pos[1] += deltaTime * displacement[1];
+            }
+            player->fixedRotation[1] = M_PI + atan2f(-displacement[0], displacement[1]);
+
+            p->time += glm_vec2_norm(displacement) * deltaTime;
+            break;
+        case LEFT_HIGH_PUNCH:
+            if (checkForColision(p, "Hitbox-Hand.l")) {
+                p->enemy->state = DAMAGE_HIT;
+            } 
+            p->time += deltaTime;
+            break;
+        case RIGHT_HIGH_PUNCH:
+            if (checkForColision(p, "Hitbox-Hand.r")) {
+                p->enemy->state = DAMAGE_HIT;
+            }
+            p->time += deltaTime;
+            break;
+        case LEFT_LOW_PUNCH:
+            if (checkForColision(p, "Hitbox-Hand.l")) {
+                p->enemy->state = DAMAGE_KICK;
+            }
+            p->time += deltaTime;
+            break;
+        case RIGHT_LOW_PUNCH:
+            if (checkForColision(p, "Hitbox-Hand.r")) {
+                p->enemy->state = DAMAGE_KICK;
+            }
+            p->time += deltaTime;
+            break;
+        case LEFT_KICK:
+            if (
+                checkForColision(p, "Hitbox-Leg1.l") ||
+                checkForColision(p, "Hitbox-Leg2.l")
+            ) {
+                p->enemy->state = DAMAGE_KICK;
+            }
+            p->time += deltaTime;
+            break;
+        case RIGHT_KICK:
+            if (
+                checkForColision(p, "Hitbox-Leg1.r") ||
+                checkForColision(p, "Hitbox-Leg2.r")
+            ) {
+                p->enemy->state = DAMAGE_KICK;
+            }
+            p->time += deltaTime;
+            break;
+        default:
+            p->time += deltaTime;
+            break;
+    }
+
+    *p->splitScreen = updateSplitScreenCamera(p);
+    *p->face = updateFaceCamera(p);
 
     animate(p->model, p->actualModel, p->state, p->time);
 }

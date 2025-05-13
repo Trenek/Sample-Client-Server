@@ -1,10 +1,9 @@
-#include "GLFW/glfw3.h"
+#include <GLFW/glfw3.h>
 
 #include "graphicsFunctions.h"
 #include "graphicsSetup.h"
 
 #include "definitions.h"
-#include "descriptor.h"
 
 static void cleanupSwapChain(struct GraphicsSetup *vulkan) {
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i += 1) {

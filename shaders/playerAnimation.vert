@@ -55,7 +55,7 @@ void main() {
         ubo.proj * 
         ubo.view * 
         instance.objects[gl_InstanceIndex].model * 
-        mesh.localModel[PushConstants.meshID] * 
+        //mesh.localModel[PushConstants.meshID] * 
         vec4(position, 1.0);
 
     fragColor = inColor;

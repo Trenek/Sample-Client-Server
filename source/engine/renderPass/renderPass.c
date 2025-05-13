@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stddef.h>
 
-#include "GraphicsSetup.h"
+#include "graphicsSetup.h"
 #include "definitions.h"
 
 struct renderPass createRenderPassObj(struct renderPassBuilder builder, struct GraphicsSetup *vulkan) {
@@ -16,7 +16,7 @@ struct renderPass createRenderPassObj(struct renderPassBuilder builder, struct G
         .updateCameraBuffer = builder.updateCameraBuffer
     };
 
-    memcpy(result.p, builder.p, sizeof(double[4]));
+    memcpy(result.coordinates, builder.coordinates, sizeof(double[4]));
 
     createUniformBuffers(result.cameraBuffer, result.cameraBufferMemory, result.cameraBufferMapped, vulkan->device, vulkan->physicalDevice, vulkan->surface);
 

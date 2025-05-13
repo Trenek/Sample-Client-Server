@@ -19,3 +19,6 @@
 [submodule "dependencies/miniaudio"]
 	path = dependencies/miniaudio
 	url = https://github.com/mackron/miniaudio
+[submodule "dependencies/openGJK"]
+	path = dependencies/openGJK
+	url = https://github.com/MattiaMontanari/openGJK
