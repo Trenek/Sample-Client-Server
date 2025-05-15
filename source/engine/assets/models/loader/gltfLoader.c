@@ -194,11 +194,11 @@ void loadAnimation(cgltf_data *data, struct jointData foo2[data->animations_coun
             cgltf_size k = getNodeID(data, node);
             if (k != SIZE_MAX) {
                 foo2[i][k].isJoint = true;
-                foo2[i][k].t[channel->target_path - 1] = importantThings(channel->sampler);
+                foo2[i][k].transformation[channel->target_path - 1] = importantThings(channel->sampler);
 
                 if (channel->target_path == cgltf_animation_path_type_rotation &&
-                    foo2[i][k].t[channel->target_path - 1].interpolationType == cgltf_interpolation_type_linear) {
-                    foo2[i][k].t[channel->target_path - 1].interpolationType = 3;
+                    foo2[i][k].transformation[channel->target_path - 1].interpolationType == cgltf_interpolation_type_linear) {
+                    foo2[i][k].transformation[channel->target_path - 1].interpolationType = 3;
                 }
             }
         }

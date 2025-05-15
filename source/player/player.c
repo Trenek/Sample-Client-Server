@@ -131,25 +131,25 @@ static void calculateJointData(size_t index, struct jointData *data, mat4 out, f
             calculateJointData(data[index].father, data, out, deltaTime);
         }
 
-        if (data[index].t[0].qData) {
+        if (data[index].transformation[0].qData) {
             vec4 interpolatedData; {
-                interpolateData(&data[index].t[0], deltaTime, interpolatedData);
+                interpolateData(&data[index].transformation[0], deltaTime, interpolatedData);
             }
 
             glm_translate(out, interpolatedData);
         }
 
-        if (data[index].t[1].qData) {
+        if (data[index].transformation[1].qData) {
             vec4 interpolatedData; {
-                interpolateData(&data[index].t[1], deltaTime, interpolatedData);
+                interpolateData(&data[index].transformation[1], deltaTime, interpolatedData);
             }
 
             glm_quat_rotate(out, interpolatedData, out);
         }
 
-        if (data[index].t[2].qData) {
+        if (data[index].transformation[2].qData) {
             vec4 interpolatedData; {
-                interpolateData(&data[index].t[2], deltaTime, interpolatedData);
+                interpolateData(&data[index].transformation[2], deltaTime, interpolatedData);
             }
 
             glm_scale(out, interpolatedData);
