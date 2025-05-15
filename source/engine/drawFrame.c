@@ -75,7 +75,7 @@ static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swa
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPass[i].data[j].pipe->pipeline);
             for (uint32_t k = 0; k < renderPass[i].data[j].qEntity; k += 1) {
                 VkDescriptorSet sets[] = {
-                    renderPass[i].data[j].entity[k]->graphics.object.descriptorSets[currentFrame],
+                    renderPass[i].data[j].entity[k]->object.descriptorSets[currentFrame],
                     renderPass[i].data[j].pipe->texture->descriptorSets[currentFrame],
                     renderPass[i].cameraDescriptorSet[currentFrame],
                 };

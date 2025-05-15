@@ -10,3 +10,4 @@ struct SoundManager initSoundManager(void);
 void cleanupSoundManager(struct SoundManager this);
 
 void loadSound(struct SoundManager *this, size_t soundIndex, const char *soundName);
+void playSound(struct SoundManager *this, size_t soundIndex, bool shouldLoop);
