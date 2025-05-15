@@ -21,21 +21,20 @@ void cleanupWindowControl(struct WindowManager this) {
     free(this.data);
 }
 
-uint8_t getKeyState(struct WindowManager *windowControl, int key) {
-    uint8_t result = (windowControl->data->key[key].press ? KEY_PRESS : KEY_RELEASE) |
-                     (windowControl->data->key[key].change ? KEY_CHANGE : KEY_REPEAT);
-    windowControl->data->key[key].change = 0;
+static uint8_t updateKeyState(union keyState *state) {
+    uint8_t result = (state->press ? KEY_PRESS : KEY_RELEASE) |
+                     (state->change ? KEY_CHANGE : KEY_REPEAT);
+    state->change = 0;
 
     return result;
 }
 
+uint8_t getKeyState(struct WindowManager *windowControl, int key) {
+    return updateKeyState(&windowControl->data->key[key]);
+}
+
 uint8_t getMouseState(struct WindowManager *windowControl, int key) {
-    uint8_t result = (windowControl->data->mouseButton[key].press ? KEY_PRESS : KEY_RELEASE) |
-                     (windowControl->data->mouseButton[key].change ? KEY_CHANGE : KEY_REPEAT);
-
-    windowControl->data->mouseButton[key].change = 0;
-
-    return result;
+    return updateKeyState(&windowControl->data->mouseButton[key]);
 }
 
 bool shouldWindowClose(struct WindowManager windowControl) {

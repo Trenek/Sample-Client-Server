@@ -13,7 +13,7 @@ static void framebufferResizeCallback(GLFWwindow* window, int, int) {
     GET(window)->framebufferResized = true;
 }
 
-void update(union keyState *state, int action) {
+static void stateCallback(union keyState *state, int action) {
     if (action == GLFW_REPEAT) {
         state->change = 0;
     }
@@ -25,11 +25,11 @@ void update(union keyState *state, int action) {
 }
 
 static void keyCallback(GLFWwindow* window, int key, int, int action, int) {
-    update(&GET(window)->key[key], action);
+    stateCallback(&GET(window)->key[key], action);
 }
 
 static void mouseCallback(GLFWwindow* window, int button, int action, int) {
-    update(&GET(window)->mouseButton[button], action);
+    stateCallback(&GET(window)->mouseButton[button], action);
 }
 
 GLFWwindow *createWindow(struct windowData *data) {
