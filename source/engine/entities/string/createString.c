@@ -92,7 +92,7 @@ struct Entity *createString(struct StringBuilder builder, struct GraphicsSetup *
         for (uint32_t j = 0; j < meshQuantity; j += 1) {
             mat4 temp;
             glm_mat4_identity(temp);
-            glm_translate(temp, (vec4) { thisBuffer[k][meshQuantity - 1][3][0] * -0.5, 0, 0, 1 });
+            glm_translate(temp, (vec4) { -thisBuffer[k][meshQuantity - 1][3][0] * 0.5 * (builder.center + 1), 0, 0, 1 });
             glm_mat4_mul(thisBuffer[k][j], temp, thisBuffer[k][j]);
         }
     }

@@ -6,8 +6,6 @@
 #include "definitions.h"
 #include "swapChain.h"
 
-#include "entity.h"
-
 struct GraphicsSetup {
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;

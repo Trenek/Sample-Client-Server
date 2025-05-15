@@ -3,6 +3,7 @@
 
 #include "graphicsSetup.h"
 
+#include "entity.h"
 #include "entityBuilder.h"
 
 struct Entity *createEntity(struct EntityBuilder builder, struct GraphicsSetup *vulkan) {

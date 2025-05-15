@@ -6,12 +6,12 @@
 
 #include "Vertex.h"
 #include "instanceBuffer.h"
-#include "windowControl.h"
+#include "windowManager.h"
 #include "actualModel.h"
 
 bool checkCubeCollision(vec3 cube1[8], vec3 cube2[8]);
 
-static void getWalkDirection(struct windowControl *wc, int key[4], int joystick, vec2 deltaPos) {
+static void getWalkDirection(struct WindowManager *wc, int key[4], int joystick, vec2 deltaPos) {
     bool isUpClicked = KEY_PRESS & getKeyState(wc, key[0]);
     bool isLeftClicked = KEY_PRESS & getKeyState(wc, key[1]);
     bool isDownClicked = KEY_PRESS & getKeyState(wc, key[2]);
@@ -186,7 +186,7 @@ static struct camera updateSplitScreenCamera(struct player *p) {
         .direction = {
             [0] = enemy->pos[0],
             [1] = enemy->pos[1],
-            [2] = enemy->pos[2] + 1
+            [2] = 1
         }
     };
 }
@@ -209,7 +209,7 @@ static struct camera updateFaceCamera(struct player *p) {
     };
 }
 
-static void getPlayerDisplacement(struct player *p, struct windowControl *wc, vec2 displacement) {
+static void getPlayerDisplacement(struct player *p, struct WindowManager *wc, vec2 displacement) {
     struct playerInstance *player = p->model->instance;
     struct playerInstance *enemy = p->enemy->model->instance;
 
@@ -292,8 +292,9 @@ static bool checkForColision(struct player *p, const char *name) {
     return checkForColisionToAdd(p, name, (vec3){});
 }
 
-void movePlayer(struct player *p, struct windowControl *wc, float deltaTime) {
+void movePlayer(struct player *p, struct WindowManager *wc, float deltaTime) {
     struct playerInstance *player = p->model->instance;
+    struct playerInstance *enemy = p->enemy->model->instance;
 
     vec2 displacement; {
         getPlayerDisplacement(p, wc, displacement);
@@ -306,7 +307,7 @@ void movePlayer(struct player *p, struct windowControl *wc, float deltaTime) {
         (KEY_PRESS & getKeyState(wc, p->playerKeys[7])) ? RIGHT_LOW_PUNCH :
         (KEY_PRESS & getKeyState(wc, p->playerKeys[8])) ? LEFT_KICK :
         (KEY_PRESS & getKeyState(wc, p->playerKeys[9])) ? RIGHT_KICK :
-        glm_vec2_norm(displacement) > 0.1 ?               BATTLE_WALK :
+        glm_vec2_norm(displacement) > 0.1               ? BATTLE_WALK :
         p->state == DAMAGE_HIT                          ? DAMAGE_HIT :
         p->state == DAMAGE_KICK                         ? DAMAGE_KICK :
                                                           STANDING;
@@ -382,6 +383,25 @@ void movePlayer(struct player *p, struct windowControl *wc, float deltaTime) {
                 checkForColision(p, "Hitbox-Leg2.r")
             ) {
                 p->enemy->state = DAMAGE_KICK;
+            }
+            p->time += deltaTime;
+            break;
+        case DAMAGE_KICK:
+            if (checkForColision(p, "HurtBox-Torso") ||
+                checkForColision(p, "Hurtbox-Head")) {
+                vec2 delta; {
+                    glm_vec2_sub(player->pos, enemy->pos, delta);
+                    glm_vec2_normalize(delta);
+                    glm_vec2_scale(delta, 0.01, delta);
+                }
+                glm_vec2_add(delta, player->pos, player->pos);
+                player->pos[2] += 0.01;
+            }
+            else {
+                if (player->pos[2] > 0) {
+                    player->pos[2] -= 0.01;
+                }
+                else player->pos[2] = 0;
             }
             p->time += deltaTime;
             break;

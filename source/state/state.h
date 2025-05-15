@@ -1,9 +1,7 @@
 #ifndef STATE_H
 #define STATE_H
 
-#include <stdint.h>
-
-struct VulkanTools;
+struct EngineCore;
 enum state {
     MAIN_MENU,
     GAME,
@@ -13,6 +11,7 @@ enum state {
     EXIT
 };
 
-void game(struct VulkanTools *vulkan, enum state *state);
+void game(struct EngineCore *engine, enum state *state);
+void menu(struct EngineCore *engine, enum state *state);
 
 #endif

@@ -1,8 +1,8 @@
-#include <stdio.h>
 #include <string.h>
 
-#include "VulkanTools.h"
+#include "engineCore.h"
 
+#include "entity.h"
 #include "actualModel.h"
 #include "renderPass.h"
 #include "graphicsPipelineObj.h"
@@ -10,7 +10,7 @@
 
 #include "MY_ASSERT.h"
 
-static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swapChainFramebuffer, VkExtent2D swapChainExtent, struct VulkanTools *vulkan, uint32_t currentFrame, uint16_t qRenderPass, struct renderPass renderPass[qRenderPass]) {
+static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swapChainFramebuffer, VkExtent2D swapChainExtent, struct EngineCore *vulkan, uint32_t currentFrame, uint16_t qRenderPass, struct renderPass renderPass[qRenderPass]) {
     VkCommandBufferBeginInfo beginInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = 0,
@@ -116,7 +116,7 @@ static void updateBuffers(size_t currentFrame, size_t qRenderPass, struct render
     }
 }
 
-static VkResult localDrawFrame(struct VulkanTools *vulkan, uint16_t qRenderPass, struct renderPass renderPass[qRenderPass]) {
+static VkResult localDrawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPass renderPass[qRenderPass]) {
     VkResult result = VK_TRUE;
 
     uint32_t imageIndex = 0;
@@ -182,7 +182,7 @@ static VkResult localDrawFrame(struct VulkanTools *vulkan, uint16_t qRenderPass,
     return result;
 }
 
-void drawFrame(struct VulkanTools *vulkan, uint16_t qRenderPass, struct renderPass renderPass[qRenderPass]) {
+void drawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPass *renderPass) {
     updateDeltaTime(&vulkan->deltaTime);
 
     switch (localDrawFrame(vulkan, qRenderPass, renderPass)) {
@@ -190,16 +190,16 @@ void drawFrame(struct VulkanTools *vulkan, uint16_t qRenderPass, struct renderPa
             break;
         case VK_SUBOPTIMAL_KHR:
         case VK_ERROR_OUT_OF_DATE_KHR:
-            *vulkan->framebufferResized = true;
+            vulkan->window.data->framebufferResized = true;
             break;
         default:
             fprintf(stderr, "Oh no");
-            glfwSetWindowShouldClose(vulkan->window, GLFW_TRUE);
+            glfwSetWindowShouldClose(vulkan->window.window, GLFW_TRUE);
             break;
     }
 
-    if (*vulkan->framebufferResized) {
-        *vulkan->framebufferResized = false;
+    if (vulkan->window.data->framebufferResized) {
+        vulkan->window.data->framebufferResized = false;
 
         recreateSwapChain(vulkan);
     }

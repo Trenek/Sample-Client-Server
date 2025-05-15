@@ -1,7 +1,9 @@
 #include <GLFW/glfw3.h>
 #include <cglm.h>
 
-#include "VulkanTools.h"
+#include "camera.h"
+
+#include "windowManager.h"
 
 struct camera initCamera() {
     struct camera result = {
@@ -19,7 +21,7 @@ struct camera initCamera() {
     return result;
 }
 
-void moveCamera(struct windowControl *windowControl, GLFWwindow *window, struct camera *camera, float deltaTime) {
+void moveCamera(struct WindowManager *windowControl, GLFWwindow *window, struct camera *camera, float deltaTime) {
     mat4 id = {
         [0][0] = 1.0f,
         [1][1] = 1.0f,

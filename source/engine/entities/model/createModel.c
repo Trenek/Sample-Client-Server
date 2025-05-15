@@ -1,7 +1,7 @@
 #include <cglm.h>
 
+#include "entity.h"
 #include "graphicsSetup.h"
-#include "mat4.h"
 #include "modelBuilder.h"
 #include "actualModel.h"
 

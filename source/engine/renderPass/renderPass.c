@@ -1,11 +1,14 @@
-#include "renderPass.h"
-
 #include <vulkan/vulkan.h>
 #include <string.h>
 #include <stddef.h>
 
+#include "renderPass.h"
+
 #include "graphicsSetup.h"
 #include "definitions.h"
+
+#include "buffer.h"
+#include "descriptor.h"
 
 struct renderPass createRenderPassObj(struct renderPassBuilder builder, struct GraphicsSetup *vulkan) {
     struct renderPass result = {

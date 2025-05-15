@@ -32,6 +32,6 @@ enum animation {
     WALK
 };
 
-struct windowControl;
-void movePlayer(struct player *p, struct windowControl *wc, float deltaTime);
-void moveEnemy(struct player *p, struct windowControl *, float deltaTime);
+struct WindowManager;
+void movePlayer(struct player *p, struct WindowManager *wc, float deltaTime);
+void moveEnemy(struct player *p, struct WindowManager *, float deltaTime);
