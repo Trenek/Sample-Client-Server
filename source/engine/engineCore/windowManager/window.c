@@ -1,5 +1,3 @@
-#include <GLFW/glfw3.h>
-
 #include "windowManager.h"
 
 #include "MY_ASSERT.h"
