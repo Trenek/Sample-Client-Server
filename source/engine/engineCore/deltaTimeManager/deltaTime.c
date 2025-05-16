@@ -1,6 +1,6 @@
 #include "deltaTime.h"
 
-struct DeltaTimeManager initDeltaTime(void) {
+struct DeltaTimeManager initDeltaTimeManager(void) {
     struct DeltaTimeManager result = {
         .prev = { 0 },
         .deltaTime = 0

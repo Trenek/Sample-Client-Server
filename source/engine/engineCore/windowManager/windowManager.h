@@ -29,7 +29,7 @@ enum keyStateNum {
     KEY_CHANGE =  1 << 3
 };
 
-struct WindowManager initWindowControl(void);
+struct WindowManager initWindowManager(void);
 void cleanupWindowControl(struct WindowManager this);
 
 uint8_t getKeyState(struct WindowManager *windowControl, int key);

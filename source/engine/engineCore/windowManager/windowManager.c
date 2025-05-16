@@ -5,7 +5,7 @@
 GLFWwindow *createWindow(struct windowData *data);
 void destroyWindow(GLFWwindow *window);
 
-struct WindowManager initWindowControl(void) {
+struct WindowManager initWindowManager(void) {
     struct WindowManager result = {
         .data = calloc(1, sizeof(struct windowData))
     };

@@ -7,5 +7,5 @@ struct DeltaTimeManager {
     float deltaTime;
 };
 
-struct DeltaTimeManager initDeltaTime(void);
+struct DeltaTimeManager initDeltaTimeManager(void);
 void updateDeltaTime(struct DeltaTimeManager *deltaTime);

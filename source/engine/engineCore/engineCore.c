@@ -15,9 +15,9 @@ void recreateSwapChain(struct EngineCore *vulkan) {
 
 struct EngineCore setup() {
     struct EngineCore vulkan = {
-        .window = initWindowControl(),
+        .window = initWindowManager(),
         .soundManager = initSoundManager(),
-        .deltaTime = initDeltaTime()
+        .deltaTime = initDeltaTimeManager()
     };
 
     vulkan.graphics = setupGraphics(vulkan.window.window);

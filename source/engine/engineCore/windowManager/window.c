@@ -7,7 +7,7 @@ static const uint32_t HEIGHT = 600;
 
 #define GET(x) ((struct windowData *)glfwGetWindowUserPointer(x))
 
-static void framebufferResizeCallback(GLFWwindow* window, int, int) {
+static void framebufferResizeCallback(GLFWwindow *window, int, int) {
     GET(window)->framebufferResized = true;
 }
 
@@ -22,11 +22,11 @@ static void stateCallback(union keyState *state, int action) {
     }
 }
 
-static void keyCallback(GLFWwindow* window, int key, int, int action, int) {
+static void keyCallback(GLFWwindow *window, int key, int, int action, int) {
     stateCallback(&GET(window)->key[key], action);
 }
 
-static void mouseCallback(GLFWwindow* window, int button, int action, int) {
+static void mouseCallback(GLFWwindow *window, int button, int action, int) {
     stateCallback(&GET(window)->mouseButton[button], action);
 }
 
