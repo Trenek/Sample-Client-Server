@@ -38,7 +38,8 @@ void menu(struct EngineCore *engine, enum state *state) {
 
     const char *modelPath[] = {
         "fonts/c.ttf",
-        "models/my_skybox.obj",
+        "models/my_model2d.obj",
+        "models/my_skybox.obj"
     };
     size_t modelQuantity = sizeof(modelPath) / sizeof(const char *);
 
@@ -76,11 +77,25 @@ void menu(struct EngineCore *engine, enum state *state) {
 
             .objectLayout = objectLayout,
 
-            .sizeOfVertex = sizeof(struct FontVertex),
-            .numOfAttributes = sizeof(fontVertexAttributeDescriptions) / sizeof(*fontVertexAttributeDescriptions),
-            .attributeDescription = fontVertexAttributeDescriptions,
+            Vert(FontVertex),
             .operation = VK_COMPARE_OP_LESS,
             .cullFlags = VK_CULL_MODE_BACK_BIT,
+
+            .cameraLayout = cameraLayout
+        }, &engine->graphics),
+        /* Flat */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
+            .vertexShader = "shaders/vert2d.spv",
+            .fragmentShader = "shaders/frag2d.spv",
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f,
+            .texture = &texture.descriptor,
+            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+
+            .objectLayout = objectLayout,
+
+            Vert(AnimVertex),
+            .operation = VK_COMPARE_OP_LESS,
+            .cullFlags = VK_CULL_MODE_NONE,
 
             .cameraLayout = cameraLayout
         }, &engine->graphics),
@@ -94,9 +109,7 @@ void menu(struct EngineCore *engine, enum state *state) {
 
             .objectLayout = objectLayout,
 
-            .sizeOfVertex = sizeof(struct AnimVertex),
-            .numOfAttributes = sizeof(animVertexAttributeDescriptions) / sizeof(*animVertexAttributeDescriptions),
-            .attributeDescription = animVertexAttributeDescriptions,
+            Vert(AnimVertex),
             .operation = VK_COMPARE_OP_LESS_OR_EQUAL,
             .cullFlags = VK_CULL_MODE_BACK_BIT,
 
@@ -112,19 +125,22 @@ void menu(struct EngineCore *engine, enum state *state) {
             .modelData = &actualModel[0],
             .objectLayout = objectLayout,
 
-            .instanceSize = sizeof(struct instance),
-            .instanceBufferSize = sizeof(struct instanceBuffer),
-            .instanceUpdater = updateInstance,
+            INS(instance, instanceBuffer),
             .center = 0
         }, &engine->graphics),
-        /*background*/ createModel((struct ModelBuilder) {
+        /*flat*/ createModel((struct ModelBuilder) {
             .instanceCount = 1,
             .modelData = &actualModel[1],
             .objectLayout = objectLayout,
 
-            .instanceSize = sizeof(struct instance),
-            .instanceBufferSize = sizeof(struct instanceBuffer),
-            .instanceUpdater = updateInstance,
+            INS(instance, instanceBuffer),
+        }, &engine->graphics),
+        /*background*/ createModel((struct ModelBuilder) {
+            .instanceCount = 1,
+            .modelData = &actualModel[2],
+            .objectLayout = objectLayout,
+
+            INS(instance, instanceBuffer),
         }, &engine->graphics),
     };
     size_t qEntity = sizeof(entity) / sizeof(struct Entity *);
@@ -134,39 +150,45 @@ void menu(struct EngineCore *engine, enum state *state) {
             .coordinates = { 0.0, 0.0, 1.0, 1.0 },
             .data = (struct pipelineConnection[]) {
                 {
+                    .pipe = &pipe[0],
+                    .entity = &entity[0],
+                    .qEntity = 1
+                },
+                {
                     .pipe = &pipe[1],
                     .entity = &entity[1],
                     .qEntity = 1
                 },
-            },
-            .qData = 1,
-            .updateCameraBuffer = updateThirdPersonCameraBuffer
-        }, &engine->graphics),
-        createRenderPassObj((struct renderPassBuilder){
-            .coordinates = { 0.0, 0.0, 1.0, 1.0 },
-            .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[0],
-                    .entity = (struct Entity* []) {
-                        entity[0],
-                    },
+                    .pipe = &pipe[2],
+                    .entity = &entity[2],
                     .qEntity = 1
-                },
+                }
             },
-            .qData = 1,
+            .qData = 3,
             .updateCameraBuffer = updateFirstPersonCameraBuffer
         }, &engine->graphics),
     };
     size_t qRenderPass = sizeof(renderPass) / sizeof(struct renderPass);
 
     struct instance *text = entity[0]->instance;
-    struct instance *background = entity[1]->instance;
+    struct instance *flat = entity[1]->instance;
+    struct instance *background = entity[2]->instance;
 
     text[0] = (struct instance){
         .pos = { 0.0f, 0.3f, 0.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
         .fixedRotation = { 0.0f, 0.0f, 0.0f },
         .scale = { 4 * 10e-3, 4 * 10e-3, 4 * 10e-3 },
+        .textureIndex = 0,
+        .shadow = false
+    };
+
+    flat[0] = (struct instance){
+        .pos = { 0.0f, 0.0f, 0.0f },
+        .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { 0.0f, 0.0f, 0.0f },
+        .scale = { 0.1f, 0.05f, 0.1f },
         .textureIndex = 0,
         .shadow = false
     };
@@ -186,10 +208,6 @@ void menu(struct EngineCore *engine, enum state *state) {
     };
 
     while (MAIN_MENU == *state && !shouldWindowClose(engine->window)) {
-        if (KEY_PRESS & getKeyState(&engine->window, GLFW_KEY_SPACE)) {
-            *state = GAME;
-        }
-
         glfwPollEvents();
 
         updateInstances(entity, qEntity, engine->deltaTime.deltaTime);

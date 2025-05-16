@@ -2,7 +2,7 @@
 
 #include "entity.h"
 
-void updateInstance(void *instancePtr, void *instanceBufferPtr, uint32_t instanceCount, float deltaTime) {
+void instanceUpdater(void *instancePtr, void *instanceBufferPtr, uint32_t instanceCount, float deltaTime) {
     struct instance *instance = instancePtr;
     struct instanceBuffer *instanceBuffer = instanceBufferPtr;
     static float time = 0;
@@ -21,7 +21,7 @@ void updateInstance(void *instancePtr, void *instanceBufferPtr, uint32_t instanc
     }
 }
 
-void updatePlayerInstance(void *instancePtr, void *instanceBufferPtr, uint32_t instanceCount, float deltaTime) {
+void playerInstanceUpdater(void *instancePtr, void *instanceBufferPtr, uint32_t instanceCount, float deltaTime) {
     struct playerInstance *instance = instancePtr;
     struct playerInstanceBuffer *instanceBuffer = instanceBufferPtr;
     static float time = 0;

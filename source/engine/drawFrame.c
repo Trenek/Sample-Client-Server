@@ -20,9 +20,9 @@ static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swa
 
     VkClearValue clearValues[] = {
         [0].color.float32 = {
-            0.0f,
-            0.0f,
-            0.0f,
+            1.0f,
+            1.0f,
+            1.0f,
             1.0f
         },
         [1].depthStencil = {

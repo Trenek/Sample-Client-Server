@@ -102,9 +102,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .texture = &texture.descriptor,
             .objectLayout = objectLayout,
 
-            .sizeOfVertex = sizeof(struct AnimVertex),
-            .numOfAttributes = sizeof(animVertexAttributeDescriptions) / sizeof(*animVertexAttributeDescriptions),
-            .attributeDescription = animVertexAttributeDescriptions,
+            Vert(AnimVertex),
             .operation = VK_COMPARE_OP_LESS,
             .cullFlags = VK_CULL_MODE_BACK_BIT,
 
@@ -120,9 +118,7 @@ void game(struct EngineCore *engine, enum state *state) {
 
             .objectLayout = animLayout,
 
-            .sizeOfVertex = sizeof(struct AnimVertex),
-            .numOfAttributes = sizeof(animVertexAttributeDescriptions) / sizeof(*animVertexAttributeDescriptions),
-            .attributeDescription = animVertexAttributeDescriptions,
+            Vert(AnimVertex),
             .operation = VK_COMPARE_OP_LESS,
             .cullFlags = VK_CULL_MODE_NONE,
 
@@ -138,9 +134,7 @@ void game(struct EngineCore *engine, enum state *state) {
 
             .objectLayout = objectLayout,
 
-            .sizeOfVertex = sizeof(struct FontVertex),
-            .numOfAttributes = sizeof(fontVertexAttributeDescriptions) / sizeof(*fontVertexAttributeDescriptions),
-            .attributeDescription = fontVertexAttributeDescriptions,
+            Vert(FontVertex),
             .operation = VK_COMPARE_OP_LESS,
             .cullFlags = VK_CULL_MODE_BACK_BIT,
 
@@ -156,9 +150,7 @@ void game(struct EngineCore *engine, enum state *state) {
 
             .objectLayout = objectLayout,
 
-            .sizeOfVertex = sizeof(struct AnimVertex),
-            .numOfAttributes = sizeof(animVertexAttributeDescriptions) / sizeof(*animVertexAttributeDescriptions),
-            .attributeDescription = animVertexAttributeDescriptions,
+            Vert(AnimVertex),
             .operation = VK_COMPARE_OP_LESS_OR_EQUAL,
             .cullFlags = VK_CULL_MODE_BACK_BIT,
 
@@ -173,27 +165,21 @@ void game(struct EngineCore *engine, enum state *state) {
             .modelData = &actualModel[1],
             .objectLayout = objectLayout,
 
-            .instanceSize = sizeof(struct instance),
-            .instanceBufferSize = sizeof(struct instanceBuffer),
-            .instanceUpdater = updateInstance
+            INS(instance, instanceBuffer),
         }, &engine->graphics),
         /*player*/ createModel((struct ModelBuilder) {
             .instanceCount = 1,
             .modelData = &actualModel[5],
             .objectLayout = animLayout,
 
-            .instanceSize = sizeof(struct playerInstance),
-            .instanceBufferSize = sizeof(struct playerInstanceBuffer),
-            .instanceUpdater = updatePlayerInstance,
+            INS(playerInstance, playerInstanceBuffer),
         }, &engine->graphics),
         /*enemy*/ createModel((struct ModelBuilder) {
             .instanceCount = 1,
             .modelData = &actualModel[5],
             .objectLayout = animLayout,
 
-            .instanceSize = sizeof(struct playerInstance),
-            .instanceBufferSize = sizeof(struct playerInstanceBuffer),
-            .instanceUpdater = updatePlayerInstance,
+            INS(playerInstance, playerInstanceBuffer),
         }, &engine->graphics),
         /*text*/ createString((struct StringBuilder) {
             .instanceCount = 1,
@@ -201,9 +187,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .modelData = &actualModel[3],
             .objectLayout = objectLayout,
 
-            .instanceSize = sizeof(struct instance),
-            .instanceBufferSize = sizeof(struct instanceBuffer),
-            .instanceUpdater = updateInstance,
+            INS(instance, instanceBuffer),
             .center = 0
         }, &engine->graphics),
         /*background*/ createModel((struct ModelBuilder) {
@@ -211,9 +195,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .modelData = &actualModel[4],
             .objectLayout = objectLayout,
 
-            .instanceSize = sizeof(struct instance),
-            .instanceBufferSize = sizeof(struct instanceBuffer),
-            .instanceUpdater = updateInstance,
+            INS(instance, instanceBuffer),
         }, &engine->graphics),
         /*text*/ createString((struct StringBuilder) {
             .instanceCount = 1,
@@ -221,9 +203,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .modelData = &actualModel[3],
             .objectLayout = objectLayout,
 
-            .instanceSize = sizeof(struct instance),
-            .instanceBufferSize = sizeof(struct instanceBuffer),
-            .instanceUpdater = updateInstance,
+            INS(instance, instanceBuffer),
             .center = 0
         }, &engine->graphics),
         /*text*/ createString((struct StringBuilder) {
@@ -232,9 +212,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .modelData = &actualModel[3],
             .objectLayout = objectLayout,
 
-            .instanceSize = sizeof(struct instance),
-            .instanceBufferSize = sizeof(struct instanceBuffer),
-            .instanceUpdater = updateInstance,
+            INS(instance, instanceBuffer),
             .center = 0
         }, &engine->graphics),
     };
