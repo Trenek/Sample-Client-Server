@@ -224,7 +224,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .instanceSize = sizeof(struct instance),
             .instanceBufferSize = sizeof(struct instanceBuffer),
             .instanceUpdater = updateInstance,
-            .center = -1
+            .center = 0
         }, &engine->graphics),
         /*text*/ createString((struct StringBuilder) {
             .instanceCount = 1,
@@ -235,7 +235,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .instanceSize = sizeof(struct instance),
             .instanceBufferSize = sizeof(struct instanceBuffer),
             .instanceUpdater = updateInstance,
-            .center = 1
+            .center = 0
         }, &engine->graphics),
     };
     size_t qEntity = sizeof(entity) / sizeof(struct Entity *);
@@ -453,7 +453,7 @@ void game(struct EngineCore *engine, enum state *state) {
     };
 
     player1Text[0] = (struct instance){
-        .pos = { -0.5f, 0.0f, 0.0f },
+        .pos = { 0.0f, 0.0f, 0.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
         .fixedRotation = { 0.0f, 0.0f, 0.0f },
         .scale = { 2 * 10e-2, 2 * 10e-2, 2 * 10e-2 },
@@ -462,7 +462,7 @@ void game(struct EngineCore *engine, enum state *state) {
     };
 
     player2Text[0] = (struct instance){
-        .pos = { 0.5f, 0.0f, 0.0f },
+        .pos = { 0.0f, 0.0f, 0.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
         .fixedRotation = { 0.0f, 0.0f, 0.0f },
         .scale = { 2 * 10e-2, 2 * 10e-2, 2 * 10e-2 },

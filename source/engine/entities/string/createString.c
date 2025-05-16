@@ -89,10 +89,12 @@ struct Entity *createString(struct StringBuilder builder, struct GraphicsSetup *
         buffer += 1;
     }
     for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {
+        mat4 length;
+        glm_mat4_mul(thisBuffer[k][meshQuantity - 1], transform[k][getGlyphID(prev)], length);
         for (uint32_t j = 0; j < meshQuantity; j += 1) {
             mat4 temp;
             glm_mat4_identity(temp);
-            glm_translate(temp, (vec4) { -thisBuffer[k][meshQuantity - 1][3][0] * 0.5 * (builder.center + 1), 0, 0, 1 });
+            glm_translate(temp, (vec4) { -length[3][0] * 0.5 * (builder.center + 1), 0, 0, 1 });
             glm_mat4_mul(thisBuffer[k][j], temp, thisBuffer[k][j]);
         }
     }
