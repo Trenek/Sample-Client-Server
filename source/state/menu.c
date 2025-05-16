@@ -142,6 +142,15 @@ void menu(struct EngineCore *engine, enum state *state) {
 
             INS(instance, instanceBuffer),
         }, &engine->graphics),
+        /*text2*/ createString((struct StringBuilder) {
+            .instanceCount = 1,
+            .string = "Play",
+            .modelData = &actualModel[0],
+            .objectLayout = objectLayout,
+
+            INS(instance, instanceBuffer),
+            .center = 0
+        }, &engine->graphics),
     };
     size_t qEntity = sizeof(entity) / sizeof(struct Entity *);
 
@@ -151,8 +160,11 @@ void menu(struct EngineCore *engine, enum state *state) {
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = &pipe[0],
-                    .entity = &entity[0],
-                    .qEntity = 1
+                    .entity = (struct Entity* []) {
+                        entity[0],
+                        entity[3],
+                    },
+                    .qEntity = 2
                 },
                 {
                     .pipe = &pipe[1],
@@ -174,9 +186,19 @@ void menu(struct EngineCore *engine, enum state *state) {
     struct instance *text = entity[0]->instance;
     struct instance *flat = entity[1]->instance;
     struct instance *background = entity[2]->instance;
+    struct instance *text2 = entity[3]->instance;
 
     text[0] = (struct instance){
         .pos = { 0.0f, 0.3f, 0.0f },
+        .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { 0.0f, 0.0f, 0.0f },
+        .scale = { 4 * 10e-3, 4 * 10e-3, 4 * 10e-3 },
+        .textureIndex = 0,
+        .shadow = false
+    };
+
+    text2[0] = (struct instance){
+        .pos = { 0.0f, 0.0f, 0.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
         .fixedRotation = { 0.0f, 0.0f, 0.0f },
         .scale = { 4 * 10e-3, 4 * 10e-3, 4 * 10e-3 },
