@@ -165,7 +165,7 @@ void menu(struct EngineCore *engine, enum state *state) {
     };
     size_t qEntity = sizeof(entity) / sizeof(struct Entity *);
 
-    struct renderPass renderPass[] = {
+    struct renderPassObj renderPass[] = {
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 0.0, 0.0, 1.0, 1.0 },
             .data = (struct pipelineConnection[]) {
@@ -193,7 +193,7 @@ void menu(struct EngineCore *engine, enum state *state) {
             .updateCameraBuffer = updateFirstPersonCameraBuffer
         }, &engine->graphics),
     };
-    size_t qRenderPass = sizeof(renderPass) / sizeof(struct renderPass);
+    size_t qRenderPass = sizeof(renderPass) / sizeof(struct renderPassObj);
 
     struct instance *text = entity[0]->instance;
     struct instance *flat = entity[1]->instance;

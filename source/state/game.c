@@ -20,7 +20,7 @@
 
 void game(struct EngineCore *engine, enum state *state) {
     const char *texturePaths[] = {
-        "textures/texture.jpg",
+        "textures/background.png",
     };
     size_t texturesQuantity = sizeof(texturePaths) / sizeof(const char *);
 
@@ -94,7 +94,7 @@ void game(struct EngineCore *engine, enum state *state) {
     struct graphicsPipeline pipe[] = { 
         /* No Texture Model */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
             .vertexShader = "shaders/vert.spv",
-            .fragmentShader = "shaders/debugFrag.spv",
+            .fragmentShader = "shaders/frag.spv",
             .minDepth = 0.0f,
             .maxDepth = 1.0f,
             .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
@@ -153,6 +153,22 @@ void game(struct EngineCore *engine, enum state *state) {
             Vert(AnimVertex),
             .operation = VK_COMPARE_OP_LESS_OR_EQUAL,
             .cullFlags = VK_CULL_MODE_BACK_BIT,
+
+            .cameraLayout = cameraLayout
+        }, &engine->graphics),
+        /* Flat */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
+            .vertexShader = "shaders/vert2d.spv",
+            .fragmentShader = "shaders/frag2d.spv",
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f,
+            .texture = &texture.descriptor,
+            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+
+            .objectLayout = objectLayout,
+
+            Vert(AnimVertex),
+            .operation = VK_COMPARE_OP_LESS,
+            .cullFlags = VK_CULL_MODE_NONE,
 
             .cameraLayout = cameraLayout
         }, &engine->graphics),
@@ -215,11 +231,18 @@ void game(struct EngineCore *engine, enum state *state) {
             INS(instance, instanceBuffer),
             .center = 0
         }, &engine->graphics),
+        /*flat*/ createModel((struct ModelBuilder) {
+            .instanceCount = 1,
+            .modelData = &actualModel[0],
+            .objectLayout = objectLayout,
+
+            INS(instance, instanceBuffer),
+        }, &engine->graphics),
     };
     size_t qEntity = sizeof(entity) / sizeof(struct Entity *);
 
-    struct renderPass renderPass[] = {
-        createRenderPassObj((struct renderPassBuilder){
+    struct renderPassObj renderPass[] = {
+        /* left screen */createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 0.0, 0.0, 0.5, 1.0 },
             .data = (struct pipelineConnection[]) {
                 {
@@ -241,7 +264,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .qData = 3,
             .updateCameraBuffer = updateThirdPersonCameraBuffer
         }, &engine->graphics),
-        createRenderPassObj((struct renderPassBuilder){
+        /* right screen */createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 0.5, 0.0, 0.5, 1.0 },
             .data = (struct pipelineConnection[]) {
                 {
@@ -263,31 +286,31 @@ void game(struct EngineCore *engine, enum state *state) {
             .qData = 3,
             .updateCameraBuffer = updateThirdPersonCameraBuffer
         }, &engine->graphics),
-        createRenderPassObj((struct renderPassBuilder){
-            .coordinates = { 0.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
+        /* background left */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 0.0 / 8, 0.0 / 8, 2.0 / 8, 1.0 / 8 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[1],
-                    .entity = entity + 1,
+                    .pipe = &pipe[4],
+                    .entity = entity + 7,
                     .qEntity = 1
                 },
             },
             .qData = 1,
             .updateCameraBuffer = updateThirdPersonCameraBuffer
         }, &engine->graphics),
-        createRenderPassObj((struct renderPassBuilder){
-            .coordinates = { 7.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
+        /* background right */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 6.0 / 8, 0.0 / 8, 2.0 / 8, 1.0 / 8 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[1],
-                    .entity = entity + 2,
+                    .pipe = &pipe[4],
+                    .entity = entity + 7,
                     .qEntity = 1
                 },
             },
             .qData = 1,
             .updateCameraBuffer = updateThirdPersonCameraBuffer
         }, &engine->graphics),
-        createRenderPassObj((struct renderPassBuilder){
+        /* middle text */createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 0.0, 0.0, 1.0, 1.0 },
             .data = (struct pipelineConnection[]) {
                 {
@@ -301,8 +324,32 @@ void game(struct EngineCore *engine, enum state *state) {
             .qData = 1,
             .updateCameraBuffer = updateFirstPersonCameraBuffer
         }, &engine->graphics),
-        createRenderPassObj((struct renderPassBuilder){
-            .coordinates = { 0.0 / 8, 1.0 / 12, 1.0 / 8, 1.0 / 8 },
+        /* left figure */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 0.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
+            .data = (struct pipelineConnection[]) {
+                {
+                    .pipe = &pipe[1],
+                    .entity = entity + 1,
+                    .qEntity = 1
+                },
+            },
+            .qData = 1,
+            .updateCameraBuffer = updateThirdPersonCameraBuffer
+        }, &engine->graphics),
+        /* right figure */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 7.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
+            .data = (struct pipelineConnection[]) {
+                {
+                    .pipe = &pipe[1],
+                    .entity = entity + 2,
+                    .qEntity = 1
+                },
+            },
+            .qData = 1,
+            .updateCameraBuffer = updateThirdPersonCameraBuffer
+        }, &engine->graphics),
+        /* left text */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 0.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = &pipe[2],
@@ -315,8 +362,8 @@ void game(struct EngineCore *engine, enum state *state) {
             .qData = 1,
             .updateCameraBuffer = updateFirstPersonCameraBuffer
         }, &engine->graphics),
-        createRenderPassObj((struct renderPassBuilder){
-            .coordinates = { 7.0 / 8, 1.0 / 12, 1.0 / 8, 1.0 / 8 },
+        /* right text */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 7.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = &pipe[2],
@@ -330,7 +377,8 @@ void game(struct EngineCore *engine, enum state *state) {
             .updateCameraBuffer = updateFirstPersonCameraBuffer
         }, &engine->graphics),
     };
-    size_t qRenderPass = sizeof(renderPass) / sizeof(struct renderPass);
+
+    size_t qRenderPass = sizeof(renderPass) / sizeof(struct renderPassObj);
 
     struct player playerData[2] = {
         {
@@ -352,7 +400,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .playerJoystick = GLFW_JOYSTICK_1,
 
             .splitScreen = &renderPass[0].camera,
-            .face = &renderPass[2].camera,
+            .face = &renderPass[5].camera,
             .relativeFaceCameraPos = {
                 -1,
                 0.4,
@@ -378,7 +426,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .playerJoystick = GLFW_JOYSTICK_2,
 
             .splitScreen = &renderPass[1].camera,
-            .face = &renderPass[3].camera,
+            .face = &renderPass[6].camera,
             .relativeFaceCameraPos = {
                 1,
                 0.4,
@@ -394,6 +442,7 @@ void game(struct EngineCore *engine, enum state *state) {
     struct instance *player1Text = entity[5]->instance;
     struct instance *player2Text = entity[6]->instance;
     struct instance *background = entity[4]->instance;
+    struct instance *flat = entity[7]->instance;
 
     floor[0] = (struct instance){
         .pos = { 0.0f, 0.0f, -5.0f },
@@ -431,7 +480,7 @@ void game(struct EngineCore *engine, enum state *state) {
     };
 
     player1Text[0] = (struct instance){
-        .pos = { 0.0f, 0.0f, 0.0f },
+        .pos = { 0.0f, -0.35f, 0.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
         .fixedRotation = { 0.0f, 0.0f, 0.0f },
         .scale = { 2 * 10e-2, 2 * 10e-2, 2 * 10e-2 },
@@ -440,7 +489,7 @@ void game(struct EngineCore *engine, enum state *state) {
     };
 
     player2Text[0] = (struct instance){
-        .pos = { 0.0f, 0.0f, 0.0f },
+        .pos = { 0.0f, -0.35f, 0.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
         .fixedRotation = { 0.0f, 0.0f, 0.0f },
         .scale = { 2 * 10e-2, 2 * 10e-2, 2 * 10e-2 },
@@ -453,6 +502,15 @@ void game(struct EngineCore *engine, enum state *state) {
         .rotation = { 0.0f, glm_rad(0.3), 0.0f },
         .fixedRotation = { glm_rad(90), 0.0f, 0.0f },
         .scale = { 1.0f, 1.0f, 1.0f },
+        .textureIndex = 0,
+        .shadow = false
+    };
+
+    flat[0] = (struct instance){
+        .pos = { 0.0f, 0.0f, 0.0f }, 
+        .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { 0.0f, 0.0f, 0.0f },
+        .scale = { 10.0f, 10.0f, 10.0f },
         .textureIndex = 0,
         .shadow = false
     };

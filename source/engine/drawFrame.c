@@ -10,7 +10,7 @@
 
 #include "MY_ASSERT.h"
 
-static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swapChainFramebuffer, VkExtent2D swapChainExtent, struct EngineCore *vulkan, uint32_t currentFrame, uint16_t qRenderPass, struct renderPass renderPass[qRenderPass]) {
+static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swapChainFramebuffer, VkExtent2D swapChainExtent, struct EngineCore *vulkan, uint32_t currentFrame, uint16_t qRenderPass, struct renderPassObj renderPass[qRenderPass]) {
     VkCommandBufferBeginInfo beginInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = 0,
@@ -20,9 +20,9 @@ static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swa
 
     VkClearValue clearValues[] = {
         [0].color.float32 = {
-            1.0f,
-            1.0f,
-            1.0f,
+            0.0f,
+            0.0f,
+            0.0f,
             1.0f
         },
         [1].depthStencil = {
@@ -102,7 +102,7 @@ static void updateModelBuffer(size_t currentFrame, struct Entity *model) {
     }
 }
 
-static void updateBuffers(size_t currentFrame, size_t qRenderPass, struct renderPass renderPass[qRenderPass], VkExtent2D swapChainExtent) {
+static void updateBuffers(size_t currentFrame, size_t qRenderPass, struct renderPassObj renderPass[qRenderPass], VkExtent2D swapChainExtent) {
     for (uint32_t i = 0; i < qRenderPass; i += 1) {
         renderPass[i].updateCameraBuffer(renderPass[i].cameraBufferMapped[currentFrame], (VkExtent2D) { 
             .width = renderPass[i].coordinates[2] * swapChainExtent.width,
@@ -116,7 +116,7 @@ static void updateBuffers(size_t currentFrame, size_t qRenderPass, struct render
     }
 }
 
-static VkResult localDrawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPass renderPass[qRenderPass]) {
+static VkResult localDrawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPassObj renderPass[qRenderPass]) {
     VkResult result = VK_TRUE;
 
     uint32_t imageIndex = 0;
@@ -182,7 +182,7 @@ static VkResult localDrawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, 
     return result;
 }
 
-void drawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPass *renderPass) {
+void drawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPassObj *renderPass) {
     updateDeltaTime(&vulkan->deltaTime);
 
     switch (localDrawFrame(vulkan, qRenderPass, renderPass)) {

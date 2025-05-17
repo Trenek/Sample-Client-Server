@@ -196,15 +196,15 @@ static struct camera updateFaceCamera(struct player *p) {
 
     return (struct camera) {
         .pos = {
-            [0] = player->pos[0] + p->relativeFaceCameraPos[0],
-            [1] = player->pos[1] + p->relativeFaceCameraPos[1],
-            [2] = player->pos[2] + p->relativeFaceCameraPos[2],
+            [0] = player->pos[0] + p->relativeFaceCameraPos[0] / 2,
+            [1] = player->pos[1] + p->relativeFaceCameraPos[1] / 2,
+            [2] = player->pos[2] + p->relativeFaceCameraPos[2] + 0.15,
         },
 
         .direction = {
             [0] = player->pos[0],
             [1] = player->pos[1],
-            [2] = player->pos[2] + 2.3
+            [2] = player->pos[2] + 2.25
         }
     };
 }

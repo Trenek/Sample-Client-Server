@@ -26,8 +26,14 @@ struct renderPassBuilder {
 };
 
 struct renderPass {
+    VkRenderPass renderPass;
+    VkFramebuffer *swapChainFramebuffers;
+};
+
+struct renderPassObj {
     double coordinates[4];
     
+    struct renderPass *renderPass;
     struct camera camera;
     void (*updateCameraBuffer)(void *buffersMapped, VkExtent2D swapChainExtent, vec3 cameraPos, vec3 direction);
 
@@ -43,7 +49,7 @@ struct renderPass {
     VkDescriptorSet cameraDescriptorSet[MAX_FRAMES_IN_FLIGHT];
 };
 
-struct renderPass createRenderPassObj(struct renderPassBuilder builder, struct GraphicsSetup *vulkan);
-void destroyRenderPassObj(size_t qRenderPass, struct renderPass *renderPass, struct GraphicsSetup *vulkan);
+struct renderPassObj createRenderPassObj(struct renderPassBuilder builder, struct GraphicsSetup *vulkan);
+void destroyRenderPassObj(size_t qRenderPass, struct renderPassObj *renderPass, struct GraphicsSetup *vulkan);
 
 #endif

@@ -11,8 +11,8 @@
 #include "descriptor.h"
 #include "cameraBufferObject.h"
 
-struct renderPass createRenderPassObj(struct renderPassBuilder builder, struct GraphicsSetup *vulkan) {
-    struct renderPass result = {
+struct renderPassObj createRenderPassObj(struct renderPassBuilder builder, struct GraphicsSetup *vulkan) {
+    struct renderPassObj result = {
         .data = builder.data,
         .qData = builder.qData,
         .cameraDescriptorPool = createCameraDescriptorPool(vulkan->device),
@@ -30,7 +30,7 @@ struct renderPass createRenderPassObj(struct renderPassBuilder builder, struct G
     return result;
 }
 
-void destroyRenderPassObj(size_t qRenderPass, struct renderPass *renderPass, struct GraphicsSetup *vulkan) {
+void destroyRenderPassObj(size_t qRenderPass, struct renderPassObj *renderPass, struct GraphicsSetup *vulkan) {
     for (size_t i = 0; i < qRenderPass; i += 1) {
         vkDestroyDescriptorPool(vulkan->device, renderPass[i].cameraDescriptorPool, NULL);
         vkDestroyDescriptorSetLayout(vulkan->device, renderPass[i].cameraDescriptorSetLayout, NULL);

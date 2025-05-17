@@ -20,7 +20,6 @@ struct GraphicsSetup {
     VkImageView *swapChainImageViews;
 
     VkRenderPass renderPass;
-
     VkFramebuffer *swapChainFramebuffers;
 
     VkCommandPool commandPool;
