@@ -3,6 +3,11 @@
 
 #include <cglm.h>
 
+#define INS(x, y) \
+    .instanceSize = sizeof(struct x), \
+    .instanceBufferSize = sizeof(struct y), \
+    .instanceUpdater = x##Updater
+
 struct instanceBuffer {
     uint32_t textureIndex;
     mat4 modelMatrix;
@@ -36,6 +41,6 @@ struct playerInstance {
 
 struct Entity;
 void updateInstances(struct Entity **model, size_t qModel, float deltaTime);
-void updatePlayerInstance(void *instancePtr, void *instanceBufferPtr, uint32_t instanceCount, float deltaTime);
-void updateInstance(void *instancePtr, void *instanceBufferPtr, uint32_t instanceCount, float deltaTime);
+void playerInstanceUpdater(void *instancePtr, void *instanceBufferPtr, uint32_t instanceCount, float deltaTime);
+void instanceUpdater(void *instancePtr, void *instanceBufferPtr, uint32_t instanceCount, float deltaTime);
 #endif

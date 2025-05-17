@@ -1,16 +1,16 @@
-#include <stdio.h>
 #include <string.h>
 
-#include "VulkanTools.h"
+#include "engineCore.h"
 
-#include "actualModel.h"
 #include "renderPass.h"
 #include "graphicsPipelineObj.h"
+#include "entity.h"
+#include "actualModel.h"
 #include "pushConstantsBuffer.h"
 
 #include "MY_ASSERT.h"
 
-static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swapChainFramebuffer, VkExtent2D swapChainExtent, struct VulkanTools *vulkan, uint32_t currentFrame, uint16_t qRenderPass, struct renderPass renderPass[qRenderPass]) {
+static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swapChainFramebuffer, VkExtent2D swapChainExtent, struct EngineCore *vulkan, uint32_t currentFrame, uint16_t qRenderPass, struct renderPassObj renderPass[qRenderPass]) {
     VkCommandBufferBeginInfo beginInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = 0,
@@ -75,7 +75,7 @@ static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swa
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPass[i].data[j].pipe->pipeline);
             for (uint32_t k = 0; k < renderPass[i].data[j].qEntity; k += 1) {
                 VkDescriptorSet sets[] = {
-                    renderPass[i].data[j].entity[k]->graphics.object.descriptorSets[currentFrame],
+                    renderPass[i].data[j].entity[k]->object.descriptorSets[currentFrame],
                     renderPass[i].data[j].pipe->texture->descriptorSets[currentFrame],
                     renderPass[i].cameraDescriptorSet[currentFrame],
                 };
@@ -102,7 +102,7 @@ static void updateModelBuffer(size_t currentFrame, struct Entity *model) {
     }
 }
 
-static void updateBuffers(size_t currentFrame, size_t qRenderPass, struct renderPass renderPass[qRenderPass], VkExtent2D swapChainExtent) {
+static void updateBuffers(size_t currentFrame, size_t qRenderPass, struct renderPassObj renderPass[qRenderPass], VkExtent2D swapChainExtent) {
     for (uint32_t i = 0; i < qRenderPass; i += 1) {
         renderPass[i].updateCameraBuffer(renderPass[i].cameraBufferMapped[currentFrame], (VkExtent2D) { 
             .width = renderPass[i].coordinates[2] * swapChainExtent.width,
@@ -116,7 +116,7 @@ static void updateBuffers(size_t currentFrame, size_t qRenderPass, struct render
     }
 }
 
-static VkResult localDrawFrame(struct VulkanTools *vulkan, uint16_t qRenderPass, struct renderPass renderPass[qRenderPass]) {
+static VkResult localDrawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPassObj renderPass[qRenderPass]) {
     VkResult result = VK_TRUE;
 
     uint32_t imageIndex = 0;
@@ -182,7 +182,7 @@ static VkResult localDrawFrame(struct VulkanTools *vulkan, uint16_t qRenderPass,
     return result;
 }
 
-void drawFrame(struct VulkanTools *vulkan, uint16_t qRenderPass, struct renderPass renderPass[qRenderPass]) {
+void drawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPassObj *renderPass) {
     updateDeltaTime(&vulkan->deltaTime);
 
     switch (localDrawFrame(vulkan, qRenderPass, renderPass)) {
@@ -190,16 +190,16 @@ void drawFrame(struct VulkanTools *vulkan, uint16_t qRenderPass, struct renderPa
             break;
         case VK_SUBOPTIMAL_KHR:
         case VK_ERROR_OUT_OF_DATE_KHR:
-            *vulkan->framebufferResized = true;
+            vulkan->window.data->framebufferResized = true;
             break;
         default:
             fprintf(stderr, "Oh no");
-            glfwSetWindowShouldClose(vulkan->window, GLFW_TRUE);
+            glfwSetWindowShouldClose(vulkan->window.window, GLFW_TRUE);
             break;
     }
 
-    if (*vulkan->framebufferResized) {
-        *vulkan->framebufferResized = false;
+    if (vulkan->window.data->framebufferResized) {
+        vulkan->window.data->framebufferResized = false;
 
         recreateSwapChain(vulkan);
     }

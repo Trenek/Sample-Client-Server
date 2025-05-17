@@ -6,6 +6,11 @@
 #include <cglm.h>
 #include <vulkan/vulkan_core.h>
 
+#define Vert(x) \
+    .sizeOfVertex = sizeof(struct x), \
+    .numOfAttributes = sizeof(x##AttributeDescriptions) / sizeof(VkVertexInputAttributeDescription), \
+    .attributeDescription = x##AttributeDescriptions
+
 struct Vertex {
     vec3 pos;
     vec3 color;
@@ -13,7 +18,7 @@ struct Vertex {
 };
 
 [[maybe_unused]]
-static VkVertexInputAttributeDescription vertexAttributeDescriptions[] = {
+static VkVertexInputAttributeDescription VertexAttributeDescriptions[] = {
     [0] = {
         .binding = 0,
         .location = 0,
@@ -43,7 +48,7 @@ struct AnimVertex {
 };
 
 [[maybe_unused]]
-static VkVertexInputAttributeDescription animVertexAttributeDescriptions[] = {
+static VkVertexInputAttributeDescription AnimVertexAttributeDescriptions[] = {
     [0] = {
         .binding = 0,
         .location = 0,
@@ -84,7 +89,7 @@ struct FontVertex {
 };
 
 [[maybe_unused]]
-static VkVertexInputAttributeDescription fontVertexAttributeDescriptions[] = {
+static VkVertexInputAttributeDescription FontVertexAttributeDescriptions[] = {
     [0] = {
         .binding = 0,
         .location = 0,

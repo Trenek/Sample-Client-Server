@@ -1,7 +1,7 @@
+#include <vulkan/vulkan.h>
 #include <myMalloc.h>
 
-#include "VulkanTools.h"
-
+#include "swapChain.h"
 #include "imageOperations.h"
 #include "swapChainSupportDetails.h"
 

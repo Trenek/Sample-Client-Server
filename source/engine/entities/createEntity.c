@@ -3,6 +3,7 @@
 
 #include "graphicsSetup.h"
 
+#include "entity.h"
 #include "entityBuilder.h"
 
 struct Entity *createEntity(struct EntityBuilder builder, struct GraphicsSetup *vulkan) {
@@ -24,7 +25,7 @@ struct Entity *createEntity(struct EntityBuilder builder, struct GraphicsSetup *
         .mesh = builder.mesh,
         .bufferSize = builder.instanceBufferSize,
 
-        .graphics.object.descriptorPool = createObjectDescriptorPool(vulkan->device, builder.qBuff + 1),
+        .object.descriptorPool = createObjectDescriptorPool(vulkan->device, builder.qBuff + 1),
         .qBuff = builder.qBuff + 1
     };
 
@@ -35,10 +36,10 @@ struct Entity *createEntity(struct EntityBuilder builder, struct GraphicsSetup *
 
     VkBuffer (*buff2[builder.qBuff + 1])[MAX_FRAMES_IN_FLIGHT];
 
-    createStorageBuffer(builder.instanceCount * builder.instanceBufferSize, result->graphics.uniformModel.buffers, result->graphics.uniformModel.buffersMemory, result->graphics.uniformModel.buffersMapped, vulkan->device, vulkan->physicalDevice, vulkan->surface);
+    createBuffers(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, builder.instanceCount * builder.instanceBufferSize, result->uniformModel.buffers, result->uniformModel.buffersMemory, result->uniformModel.buffersMapped, vulkan->device, vulkan->physicalDevice, vulkan->surface);
 
-    result->mapp[0] = &result->graphics.uniformModel.buffersMapped;
-    buff2[0] = &result->graphics.uniformModel.buffers;
+    result->mapp[0] = &result->uniformModel.buffersMapped;
+    buff2[0] = &result->uniformModel.buffers;
     result->range[0] = builder.instanceCount * builder.instanceBufferSize;
     memcpy(buff2 + 1, builder.buff, sizeof(void *) * builder.qBuff);
     memcpy(result->range + 1, builder.range, sizeof(size_t) * builder.qBuff);
@@ -46,9 +47,9 @@ struct Entity *createEntity(struct EntityBuilder builder, struct GraphicsSetup *
 
     memset(result->buffer[0], 0, builder.instanceBufferSize * builder.instanceCount);
 
-    createDescriptorSets(result->graphics.object.descriptorSets, vulkan->device, result->graphics.object.descriptorPool, builder.objectLayout);
+    createDescriptorSets(result->object.descriptorSets, vulkan->device, result->object.descriptorPool, builder.objectLayout);
 
-    bindObjectBuffersToDescriptorSets(result->graphics.object.descriptorSets, vulkan->device, builder.qBuff + 1, buff2, result->range);
+    bindObjectBuffersToDescriptorSets(result->object.descriptorSets, vulkan->device, builder.qBuff + 1, buff2, result->range);
 
     return result;
 }
@@ -60,9 +61,9 @@ static void destroyEntity(VkDevice device, struct Entity model) {
 
     free(model.instance);
 
-    destroyStorageBuffer(device, model.graphics.uniformModel.buffers, model.graphics.uniformModel.buffersMemory);
+    destroyBuffers(device, model.uniformModel.buffers, model.uniformModel.buffersMemory);
 
-    vkDestroyDescriptorPool(device, model.graphics.object.descriptorPool, NULL);
+    vkDestroyDescriptorPool(device, model.object.descriptorPool, NULL);
 }
 
 void destroyEntityArray(uint16_t num, struct Entity *modelArray[num], struct GraphicsSetup *graphics) {

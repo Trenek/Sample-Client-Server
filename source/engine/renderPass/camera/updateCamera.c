@@ -1,7 +1,7 @@
 #include <vulkan/vulkan.h>
 #include <string.h>
 
-#include "uniformBufferObject.h"
+#include "cameraBufferObject.h"
 
 void updateFirstPersonCameraBuffer(void *uniformBuffersMapped, VkExtent2D swapChainExtent, vec3 cameraPos, vec3 direction) {
     struct CameraBuffer ubo;

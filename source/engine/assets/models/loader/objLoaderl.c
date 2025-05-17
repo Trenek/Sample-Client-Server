@@ -216,7 +216,7 @@ void objLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
         model->mesh[0].indices[i] = attrib.faces[i].v_idx;
     }
 #endif
-    createStorageBuffer(model->meshQuantity * sizeof(mat4), model->localMesh.buffers, model->localMesh.buffersMemory, model->localMesh.buffersMapped, device, physicalDevice, surface);
+    createBuffers(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, model->meshQuantity * sizeof(mat4), model->localMesh.buffers, model->localMesh.buffersMemory, model->localMesh.buffersMapped, device, physicalDevice, surface);
 
     for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {
         glm_mat4_identity(((mat4 **)model->localMesh.buffersMapped)[k][0]);

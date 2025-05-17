@@ -1,7 +1,7 @@
 #include "deltaTime.h"
 
-struct deltaTimeManager initDeltaTime() {
-    struct deltaTimeManager result = {
+struct DeltaTimeManager initDeltaTimeManager(void) {
+    struct DeltaTimeManager result = {
         .prev = { 0 },
         .deltaTime = 0
     };
@@ -11,7 +11,7 @@ struct deltaTimeManager initDeltaTime() {
     return result;
 }
 
-void updateDeltaTime(struct deltaTimeManager *deltaTime) {
+void updateDeltaTime(struct DeltaTimeManager *deltaTime) {
     deltaTime->prev = deltaTime->curr;
     timespec_get(&deltaTime->curr, TIME_UTC);
 

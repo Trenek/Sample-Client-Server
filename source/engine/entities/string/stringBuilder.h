@@ -16,6 +16,7 @@ struct StringBuilder {
     struct actualModel *modelData;
 
     VkDescriptorSetLayout objectLayout;
+    int center;
 };
 
 struct Entity *createString(struct StringBuilder builder, struct GraphicsSetup *vulkan);

@@ -30,6 +30,33 @@ void loadModels(size_t quantity, struct actualModel model[quantity], const char 
     }
 }
 
+void freeTransformation(struct timeFrame transformation) {
+    if (transformation.data != NULL) {
+        free(transformation.data->values);
+    }
+
+    free(transformation.data);
+}
+
+void freeAnimations(size_t qAnim, size_t qJoints, struct jointData animation[qAnim][qJoints]) {
+    for (size_t i = 0; i < qAnim; i += 1) {
+        for (size_t j = 0; j < qJoints; j += 1) {
+            freeTransformation(animation[i][j].transformation[0]);
+            freeTransformation(animation[i][j].transformation[1]);
+            freeTransformation(animation[i][j].transformation[2]);
+        }
+    }
+
+    free(animation);
+}
+
+void cleanupColisionBox(size_t qBox, struct colisionBox *box) {
+    for (uint32_t i = 0; i < qBox; i += 1) {
+        free(box[i].name);
+        free(box[i].vertex);
+    }
+}
+
 void destroyActualModels(VkDevice device, uint32_t modelQuantity, struct actualModel *model) {
     for (uint32_t i = 0; i < modelQuantity; i += 1) {
         for (uint32_t j = 0; j < model[i].meshQuantity; j += 1) {
@@ -43,7 +70,11 @@ void destroyActualModels(VkDevice device, uint32_t modelQuantity, struct actualM
         }
         free(model[i].mesh);
 
-        destroyStorageBuffer(device, model[i].localMesh.buffers, model[i].localMesh.buffersMemory);
+        freeAnimations(model[i].qAnim, model[i].qJoint, model[i].anim);
+
+        cleanupColisionBox(model[i].qHitbox, model[i].hitBox);
+        cleanupColisionBox(model[i].qHurtBox, model[i].hurtBox);
+
+        destroyBuffers(device, model[i].localMesh.buffers, model[i].localMesh.buffersMemory);
     }
 }
-

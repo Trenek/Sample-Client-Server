@@ -3,6 +3,8 @@
 #include "pipelineFunctions.h"
 #include "graphicsSetup.h"
 
+#include "descriptor.h"
+
 struct graphicsPipeline createObjGraphicsPipeline(struct graphicsPipelineBuilder builder, struct GraphicsSetup *vulkan) {
     VkDescriptorSetLayout descriptorSetLayout[] = {
         builder.objectLayout,

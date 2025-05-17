@@ -4,7 +4,7 @@
 
 #include "definitions.h"
 
-void createStorageBuffer(VkDeviceSize bufferSize, VkBuffer uniformBuffers[], VkDeviceMemory uniformBuffersMemory[], void *uniformBuffersMapped[], VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
+void createBuffers(VkBufferUsageFlagBits bufferUsageBit, VkDeviceSize bufferSize, VkBuffer uniformBuffers[], VkDeviceMemory uniformBuffersMemory[], void *uniformBuffersMapped[], VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     size_t i = 0;
 
     while (i < MAX_FRAMES_IN_FLIGHT) {
@@ -13,7 +13,7 @@ void createStorageBuffer(VkDeviceSize bufferSize, VkBuffer uniformBuffers[], VkD
             physicalDevice,
             surface,
             bufferSize,
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
+            bufferUsageBit
         );
         uniformBuffersMemory[i] = createBufferMemory(
             device,
@@ -28,7 +28,7 @@ void createStorageBuffer(VkDeviceSize bufferSize, VkBuffer uniformBuffers[], VkD
     }
 }
 
-void destroyStorageBuffer(VkDevice device, VkBuffer uniformBuffers[], VkDeviceMemory uniformBuffersMemory[]) {
+void destroyBuffers(VkDevice device, VkBuffer uniformBuffers[], VkDeviceMemory uniformBuffersMemory[]) {
     size_t i = 0;
 
     while (i < MAX_FRAMES_IN_FLIGHT) {

@@ -6,8 +6,6 @@
 #include "definitions.h"
 #include "swapChain.h"
 
-#include "entity.h"
-
 struct GraphicsSetup {
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
@@ -22,7 +20,6 @@ struct GraphicsSetup {
     VkImageView *swapChainImageViews;
 
     VkRenderPass renderPass;
-
     VkFramebuffer *swapChainFramebuffers;
 
     VkCommandPool commandPool;

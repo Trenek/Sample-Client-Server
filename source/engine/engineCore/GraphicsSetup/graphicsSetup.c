@@ -35,6 +35,7 @@ void recreateSwapChainGraphics(GLFWwindow *window, struct GraphicsSetup *vulkan)
     vulkan->swapChain = createSwapChain(window, vulkan->surface, vulkan->physicalDevice, vulkan->device);
     vulkan->swapChainImageViews = createImageViews(vulkan->device, vulkan->swapChain);
 
+
     createColorResources(&vulkan->colorImage, &vulkan->colorImageMemory, &vulkan->colorImageView, vulkan->device, vulkan->physicalDevice, vulkan->swapChain.extent, vulkan->swapChain.imageFormat, vulkan->msaaSamples);
     createDepthResources(&vulkan->depthImage, &vulkan->depthImageMemory, &vulkan->depthImageView, vulkan->device, vulkan->physicalDevice, vulkan->swapChain.extent, vulkan->msaaSamples, vulkan->transferCommandPool, vulkan->transferQueue);
 

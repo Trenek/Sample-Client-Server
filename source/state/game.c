@@ -1,10 +1,7 @@
-#include <GLFW/glfw3.h>
 #include <cglm.h>
 #include <string.h>
 
-#include <miniaudio.h>
-
-#include "VulkanTools.h"
+#include "engineCore.h"
 #include "state.h"
 
 #include "asset.h"
@@ -21,23 +18,18 @@
 
 #include "player.h"
 
-void game(struct VulkanTools *vulkan, enum state *state) {
-    ma_engine engine;
-    ma_sound sound; {
-        assert(MA_SUCCESS == ma_engine_init(NULL, &engine));
-        assert(MA_SUCCESS == ma_sound_init_from_file(&engine, "music/music.mp3", 0, NULL, NULL, &sound));
-
-        ma_sound_start(&sound);
-        ma_sound_set_looping(&sound, true);
-    }
-
+void game(struct EngineCore *engine, enum state *state) {
     const char *texturePaths[] = {
-        "textures/texture.jpg",
+        "textures/background.png",
+        "textures/red.png",
+        "textures/red_bg.png",
+        "textures/blue.png",
+        "textures/blue_bg.png",
     };
     size_t texturesQuantity = sizeof(texturePaths) / sizeof(const char *);
 
-    struct Textures texture = loadTextures(&vulkan->graphics, texturesQuantity, texturePaths);
-    struct Textures cubeMap = loadCubeMaps(&vulkan->graphics, (const char *[]) {
+    struct Textures texture = loadTextures(&engine->graphics, texturesQuantity, texturePaths);
+    struct Textures cubeMap = loadCubeMaps(&engine->graphics, (const char *[]) {
         "textures/CubeMaps/xpos.png",
         "textures/CubeMaps/xneg.png",
         "textures/CubeMaps/ypos.png",
@@ -57,10 +49,10 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     size_t modelQuantity = sizeof(modelPath) / sizeof(const char *);
 
     struct actualModel actualModel[modelQuantity] = {}; {
-        loadModels(modelQuantity, actualModel, modelPath, &vulkan->graphics);
+        loadModels(modelQuantity, actualModel, modelPath, &engine->graphics);
     }
 
-    VkDescriptorSetLayout objectLayout = createObjectDescriptorSetLayout(vulkan->graphics.device, 2, (VkDescriptorSetLayoutBinding []) {
+    VkDescriptorSetLayout objectLayout = createObjectDescriptorSetLayout(engine->graphics.device, 2, (VkDescriptorSetLayoutBinding []) {
         {
             .binding = 0,
             .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
@@ -77,7 +69,7 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         }
     });
 
-    VkDescriptorSetLayout animLayout = createObjectDescriptorSetLayout(vulkan->graphics.device, 3, (VkDescriptorSetLayoutBinding []) {
+    VkDescriptorSetLayout animLayout = createObjectDescriptorSetLayout(engine->graphics.device, 3, (VkDescriptorSetLayoutBinding []) {
         {
             .binding = 0,
             .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
@@ -101,12 +93,12 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         }
     });
 
-    VkDescriptorSetLayout cameraLayout = createCameraDescriptorSetLayout(vulkan->graphics.device);
+    VkDescriptorSetLayout cameraLayout = createCameraDescriptorSetLayout(engine->graphics.device);
 
     struct graphicsPipeline pipe[] = { 
         /* No Texture Model */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
             .vertexShader = "shaders/vert.spv",
-            .fragmentShader = "shaders/debugFrag.spv",
+            .fragmentShader = "shaders/frag.spv",
             .minDepth = 0.0f,
             .maxDepth = 1.0f,
             .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
@@ -114,14 +106,12 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .texture = &texture.descriptor,
             .objectLayout = objectLayout,
 
-            .sizeOfVertex = sizeof(struct AnimVertex),
-            .numOfAttributes = sizeof(animVertexAttributeDescriptions) / sizeof(*animVertexAttributeDescriptions),
-            .attributeDescription = animVertexAttributeDescriptions,
+            Vert(AnimVertex),
             .operation = VK_COMPARE_OP_LESS,
             .cullFlags = VK_CULL_MODE_BACK_BIT,
 
             .cameraLayout = cameraLayout
-        }, &vulkan->graphics),
+        }, &engine->graphics),
         /* Texture Model */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
             .vertexShader = "shaders/playerAnimation.spv",
             .fragmentShader = "shaders/playerFrag.spv",
@@ -132,14 +122,12 @@ void game(struct VulkanTools *vulkan, enum state *state) {
 
             .objectLayout = animLayout,
 
-            .sizeOfVertex = sizeof(struct AnimVertex),
-            .numOfAttributes = sizeof(animVertexAttributeDescriptions) / sizeof(*animVertexAttributeDescriptions),
-            .attributeDescription = animVertexAttributeDescriptions,
+            Vert(AnimVertex),
             .operation = VK_COMPARE_OP_LESS,
             .cullFlags = VK_CULL_MODE_NONE,
 
             .cameraLayout = cameraLayout
-        }, &vulkan->graphics),
+        }, &engine->graphics),
         /* Text */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
             .vertexShader = "shaders/text2dV.spv",
             .fragmentShader = "shaders/textF.spv",
@@ -150,14 +138,12 @@ void game(struct VulkanTools *vulkan, enum state *state) {
 
             .objectLayout = objectLayout,
 
-            .sizeOfVertex = sizeof(struct FontVertex),
-            .numOfAttributes = sizeof(fontVertexAttributeDescriptions) / sizeof(*fontVertexAttributeDescriptions),
-            .attributeDescription = fontVertexAttributeDescriptions,
+            Vert(FontVertex),
             .operation = VK_COMPARE_OP_LESS,
             .cullFlags = VK_CULL_MODE_BACK_BIT,
 
             .cameraLayout = cameraLayout
-        }, &vulkan->graphics),
+        }, &engine->graphics),
         /* Skybox */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
             .vertexShader = "shaders/skyboxV.spv",
             .fragmentShader = "shaders/skyboxF.spv",
@@ -168,14 +154,28 @@ void game(struct VulkanTools *vulkan, enum state *state) {
 
             .objectLayout = objectLayout,
 
-            .sizeOfVertex = sizeof(struct AnimVertex),
-            .numOfAttributes = sizeof(animVertexAttributeDescriptions) / sizeof(*animVertexAttributeDescriptions),
-            .attributeDescription = animVertexAttributeDescriptions,
+            Vert(AnimVertex),
             .operation = VK_COMPARE_OP_LESS_OR_EQUAL,
             .cullFlags = VK_CULL_MODE_BACK_BIT,
 
             .cameraLayout = cameraLayout
-        }, &vulkan->graphics),
+        }, &engine->graphics),
+        /* Flat */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
+            .vertexShader = "shaders/vert2d.spv",
+            .fragmentShader = "shaders/frag2d.spv",
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f,
+            .texture = &texture.descriptor,
+            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+
+            .objectLayout = objectLayout,
+
+            Vert(AnimVertex),
+            .operation = VK_COMPARE_OP_LESS,
+            .cullFlags = VK_CULL_MODE_NONE,
+
+            .cameraLayout = cameraLayout
+        }, &engine->graphics),
     };
     size_t qPipe = sizeof(pipe) / sizeof(struct graphicsPipeline);
 
@@ -185,52 +185,96 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             .modelData = &actualModel[1],
             .objectLayout = objectLayout,
 
-            .instanceSize = sizeof(struct instance),
-            .instanceBufferSize = sizeof(struct instanceBuffer),
-            .instanceUpdater = updateInstance
-        }, &vulkan->graphics),
+            INS(instance, instanceBuffer),
+        }, &engine->graphics),
         /*player*/ createModel((struct ModelBuilder) {
             .instanceCount = 1,
             .modelData = &actualModel[5],
             .objectLayout = animLayout,
 
-            .instanceSize = sizeof(struct playerInstance),
-            .instanceBufferSize = sizeof(struct playerInstanceBuffer),
-            .instanceUpdater = updatePlayerInstance,
-        }, &vulkan->graphics),
+            INS(playerInstance, playerInstanceBuffer),
+        }, &engine->graphics),
         /*enemy*/ createModel((struct ModelBuilder) {
             .instanceCount = 1,
             .modelData = &actualModel[5],
             .objectLayout = animLayout,
 
-            .instanceSize = sizeof(struct playerInstance),
-            .instanceBufferSize = sizeof(struct playerInstanceBuffer),
-            .instanceUpdater = updatePlayerInstance,
-        }, &vulkan->graphics),
+            INS(playerInstance, playerInstanceBuffer),
+        }, &engine->graphics),
         /*text*/ createString((struct StringBuilder) {
             .instanceCount = 1,
-            .string = "Hello Animation World!",
+            .string = "Fight!",
             .modelData = &actualModel[3],
             .objectLayout = objectLayout,
 
-            .instanceSize = sizeof(struct instance),
-            .instanceBufferSize = sizeof(struct instanceBuffer),
-            .instanceUpdater = updateInstance,
-        }, &vulkan->graphics),
+            INS(instance, instanceBuffer),
+            .center = 0
+        }, &engine->graphics),
         /*background*/ createModel((struct ModelBuilder) {
             .instanceCount = 1,
             .modelData = &actualModel[4],
             .objectLayout = objectLayout,
 
-            .instanceSize = sizeof(struct instance),
-            .instanceBufferSize = sizeof(struct instanceBuffer),
-            .instanceUpdater = updateInstance,
-        }, &vulkan->graphics),
+            INS(instance, instanceBuffer),
+        }, &engine->graphics),
+        /*text*/ createString((struct StringBuilder) {
+            .instanceCount = 1,
+            .string = "Player 1",
+            .modelData = &actualModel[3],
+            .objectLayout = objectLayout,
+
+            INS(instance, instanceBuffer),
+            .center = 0
+        }, &engine->graphics),
+        /*text*/ createString((struct StringBuilder) {
+            .instanceCount = 1,
+            .string = "Player 2",
+            .modelData = &actualModel[3],
+            .objectLayout = objectLayout,
+
+            INS(instance, instanceBuffer),
+            .center = 0
+        }, &engine->graphics),
+        /*flat*/ createModel((struct ModelBuilder) {
+            .instanceCount = 1,
+            .modelData = &actualModel[0],
+            .objectLayout = objectLayout,
+
+            INS(instance, instanceBuffer),
+        }, &engine->graphics),
+        /*red flat*/ createModel((struct ModelBuilder) {
+            .instanceCount = 1,
+            .modelData = &actualModel[0],
+            .objectLayout = objectLayout,
+
+            INS(instance, instanceBuffer),
+        }, &engine->graphics),
+        /*red background flat*/ createModel((struct ModelBuilder) {
+            .instanceCount = 1,
+            .modelData = &actualModel[0],
+            .objectLayout = objectLayout,
+
+            INS(instance, instanceBuffer),
+        }, &engine->graphics),
+        /*blue flat*/ createModel((struct ModelBuilder) {
+            .instanceCount = 1,
+            .modelData = &actualModel[0],
+            .objectLayout = objectLayout,
+
+            INS(instance, instanceBuffer),
+        }, &engine->graphics),
+        /*blue background flat*/ createModel((struct ModelBuilder) {
+            .instanceCount = 1,
+            .modelData = &actualModel[0],
+            .objectLayout = objectLayout,
+
+            INS(instance, instanceBuffer),
+        }, &engine->graphics),
     };
     size_t qEntity = sizeof(entity) / sizeof(struct Entity *);
 
-    struct renderPass renderPass[] = {
-        createRenderPassObj((struct renderPassBuilder){
+    struct renderPassObj renderPass[] = {
+        /* left screen */createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 0.0, 0.0, 0.5, 1.0 },
             .data = (struct pipelineConnection[]) {
                 {
@@ -251,8 +295,8 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             },
             .qData = 3,
             .updateCameraBuffer = updateThirdPersonCameraBuffer
-        }, &vulkan->graphics),
-        createRenderPassObj((struct renderPassBuilder){
+        }, &engine->graphics),
+        /* right screen */createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 0.5, 0.0, 0.5, 1.0 },
             .data = (struct pipelineConnection[]) {
                 {
@@ -273,8 +317,46 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             },
             .qData = 3,
             .updateCameraBuffer = updateThirdPersonCameraBuffer
-        }, &vulkan->graphics),
-        createRenderPassObj((struct renderPassBuilder){
+        }, &engine->graphics),
+        /* background left */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 0.0 / 8, 0.0 / 8, 2.0 / 8, 1.0 / 8 },
+            .data = (struct pipelineConnection[]) {
+                {
+                    .pipe = &pipe[4],
+                    .entity = entity + 7,
+                    .qEntity = 1
+                },
+            },
+            .qData = 1,
+            .updateCameraBuffer = updateThirdPersonCameraBuffer
+        }, &engine->graphics),
+        /* background right */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 6.0 / 8, 0.0 / 8, 2.0 / 8, 1.0 / 8 },
+            .data = (struct pipelineConnection[]) {
+                {
+                    .pipe = &pipe[4],
+                    .entity = entity + 7,
+                    .qEntity = 1
+                },
+            },
+            .qData = 1,
+            .updateCameraBuffer = updateThirdPersonCameraBuffer
+        }, &engine->graphics),
+        /* middle text */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 0.0, 0.0, 1.0, 1.0 },
+            .data = (struct pipelineConnection[]) {
+                {
+                    .pipe = &pipe[2],
+                    .entity = (struct Entity* []) {
+                        entity[3],
+                    },
+                    .qEntity = 1
+                },
+            },
+            .qData = 1,
+            .updateCameraBuffer = updateFirstPersonCameraBuffer
+        }, &engine->graphics),
+        /* left figure */createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 0.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
             .data = (struct pipelineConnection[]) {
                 {
@@ -285,8 +367,8 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             },
             .qData = 1,
             .updateCameraBuffer = updateThirdPersonCameraBuffer
-        }, &vulkan->graphics),
-        createRenderPassObj((struct renderPassBuilder){
+        }, &engine->graphics),
+        /* right figure */createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 7.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
             .data = (struct pipelineConnection[]) {
                 {
@@ -297,21 +379,134 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             },
             .qData = 1,
             .updateCameraBuffer = updateThirdPersonCameraBuffer
-        }, &vulkan->graphics),
-        createRenderPassObj((struct renderPassBuilder){
-            .coordinates = { 0.0, 0.0, 1.0, 1.0 },
+        }, &engine->graphics),
+        /* left text */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 0.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = &pipe[2],
-                    .entity = entity + 3,
+                    .entity = (struct Entity* []) {
+                        entity[5],
+                    },
                     .qEntity = 1
                 },
             },
             .qData = 1,
             .updateCameraBuffer = updateFirstPersonCameraBuffer
-        }, &vulkan->graphics),
+        }, &engine->graphics),
+        /* right text */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 7.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
+            .data = (struct pipelineConnection[]) {
+                {
+                    .pipe = &pipe[2],
+                    .entity = (struct Entity* []) {
+                        entity[6]
+                    },
+                    .qEntity = 1
+                },
+            },
+            .qData = 1,
+            .updateCameraBuffer = updateFirstPersonCameraBuffer
+        }, &engine->graphics),
+        /* background left */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 1.0 / 8, 2.0 / 80, 1.0 / 8, 3.0 / 80 },
+            .data = (struct pipelineConnection[]) {
+                {
+                    .pipe = &pipe[4],
+                    .entity = entity + 9,
+                    .qEntity = 1
+                },
+            },
+            .qData = 1,
+            .updateCameraBuffer = updateThirdPersonCameraBuffer
+        }, &engine->graphics),
+        /* background left */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 1.0 / 8, 6.0 / 90, 1.0 / 8, 3.0 / 80 },
+            .data = (struct pipelineConnection[]) {
+                {
+                    .pipe = &pipe[4],
+                    .entity = entity + 11,
+                    .qEntity = 1
+                },
+            },
+            .qData = 1,
+            .updateCameraBuffer = updateThirdPersonCameraBuffer
+        }, &engine->graphics),
+        /* background left */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 1.0 / 8, 2.0 / 80, 1.0 / 8, 3.0 / 80 },
+            .data = (struct pipelineConnection[]) {
+                {
+                    .pipe = &pipe[4],
+                    .entity = entity + 8,
+                    .qEntity = 1
+                },
+            },
+            .qData = 1,
+            .updateCameraBuffer = updateThirdPersonCameraBuffer
+        }, &engine->graphics),
+        /* background left */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 1.0 / 8, 6.0 / 90, 1.0 / 8, 3.0 / 80 },
+            .data = (struct pipelineConnection[]) {
+                {
+                    .pipe = &pipe[4],
+                    .entity = entity + 10,
+                    .qEntity = 1
+                },
+            },
+            .qData = 1,
+            .updateCameraBuffer = updateThirdPersonCameraBuffer
+        }, &engine->graphics),
+        /* background left */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 6.0 / 8, 2.0 / 80, 1.0 / 8, 3.0 / 80 },
+            .data = (struct pipelineConnection[]) {
+                {
+                    .pipe = &pipe[4],
+                    .entity = entity + 9,
+                    .qEntity = 1
+                },
+            },
+            .qData = 1,
+            .updateCameraBuffer = updateThirdPersonCameraBuffer
+        }, &engine->graphics),
+        /* background left */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 6.0 / 8, 6.0 / 90, 1.0 / 8, 3.0 / 80 },
+            .data = (struct pipelineConnection[]) {
+                {
+                    .pipe = &pipe[4],
+                    .entity = entity + 11,
+                    .qEntity = 1
+                },
+            },
+            .qData = 1,
+            .updateCameraBuffer = updateThirdPersonCameraBuffer
+        }, &engine->graphics),
+        /* background left */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 6.0 / 8, 2.0 / 80, 1.0 / 8, 3.0 / 80 },
+            .data = (struct pipelineConnection[]) {
+                {
+                    .pipe = &pipe[4],
+                    .entity = entity + 8,
+                    .qEntity = 1
+                },
+            },
+            .qData = 1,
+            .updateCameraBuffer = updateThirdPersonCameraBuffer
+        }, &engine->graphics),
+        /* background left */createRenderPassObj((struct renderPassBuilder){
+            .coordinates = { 6.0 / 8, 6.0 / 90, 1.0 / 8, 3.0 / 80 },
+            .data = (struct pipelineConnection[]) {
+                {
+                    .pipe = &pipe[4],
+                    .entity = entity + 10,
+                    .qEntity = 1
+                },
+            },
+            .qData = 1,
+            .updateCameraBuffer = updateThirdPersonCameraBuffer
+        }, &engine->graphics),
     };
-    size_t qRenderPass = sizeof(renderPass) / sizeof(struct renderPass);
+
+    size_t qRenderPass = sizeof(renderPass) / sizeof(struct renderPassObj);
 
     struct player playerData[2] = {
         {
@@ -332,8 +527,12 @@ void game(struct VulkanTools *vulkan, enum state *state) {
             },
             .playerJoystick = GLFW_JOYSTICK_1,
 
+            .maxHealth = 100,
+            .currentHealth = 50,
+            .maxRest = 100,
+            .currentRest = 50,
             .splitScreen = &renderPass[0].camera,
-            .face = &renderPass[2].camera,
+            .face = &renderPass[5].camera,
             .relativeFaceCameraPos = {
                 -1,
                 0.4,
@@ -357,9 +556,13 @@ void game(struct VulkanTools *vulkan, enum state *state) {
                 GLFW_KEY_M
             },
             .playerJoystick = GLFW_JOYSTICK_2,
+            .maxHealth = 100,
+            .currentHealth = 80,
+            .maxRest = 100,
+            .currentRest = 10,
 
             .splitScreen = &renderPass[1].camera,
-            .face = &renderPass[3].camera,
+            .face = &renderPass[6].camera,
             .relativeFaceCameraPos = {
                 1,
                 0.4,
@@ -372,7 +575,14 @@ void game(struct VulkanTools *vulkan, enum state *state) {
     struct playerInstance *player = entity[1]->instance;
     struct playerInstance *enemy = entity[2]->instance;
     struct instance *text = entity[3]->instance;
+    struct instance *player1Text = entity[5]->instance;
+    struct instance *player2Text = entity[6]->instance;
     struct instance *background = entity[4]->instance;
+    struct instance *flat = entity[7]->instance;
+    struct instance *red = entity[8]->instance;
+    struct instance *redBg = entity[9]->instance;
+    struct instance *blue = entity[10]->instance;
+    struct instance *blueBg = entity[11]->instance;
 
     floor[0] = (struct instance){
         .pos = { 0.0f, 0.0f, -5.0f },
@@ -409,6 +619,24 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         .shadow = false
     };
 
+    player1Text[0] = (struct instance){
+        .pos = { 0.0f, -0.35f, 0.0f },
+        .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { 0.0f, 0.0f, 0.0f },
+        .scale = { 2 * 10e-2, 2 * 10e-2, 2 * 10e-2 },
+        .textureIndex = 0,
+        .shadow = false
+    };
+
+    player2Text[0] = (struct instance){
+        .pos = { 0.0f, -0.35f, 0.0f },
+        .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { 0.0f, 0.0f, 0.0f },
+        .scale = { 2 * 10e-2, 2 * 10e-2, 2 * 10e-2 },
+        .textureIndex = 0,
+        .shadow = false
+    };
+
     background[0] = (struct instance){
         .pos = { 0.0f, 0.0f, 0.0f }, 
         .rotation = { 0.0f, glm_rad(0.3), 0.0f },
@@ -418,39 +646,83 @@ void game(struct VulkanTools *vulkan, enum state *state) {
         .shadow = false
     };
 
-    while (GAME == *state && !glfwWindowShouldClose(vulkan->window)) {
-        if (GLFW_PRESS == glfwGetKey(vulkan->window, GLFW_KEY_END)) {
-            glfwSetWindowShouldClose(vulkan->window, GLFW_TRUE);
-        }
+    flat[0] = (struct instance){
+        .pos = { 0.0f, 0.0f, 0.0f }, 
+        .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { 0.0f, 0.0f, 0.0f },
+        .scale = { 10.0f, 10.0f, 10.0f },
+        .textureIndex = 0,
+        .shadow = false
+    };
+
+    red[0] = (struct instance){
+        .pos = { 0.0f, 0.0f, 0.0f }, 
+        .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { 0.0f, 0.0f, 0.0f },
+        .scale = { 10.0f, 10.0f, 10.0f },
+        .textureIndex = 1,
+        .shadow = false
+    };
+
+    redBg[0] = (struct instance){
+        .pos = { 0.0f, 0.0f, 0.0f }, 
+        .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { 0.0f, 0.0f, 0.0f },
+        .scale = { 10.0f, 10.0f, 10.0f },
+        .textureIndex = 2,
+        .shadow = false
+    };
+
+    blue[0] = (struct instance){
+        .pos = { 0.0f, 0.0f, 0.0f }, 
+        .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { 0.0f, 0.0f, 0.0f },
+        .scale = { 10.0f, 10.0f, 10.0f },
+        .textureIndex = 3,
+        .shadow = false
+    };
+
+    blueBg[0] = (struct instance){
+        .pos = { 0.0f, 0.0f, 0.0f }, 
+        .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { 0.0f, 0.0f, 0.0f },
+        .scale = { 10.0f, 10.0f, 10.0f },
+        .textureIndex = 4,
+        .shadow = false
+    };
+
+    while (GAME == *state && !shouldWindowClose(engine->window)) {
         glfwPollEvents();
 
-        updateInstances(entity, qEntity, vulkan->deltaTime.deltaTime);
+        updateInstances(entity, qEntity, engine->deltaTime.deltaTime);
 
-        movePlayer(&playerData[0], vulkan->windowControl, vulkan->deltaTime.deltaTime);
-        movePlayer(&playerData[1], vulkan->windowControl, vulkan->deltaTime.deltaTime);
+        movePlayer(&playerData[0], &engine->window, engine->deltaTime.deltaTime);
+        renderPass[11].coordinates[2] = (float)playerData[0].currentHealth / (8.0 * playerData[0].maxHealth);
+        renderPass[12].coordinates[2] = (float)playerData[0].currentRest / (8.0 * playerData[0].maxRest);
 
-        drawFrame(vulkan, qRenderPass, renderPass);
+        movePlayer(&playerData[1], &engine->window, engine->deltaTime.deltaTime);
+        renderPass[15].coordinates[2] = (float)playerData[1].currentHealth / (8.0 * playerData[1].maxHealth);
+        renderPass[16].coordinates[2] = (float)playerData[1].currentRest / (8.0 * playerData[1].maxRest);
 
-        bool isMClicked = (KEY_PRESS | KEY_CHANGE) == getKeyState(vulkan->windowControl, GLFW_KEY_M);
+        drawFrame(engine, qRenderPass, renderPass);
+
+        bool isMClicked = (KEY_PRESS | KEY_CHANGE) == getKeyState(&engine->window, GLFW_KEY_M);
 
         if (isMClicked) text->shadow = !text->shadow;
     }
 
     for (size_t i = 0; i < qPipe; i += 1) {
-        destroyObjGraphicsPipeline(vulkan->graphics.device, pipe[i]);
+        destroyObjGraphicsPipeline(engine->graphics.device, pipe[i]);
     }
 
-    destroyEntityArray(qEntity, entity, &vulkan->graphics);
-    destroyRenderPassObj(qRenderPass, renderPass, &vulkan->graphics);
+    destroyEntityArray(qEntity, entity, &engine->graphics);
+    destroyRenderPassObj(qRenderPass, renderPass, &engine->graphics);
 
-    vkDestroyDescriptorSetLayout(vulkan->graphics.device, objectLayout, NULL);
-    vkDestroyDescriptorSetLayout(vulkan->graphics.device, animLayout, NULL);
-    vkDestroyDescriptorSetLayout(vulkan->graphics.device, cameraLayout, NULL);
+    vkDestroyDescriptorSetLayout(engine->graphics.device, objectLayout, NULL);
+    vkDestroyDescriptorSetLayout(engine->graphics.device, animLayout, NULL);
+    vkDestroyDescriptorSetLayout(engine->graphics.device, cameraLayout, NULL);
 
-    destroyActualModels(vulkan->graphics.device, modelQuantity, actualModel);
-    unloadTextures(vulkan->graphics.device, texture);
-    unloadTextures(vulkan->graphics.device, cubeMap);
-
-    ma_sound_uninit(&sound);
-    ma_engine_uninit(&engine);
+    destroyActualModels(engine->graphics.device, modelQuantity, actualModel);
+    unloadTextures(engine->graphics.device, texture);
+    unloadTextures(engine->graphics.device, cubeMap);
 }

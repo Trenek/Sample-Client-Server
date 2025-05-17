@@ -194,11 +194,11 @@ void loadAnimation(cgltf_data *data, struct jointData foo2[data->animations_coun
             cgltf_size k = getNodeID(data, node);
             if (k != SIZE_MAX) {
                 foo2[i][k].isJoint = true;
-                foo2[i][k].t[channel->target_path - 1] = importantThings(channel->sampler);
+                foo2[i][k].transformation[channel->target_path - 1] = importantThings(channel->sampler);
 
                 if (channel->target_path == cgltf_animation_path_type_rotation &&
-                    foo2[i][k].t[channel->target_path - 1].interpolationType == cgltf_interpolation_type_linear) {
-                    foo2[i][k].t[channel->target_path - 1].interpolationType = 3;
+                    foo2[i][k].transformation[channel->target_path - 1].interpolationType == cgltf_interpolation_type_linear) {
+                    foo2[i][k].transformation[channel->target_path - 1].interpolationType = 3;
                 }
             }
         }
@@ -298,7 +298,7 @@ void gltfLoadModel(const char *filePath, struct actualModel *model, VkDevice dev
         model->qJoint = 0;
         model->anim = NULL;
 
-        createStorageBuffer(model->meshQuantity * sizeof(mat4), model->localMesh.buffers, model->localMesh.buffersMemory, model->localMesh.buffersMapped, device, physicalDevice, surface);
+        createBuffers(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, model->meshQuantity * sizeof(mat4), model->localMesh.buffers, model->localMesh.buffersMemory, model->localMesh.buffersMapped, device, physicalDevice, surface);
 
         int i = 0;
         int z[2] = {};

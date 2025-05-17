@@ -30,7 +30,7 @@ struct timeFrame {
 };
 
 struct jointData {
-    struct timeFrame t[3];
+    struct timeFrame transformation[3];
 
     mat4 inverseMatrix;
     int16_t father;
@@ -49,7 +49,7 @@ struct actualModel {
 
     size_t qAnim;
     size_t qJoint;
-    void *anim;
+    void *anim; // struct jointData
 
     uint32_t meshQuantity;
     struct Mesh *mesh;

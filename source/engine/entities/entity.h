@@ -23,11 +23,8 @@ struct Entity {
 
     size_t qBuff;
 
-    struct ModelGraphics {
-        struct buffer uniformModel;
-
-        struct descriptor object;
-    } graphics;
+    struct buffer uniformModel;
+    struct descriptor object;
 
     void *additional;
     void (*cleanup)(void *);

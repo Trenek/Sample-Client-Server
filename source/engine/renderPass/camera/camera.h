@@ -9,12 +9,12 @@ struct camera {
     vec2 tilt;
 };
 
-struct windowControl;
+struct WindowManager;
 typedef struct GLFWwindow GLFWwindow;
 typedef struct VkExtent2D VkExtent2D;
 
 struct camera initCamera();
-void moveCamera(struct windowControl *windowControl, GLFWwindow *window, struct camera *camera, float deltaTime);
+void moveCamera(struct WindowManager *windowControl, GLFWwindow *window, struct camera *camera, float deltaTime);
 
 void updateFirstPersonCameraBuffer(void *uniformBuffersMapped, VkExtent2D swapChainExtent, vec3 cameraPos, vec3 center);
 void updateThirdPersonCameraBuffer(void *uniformBuffersMapped, VkExtent2D swapChainExtent, vec3 cameraPos, vec3 center);

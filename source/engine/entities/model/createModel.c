@@ -1,7 +1,7 @@
 #include <cglm.h>
 
+#include "entity.h"
 #include "graphicsSetup.h"
-#include "mat4.h"
 #include "modelBuilder.h"
 #include "actualModel.h"
 
@@ -15,7 +15,7 @@ void cleanupAnim(void *toCleanArg) {
     struct toCleanup *toClean = toCleanArg;
 
     if (toClean) {
-        destroyStorageBuffer(toClean->device, toClean->anim.buffers, toClean->anim.buffersMemory);
+        destroyBuffers(toClean->device, toClean->anim.buffers, toClean->anim.buffersMemory);
 
         free(toClean);
     }
@@ -48,7 +48,7 @@ struct Entity *createModel(struct ModelBuilder builder, struct GraphicsSetup *vu
         anim = malloc(sizeof(struct toCleanup));
 
         anim->device = vulkan->device;
-        createStorageBuffer(range[1], anim->anim.buffers, anim->anim.buffersMemory, anim->anim.buffersMapped, vulkan->device, vulkan->physicalDevice, vulkan->surface);
+        createBuffers(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, range[1], anim->anim.buffers, anim->anim.buffersMemory, anim->anim.buffersMapped, vulkan->device, vulkan->physicalDevice, vulkan->surface);
 
         for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; j += 1) {
             for (size_t i = 0; i < builder.modelData->qJoint; i += 1) {

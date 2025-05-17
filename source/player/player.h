@@ -9,6 +9,12 @@ struct player {
     int playerKeys[10];
     int playerJoystick;
 
+    int maxHealth;
+    int currentHealth;
+
+    int maxRest;
+    int currentRest;
+
     float time;
     int state;
 
@@ -32,6 +38,6 @@ enum animation {
     WALK
 };
 
-struct windowControl;
-void movePlayer(struct player *p, struct windowControl *wc, float deltaTime);
-void moveEnemy(struct player *p, struct windowControl *, float deltaTime);
+struct WindowManager;
+void movePlayer(struct player *p, struct WindowManager *wc, float deltaTime);
+void moveEnemy(struct player *p, struct WindowManager *, float deltaTime);
