@@ -19,21 +19,8 @@
 #include "Vertex.h"
 
 #include "player.h"
-#include "cameraBufferObject.h"
 
-void printCoordinates(struct GraphicsSetup gs, struct WindowManager wm, struct CameraBuffer *cb) {
-    double pp[2];
-    vec3 p = {};
-
-    glfwGetCursorPos(wm.window, pp, pp + 1);
-
-    p[0] = 2 * pp[0] / gs.swapChain.extent.width - 1;
-    p[1] = 2 * pp[1] / gs.swapChain.extent.height - 1;
-
-    glm_mat4_mulv3(cb->proj, p, 1, p);
-
-    printf("\r(%f, %f)", p[0], p[1]);
-}
+#include "button.h"
 
 void menu(struct EngineCore *engine, enum state *state) {
     const char *texturePaths[] = {
@@ -275,13 +262,28 @@ void menu(struct EngineCore *engine, enum state *state) {
         .direction = { 0.0, 1.0, 0.0 }
     };
 
+    struct Button button = {
+        .entity = entity[1],
+        .model = &actualModel[1],
+        .camera = renderPass[0].cameraBufferMapped[0],
+        .newState = (int []) {
+            GAME,
+            EXIT
+        },
+        .chosen = -1,
+    };
     while (MAIN_MENU == *state && !shouldWindowClose(engine->window)) {
         glfwPollEvents();
 
         updateInstances(entity, qEntity, engine->deltaTime.deltaTime);
 
         drawFrame(engine, qRenderPass, renderPass);
-        printCoordinates(engine->graphics, engine->window, renderPass[0].cameraBufferMapped[0]);
+        shadowButton(engine->graphics, engine->window, &button);
+        if ((KEY_PRESS | KEY_CHANGE) == getMouseState(&engine->window, GLFW_MOUSE_BUTTON_LEFT)) {
+            if (button.chosen >= 0) {
+                *state = button.newState[button.chosen];
+            }
+        }
     }
 
     for (size_t i = 0; i < qPipe; i += 1) {
