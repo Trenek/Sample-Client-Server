@@ -618,7 +618,8 @@ void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
     model->meshQuantity = strlen(buffer);
     model->mesh = malloc(sizeof(struct Mesh) * (model->meshQuantity));
 
-    createStorageBuffer(
+    createBuffers(
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         model->meshQuantity * sizeof(mat4) + sizeof(mat4),
         model->localMesh.buffers, 
         model->localMesh.buffersMemory, 

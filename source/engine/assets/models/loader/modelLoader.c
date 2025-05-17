@@ -75,6 +75,6 @@ void destroyActualModels(VkDevice device, uint32_t modelQuantity, struct actualM
         cleanupColisionBox(model[i].qHitbox, model[i].hitBox);
         cleanupColisionBox(model[i].qHurtBox, model[i].hurtBox);
 
-        destroyStorageBuffer(device, model[i].localMesh.buffers, model[i].localMesh.buffersMemory);
+        destroyBuffers(device, model[i].localMesh.buffers, model[i].localMesh.buffersMemory);
     }
 }

@@ -19,10 +19,25 @@
 #include "Vertex.h"
 
 #include "player.h"
+#include "cameraBufferObject.h"
+
+void printCoordinates(struct GraphicsSetup gs, struct WindowManager wm, struct CameraBuffer *cb) {
+    double pp[2];
+    vec3 p = {};
+
+    glfwGetCursorPos(wm.window, pp, pp + 1);
+
+    p[0] = 2 * pp[0] / gs.swapChain.extent.width - 1;
+    p[1] = 2 * pp[1] / gs.swapChain.extent.height - 1;
+
+    glm_mat4_mulv3(cb->proj, p, 1, p);
+
+    printf("\r(%f, %f)", p[0], p[1]);
+}
 
 void menu(struct EngineCore *engine, enum state *state) {
     const char *texturePaths[] = {
-        "textures/texture.jpg",
+        "textures/button.png",
     };
     size_t texturesQuantity = sizeof(texturePaths) / sizeof(const char *);
 
@@ -129,7 +144,7 @@ void menu(struct EngineCore *engine, enum state *state) {
             .center = 0
         }, &engine->graphics),
         /*flat*/ createModel((struct ModelBuilder) {
-            .instanceCount = 1,
+            .instanceCount = 2,
             .modelData = &actualModel[1],
             .objectLayout = objectLayout,
 
@@ -151,6 +166,15 @@ void menu(struct EngineCore *engine, enum state *state) {
             INS(instance, instanceBuffer),
             .center = 0
         }, &engine->graphics),
+        /*text3*/ createString((struct StringBuilder) {
+            .instanceCount = 1,
+            .string = "Exit",
+            .modelData = &actualModel[0],
+            .objectLayout = objectLayout,
+
+            INS(instance, instanceBuffer),
+            .center = 0
+        }, &engine->graphics),
     };
     size_t qEntity = sizeof(entity) / sizeof(struct Entity *);
 
@@ -163,8 +187,9 @@ void menu(struct EngineCore *engine, enum state *state) {
                     .entity = (struct Entity* []) {
                         entity[0],
                         entity[3],
+                        entity[4],
                     },
-                    .qEntity = 2
+                    .qEntity = 3
                 },
                 {
                     .pipe = &pipe[1],
@@ -186,7 +211,10 @@ void menu(struct EngineCore *engine, enum state *state) {
     struct instance *text = entity[0]->instance;
     struct instance *flat = entity[1]->instance;
     struct instance *background = entity[2]->instance;
-    struct instance *text2 = entity[3]->instance;
+    struct instance *buttonText[] = {
+        entity[3]->instance,
+        entity[4]->instance
+    };
 
     text[0] = (struct instance){
         .pos = { 0.0f, 0.3f, 0.0f },
@@ -197,17 +225,35 @@ void menu(struct EngineCore *engine, enum state *state) {
         .shadow = false
     };
 
-    text2[0] = (struct instance){
-        .pos = { 0.0f, 0.0f, 0.0f },
+    buttonText[0][0] = (struct instance){
+        .pos = { 0.0f, -0.014f, 0.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
         .fixedRotation = { 0.0f, 0.0f, 0.0f },
-        .scale = { 4 * 10e-3, 4 * 10e-3, 4 * 10e-3 },
+        .scale = { 3 * 10e-3, 3 * 10e-3, 3 * 10e-3 },
+        .textureIndex = 0,
+        .shadow = false
+    };
+
+    buttonText[1][0] = (struct instance){
+        .pos = { 0.0f, -0.11f -0.014f, 0.0f },
+        .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { 0.0f, 0.0f, 0.0f },
+        .scale = { 3 * 10e-3, 3 * 10e-3, 3 * 10e-3 },
         .textureIndex = 0,
         .shadow = false
     };
 
     flat[0] = (struct instance){
         .pos = { 0.0f, 0.0f, 0.0f },
+        .rotation = { 0.0f, 0.0f, 0.0f },
+        .fixedRotation = { 0.0f, 0.0f, 0.0f },
+        .scale = { 0.1f, 0.05f, 0.1f },
+        .textureIndex = 0,
+        .shadow = false
+    };
+
+    flat[1] = (struct instance){
+        .pos = { 0.0f, -0.11f, 0.0f },
         .rotation = { 0.0f, 0.0f, 0.0f },
         .fixedRotation = { 0.0f, 0.0f, 0.0f },
         .scale = { 0.1f, 0.05f, 0.1f },
@@ -235,6 +281,7 @@ void menu(struct EngineCore *engine, enum state *state) {
         updateInstances(entity, qEntity, engine->deltaTime.deltaTime);
 
         drawFrame(engine, qRenderPass, renderPass);
+        printCoordinates(engine->graphics, engine->window, renderPass[0].cameraBufferMapped[0]);
     }
 
     for (size_t i = 0; i < qPipe; i += 1) {

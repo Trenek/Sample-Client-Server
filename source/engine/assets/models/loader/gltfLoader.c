@@ -298,7 +298,7 @@ void gltfLoadModel(const char *filePath, struct actualModel *model, VkDevice dev
         model->qJoint = 0;
         model->anim = NULL;
 
-        createStorageBuffer(model->meshQuantity * sizeof(mat4), model->localMesh.buffers, model->localMesh.buffersMemory, model->localMesh.buffersMapped, device, physicalDevice, surface);
+        createBuffers(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, model->meshQuantity * sizeof(mat4), model->localMesh.buffers, model->localMesh.buffersMemory, model->localMesh.buffersMapped, device, physicalDevice, surface);
 
         int i = 0;
         int z[2] = {};

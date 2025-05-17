@@ -36,7 +36,7 @@ struct Entity *createEntity(struct EntityBuilder builder, struct GraphicsSetup *
 
     VkBuffer (*buff2[builder.qBuff + 1])[MAX_FRAMES_IN_FLIGHT];
 
-    createStorageBuffer(builder.instanceCount * builder.instanceBufferSize, result->uniformModel.buffers, result->uniformModel.buffersMemory, result->uniformModel.buffersMapped, vulkan->device, vulkan->physicalDevice, vulkan->surface);
+    createBuffers(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, builder.instanceCount * builder.instanceBufferSize, result->uniformModel.buffers, result->uniformModel.buffersMemory, result->uniformModel.buffersMapped, vulkan->device, vulkan->physicalDevice, vulkan->surface);
 
     result->mapp[0] = &result->uniformModel.buffersMapped;
     buff2[0] = &result->uniformModel.buffers;
@@ -61,7 +61,7 @@ static void destroyEntity(VkDevice device, struct Entity model) {
 
     free(model.instance);
 
-    destroyStorageBuffer(device, model.uniformModel.buffers, model.uniformModel.buffersMemory);
+    destroyBuffers(device, model.uniformModel.buffers, model.uniformModel.buffersMemory);
 
     vkDestroyDescriptorPool(device, model.object.descriptorPool, NULL);
 }

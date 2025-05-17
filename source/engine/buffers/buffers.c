@@ -1,13 +1,10 @@
 #include <vulkan/vulkan.h>
 
 #include "bufferOperations.h"
-#include "uniformBufferObject.h"
 
 #include "definitions.h"
 
-void createUniformBuffers(VkBuffer uniformBuffers[], VkDeviceMemory uniformBuffersMemory[], void *uniformBuffersMapped[], VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
-    VkDeviceSize bufferSize = sizeof(struct CameraBuffer);
-
+void createBuffers(VkBufferUsageFlagBits bufferUsageBit, VkDeviceSize bufferSize, VkBuffer uniformBuffers[], VkDeviceMemory uniformBuffersMemory[], void *uniformBuffersMapped[], VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     size_t i = 0;
 
     while (i < MAX_FRAMES_IN_FLIGHT) {
@@ -16,7 +13,7 @@ void createUniformBuffers(VkBuffer uniformBuffers[], VkDeviceMemory uniformBuffe
             physicalDevice,
             surface,
             bufferSize,
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+            bufferUsageBit
         );
         uniformBuffersMemory[i] = createBufferMemory(
             device,
@@ -31,7 +28,7 @@ void createUniformBuffers(VkBuffer uniformBuffers[], VkDeviceMemory uniformBuffe
     }
 }
 
-void destroyUniformBuffers(VkDevice device, VkBuffer uniformBuffers[], VkDeviceMemory uniformBuffersMemory[]) {
+void destroyBuffers(VkDevice device, VkBuffer uniformBuffers[], VkDeviceMemory uniformBuffersMemory[]) {
     size_t i = 0;
 
     while (i < MAX_FRAMES_IN_FLIGHT) {
@@ -41,3 +38,4 @@ void destroyUniformBuffers(VkDevice device, VkBuffer uniformBuffers[], VkDeviceM
         i += 1;
     }
 }
+
