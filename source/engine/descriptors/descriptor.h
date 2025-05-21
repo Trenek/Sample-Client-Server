@@ -7,6 +7,14 @@
 
 struct Entity;
 
+struct descriptorSetLayout {
+    VkDevice device;
+    VkDescriptorSetLayout descriptorSetLayout;
+};
+
+struct descriptorSetLayout *createDescriptorSetLayout(VkDescriptorSetLayout layout, VkDevice device);
+void destroyDescriptorSetLayout(void *layoutPtr);
+
 struct descriptor {
     VkDescriptorSetLayout descriptorSetLayout;
     VkDescriptorPool descriptorPool;

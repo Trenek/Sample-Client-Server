@@ -6,270 +6,39 @@
 
 #include "asset.h"
 #include "entity.h"
-#include "entityBuilder.h"
-#include "modelBuilder.h"
-#include "stringBuilder.h"
 #include "instanceBuffer.h"
 
 #include "graphicsPipelineObj.h"
 #include "renderPass.h"
 
-#include "Vertex.h"
-
 #include "player.h"
 
 void game(struct EngineCore *engine, enum state *state) {
-    const char *texturePaths[] = {
-        "textures/background.png",
-        "textures/red.png",
-        "textures/red_bg.png",
-        "textures/blue.png",
-        "textures/blue_bg.png",
+    struct ResourceManager *modelData = findResource(&engine->resource, "modelData");
+    struct ResourceManager *entityData = findResource(&engine->resource, "Entity");
+    struct ResourceManager *graphicPipelineData = findResource(&engine->resource, "graphicPipelines");
+
+    struct graphicsPipeline *pipe[] = { 
+        findResource(graphicPipelineData, "Floor"),
+        findResource(graphicPipelineData, "Animated Model"),
+        findResource(graphicPipelineData, "Text"),
+        findResource(graphicPipelineData, "Skybox"),
+        findResource(graphicPipelineData, "FlatColor"),
     };
-    size_t texturesQuantity = sizeof(texturePaths) / sizeof(const char *);
-
-    struct Textures texture = loadTextures(&engine->graphics, texturesQuantity, texturePaths);
-    struct Textures cubeMap = loadCubeMaps(&engine->graphics, (const char *[]) {
-        "textures/CubeMaps/xpos.png",
-        "textures/CubeMaps/xneg.png",
-        "textures/CubeMaps/ypos.png",
-        "textures/CubeMaps/yneg.png",
-        "textures/CubeMaps/zpos.png",
-        "textures/CubeMaps/zneg.png",
-    });
-
-    const char *modelPath[] = {
-        "models/my_model2d.obj",
-        "models/my_floor.obj",
-        "models/cylinder.glb",
-        "fonts/c.ttf",
-        "models/my_skybox.obj",
-        "models/czlowiek.glb",
-    };
-    size_t modelQuantity = sizeof(modelPath) / sizeof(const char *);
-
-    struct actualModel actualModel[modelQuantity] = {}; {
-        loadModels(modelQuantity, actualModel, modelPath, &engine->graphics);
-    }
-
-    VkDescriptorSetLayout objectLayout = createObjectDescriptorSetLayout(engine->graphics.device, 2, (VkDescriptorSetLayoutBinding []) {
-        {
-            .binding = 0,
-            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .descriptorCount = 1,
-            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-            .pImmutableSamplers = NULL
-        },
-        {
-            .binding = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .descriptorCount = 1,
-            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-            .pImmutableSamplers = NULL
-        }
-    });
-
-    VkDescriptorSetLayout animLayout = createObjectDescriptorSetLayout(engine->graphics.device, 3, (VkDescriptorSetLayoutBinding []) {
-        {
-            .binding = 0,
-            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .descriptorCount = 1,
-            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-            .pImmutableSamplers = NULL
-        },
-        {
-            .binding = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .descriptorCount = 1,
-            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-            .pImmutableSamplers = NULL
-        },
-        {
-            .binding = 2,
-            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .descriptorCount = 1,
-            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-            .pImmutableSamplers = NULL
-        }
-    });
-
-    VkDescriptorSetLayout cameraLayout = createCameraDescriptorSetLayout(engine->graphics.device);
-
-    struct graphicsPipeline pipe[] = { 
-        /* No Texture Model */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
-            .vertexShader = "shaders/vert.spv",
-            .fragmentShader = "shaders/frag.spv",
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f,
-            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-
-            .texture = &texture.descriptor,
-            .objectLayout = objectLayout,
-
-            Vert(AnimVertex),
-            .operation = VK_COMPARE_OP_LESS,
-            .cullFlags = VK_CULL_MODE_BACK_BIT,
-
-            .cameraLayout = cameraLayout
-        }, &engine->graphics),
-        /* Texture Model */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
-            .vertexShader = "shaders/playerAnimation.spv",
-            .fragmentShader = "shaders/playerFrag.spv",
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f,
-            .texture = &texture.descriptor,
-            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-
-            .objectLayout = animLayout,
-
-            Vert(AnimVertex),
-            .operation = VK_COMPARE_OP_LESS,
-            .cullFlags = VK_CULL_MODE_NONE,
-
-            .cameraLayout = cameraLayout
-        }, &engine->graphics),
-        /* Text */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
-            .vertexShader = "shaders/text2dV.spv",
-            .fragmentShader = "shaders/textF.spv",
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f,
-            .texture = &texture.descriptor,
-            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-
-            .objectLayout = objectLayout,
-
-            Vert(FontVertex),
-            .operation = VK_COMPARE_OP_LESS,
-            .cullFlags = VK_CULL_MODE_BACK_BIT,
-
-            .cameraLayout = cameraLayout
-        }, &engine->graphics),
-        /* Skybox */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
-            .vertexShader = "shaders/skyboxV.spv",
-            .fragmentShader = "shaders/skyboxF.spv",
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f,
-            .texture = &cubeMap.descriptor,
-            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-
-            .objectLayout = objectLayout,
-
-            Vert(AnimVertex),
-            .operation = VK_COMPARE_OP_LESS_OR_EQUAL,
-            .cullFlags = VK_CULL_MODE_BACK_BIT,
-
-            .cameraLayout = cameraLayout
-        }, &engine->graphics),
-        /* Flat */ createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
-            .vertexShader = "shaders/vert2d.spv",
-            .fragmentShader = "shaders/frag2d.spv",
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f,
-            .texture = &texture.descriptor,
-            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-
-            .objectLayout = objectLayout,
-
-            Vert(AnimVertex),
-            .operation = VK_COMPARE_OP_LESS,
-            .cullFlags = VK_CULL_MODE_NONE,
-
-            .cameraLayout = cameraLayout
-        }, &engine->graphics),
-    };
-    size_t qPipe = sizeof(pipe) / sizeof(struct graphicsPipeline);
 
     struct Entity *entity[] = {
-        /*floor*/ createModel((struct ModelBuilder) {
-            .instanceCount = 1,
-            .modelData = &actualModel[1],
-            .objectLayout = objectLayout,
-
-            INS(instance, instanceBuffer),
-        }, &engine->graphics),
-        /*player*/ createModel((struct ModelBuilder) {
-            .instanceCount = 1,
-            .modelData = &actualModel[5],
-            .objectLayout = animLayout,
-
-            INS(playerInstance, playerInstanceBuffer),
-        }, &engine->graphics),
-        /*enemy*/ createModel((struct ModelBuilder) {
-            .instanceCount = 1,
-            .modelData = &actualModel[5],
-            .objectLayout = animLayout,
-
-            INS(playerInstance, playerInstanceBuffer),
-        }, &engine->graphics),
-        /*text*/ createString((struct StringBuilder) {
-            .instanceCount = 1,
-            .string = "Fight!",
-            .modelData = &actualModel[3],
-            .objectLayout = objectLayout,
-
-            INS(instance, instanceBuffer),
-            .center = 0
-        }, &engine->graphics),
-        /*background*/ createModel((struct ModelBuilder) {
-            .instanceCount = 1,
-            .modelData = &actualModel[4],
-            .objectLayout = objectLayout,
-
-            INS(instance, instanceBuffer),
-        }, &engine->graphics),
-        /*text*/ createString((struct StringBuilder) {
-            .instanceCount = 1,
-            .string = "Player 1",
-            .modelData = &actualModel[3],
-            .objectLayout = objectLayout,
-
-            INS(instance, instanceBuffer),
-            .center = 0
-        }, &engine->graphics),
-        /*text*/ createString((struct StringBuilder) {
-            .instanceCount = 1,
-            .string = "Player 2",
-            .modelData = &actualModel[3],
-            .objectLayout = objectLayout,
-
-            INS(instance, instanceBuffer),
-            .center = 0
-        }, &engine->graphics),
-        /*flat*/ createModel((struct ModelBuilder) {
-            .instanceCount = 1,
-            .modelData = &actualModel[0],
-            .objectLayout = objectLayout,
-
-            INS(instance, instanceBuffer),
-        }, &engine->graphics),
-        /*red flat*/ createModel((struct ModelBuilder) {
-            .instanceCount = 1,
-            .modelData = &actualModel[0],
-            .objectLayout = objectLayout,
-
-            INS(instance, instanceBuffer),
-        }, &engine->graphics),
-        /*red background flat*/ createModel((struct ModelBuilder) {
-            .instanceCount = 1,
-            .modelData = &actualModel[0],
-            .objectLayout = objectLayout,
-
-            INS(instance, instanceBuffer),
-        }, &engine->graphics),
-        /*blue flat*/ createModel((struct ModelBuilder) {
-            .instanceCount = 1,
-            .modelData = &actualModel[0],
-            .objectLayout = objectLayout,
-
-            INS(instance, instanceBuffer),
-        }, &engine->graphics),
-        /*blue background flat*/ createModel((struct ModelBuilder) {
-            .instanceCount = 1,
-            .modelData = &actualModel[0],
-            .objectLayout = objectLayout,
-
-            INS(instance, instanceBuffer),
-        }, &engine->graphics),
+        findResource(entityData, "Floor"),
+        findResource(entityData, "Player 1"),
+        findResource(entityData, "Player 2"),
+        findResource(entityData, "Fight!"),
+        findResource(entityData, "Background"),
+        findResource(entityData, "Player 1 Text"),
+        findResource(entityData, "Player 2 Text"),
+        findResource(entityData, "Blue Back"),
+        findResource(entityData, "Health"),
+        findResource(entityData, "Health Background"),
+        findResource(entityData, "Rest"),
+        findResource(entityData, "Rest Background"),
     };
     size_t qEntity = sizeof(entity) / sizeof(struct Entity *);
 
@@ -278,17 +47,17 @@ void game(struct EngineCore *engine, enum state *state) {
             .coordinates = { 0.0, 0.0, 0.5, 1.0 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[0],
+                    .pipe = pipe[0],
                     .entity = entity,
                     .qEntity = 1
                 },
                 {
-                    .pipe = &pipe[1],
+                    .pipe = pipe[1],
                     .entity = entity + 1,
                     .qEntity = 2
                 },
                 {
-                    .pipe = &pipe[3],
+                    .pipe = pipe[3],
                     .entity = entity + 4,
                     .qEntity = 1
                 },
@@ -300,17 +69,17 @@ void game(struct EngineCore *engine, enum state *state) {
             .coordinates = { 0.5, 0.0, 0.5, 1.0 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[0],
+                    .pipe = pipe[0],
                     .entity = entity,
                     .qEntity = 1
                 },
                 {
-                    .pipe = &pipe[1],
+                    .pipe = pipe[1],
                     .entity = entity + 1,
                     .qEntity = 2
                 },
                 {
-                    .pipe = &pipe[3],
+                    .pipe = pipe[3],
                     .entity = entity + 4,
                     .qEntity = 1
                 },
@@ -322,7 +91,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .coordinates = { 0.0 / 8, 0.0 / 8, 2.0 / 8, 1.0 / 8 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[4],
+                    .pipe = pipe[4],
                     .entity = entity + 7,
                     .qEntity = 1
                 },
@@ -334,7 +103,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .coordinates = { 6.0 / 8, 0.0 / 8, 2.0 / 8, 1.0 / 8 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[4],
+                    .pipe = pipe[4],
                     .entity = entity + 7,
                     .qEntity = 1
                 },
@@ -346,7 +115,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .coordinates = { 0.0, 0.0, 1.0, 1.0 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[2],
+                    .pipe = pipe[2],
                     .entity = (struct Entity* []) {
                         entity[3],
                     },
@@ -360,7 +129,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .coordinates = { 0.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[1],
+                    .pipe = pipe[1],
                     .entity = entity + 1,
                     .qEntity = 1
                 },
@@ -372,7 +141,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .coordinates = { 7.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[1],
+                    .pipe = pipe[1],
                     .entity = entity + 2,
                     .qEntity = 1
                 },
@@ -384,7 +153,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .coordinates = { 0.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[2],
+                    .pipe = pipe[2],
                     .entity = (struct Entity* []) {
                         entity[5],
                     },
@@ -398,7 +167,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .coordinates = { 7.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[2],
+                    .pipe = pipe[2],
                     .entity = (struct Entity* []) {
                         entity[6]
                     },
@@ -412,7 +181,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .coordinates = { 1.0 / 8, 2.0 / 80, 1.0 / 8, 3.0 / 80 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[4],
+                    .pipe = pipe[4],
                     .entity = entity + 9,
                     .qEntity = 1
                 },
@@ -424,7 +193,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .coordinates = { 1.0 / 8, 6.0 / 90, 1.0 / 8, 3.0 / 80 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[4],
+                    .pipe = pipe[4],
                     .entity = entity + 11,
                     .qEntity = 1
                 },
@@ -436,7 +205,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .coordinates = { 1.0 / 8, 2.0 / 80, 1.0 / 8, 3.0 / 80 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[4],
+                    .pipe = pipe[4],
                     .entity = entity + 8,
                     .qEntity = 1
                 },
@@ -448,7 +217,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .coordinates = { 1.0 / 8, 6.0 / 90, 1.0 / 8, 3.0 / 80 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[4],
+                    .pipe = pipe[4],
                     .entity = entity + 10,
                     .qEntity = 1
                 },
@@ -460,7 +229,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .coordinates = { 6.0 / 8, 2.0 / 80, 1.0 / 8, 3.0 / 80 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[4],
+                    .pipe = pipe[4],
                     .entity = entity + 9,
                     .qEntity = 1
                 },
@@ -472,7 +241,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .coordinates = { 6.0 / 8, 6.0 / 90, 1.0 / 8, 3.0 / 80 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[4],
+                    .pipe = pipe[4],
                     .entity = entity + 11,
                     .qEntity = 1
                 },
@@ -484,7 +253,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .coordinates = { 6.0 / 8, 2.0 / 80, 1.0 / 8, 3.0 / 80 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[4],
+                    .pipe = pipe[4],
                     .entity = entity + 8,
                     .qEntity = 1
                 },
@@ -496,7 +265,7 @@ void game(struct EngineCore *engine, enum state *state) {
             .coordinates = { 6.0 / 8, 6.0 / 90, 1.0 / 8, 3.0 / 80 },
             .data = (struct pipelineConnection[]) {
                 {
-                    .pipe = &pipe[4],
+                    .pipe = pipe[4],
                     .entity = entity + 10,
                     .qEntity = 1
                 },
@@ -511,7 +280,7 @@ void game(struct EngineCore *engine, enum state *state) {
     struct player playerData[2] = {
         {
             .model = entity[1],
-            .actualModel = &actualModel[5],
+            .actualModel = findResource(modelData, "player"),
             .enemy = &playerData[1],
             .playerKeys = {
                 GLFW_KEY_W,
@@ -528,9 +297,13 @@ void game(struct EngineCore *engine, enum state *state) {
             .playerJoystick = GLFW_JOYSTICK_1,
 
             .maxHealth = 100,
-            .currentHealth = 50,
-            .maxRest = 100,
-            .currentRest = 50,
+            .currentHealth = 100,
+            .healthPercentage = &renderPass[11].coordinates[2],
+
+            .maxRest = 10000,
+            .currentRest = 10000,
+            .restPercentage = &renderPass[12].coordinates[2],
+
             .splitScreen = &renderPass[0].camera,
             .face = &renderPass[5].camera,
             .relativeFaceCameraPos = {
@@ -541,7 +314,7 @@ void game(struct EngineCore *engine, enum state *state) {
         },
         {
             .model = entity[2],
-            .actualModel = &actualModel[5],
+            .actualModel = findResource(modelData, "player"),
             .enemy = &playerData[0],
             .playerKeys = {
                 GLFW_KEY_UP,
@@ -557,9 +330,12 @@ void game(struct EngineCore *engine, enum state *state) {
             },
             .playerJoystick = GLFW_JOYSTICK_2,
             .maxHealth = 100,
-            .currentHealth = 80,
-            .maxRest = 100,
-            .currentRest = 10,
+            .currentHealth = 100,
+            .healthPercentage = &renderPass[15].coordinates[2],
+
+            .maxRest = 10000,
+            .currentRest = 10000,
+            .restPercentage = &renderPass[16].coordinates[2],
 
             .splitScreen = &renderPass[1].camera,
             .face = &renderPass[6].camera,
@@ -697,32 +473,37 @@ void game(struct EngineCore *engine, enum state *state) {
         updateInstances(entity, qEntity, engine->deltaTime.deltaTime);
 
         movePlayer(&playerData[0], &engine->window, engine->deltaTime.deltaTime);
-        renderPass[11].coordinates[2] = (float)playerData[0].currentHealth / (8.0 * playerData[0].maxHealth);
-        renderPass[12].coordinates[2] = (float)playerData[0].currentRest / (8.0 * playerData[0].maxRest);
-
         movePlayer(&playerData[1], &engine->window, engine->deltaTime.deltaTime);
-        renderPass[15].coordinates[2] = (float)playerData[1].currentHealth / (8.0 * playerData[1].maxHealth);
-        renderPass[16].coordinates[2] = (float)playerData[1].currentRest / (8.0 * playerData[1].maxRest);
 
         drawFrame(engine, qRenderPass, renderPass);
 
         bool isMClicked = (KEY_PRESS | KEY_CHANGE) == getKeyState(&engine->window, GLFW_KEY_M);
 
         if (isMClicked) text->shadow = !text->shadow;
+        if (playerData[0].currentHealth <= 0 || playerData[1].currentHealth <= 0) {
+            *state = WIN_SCREEN;
+        }
     }
 
-    for (size_t i = 0; i < qPipe; i += 1) {
-        destroyObjGraphicsPipeline(engine->graphics.device, pipe[i]);
-    }
+    switch (*state) {
+        case WIN_SCREEN:
+            struct playerInstance *info = malloc(sizeof(struct playerInstance)); {
+                memcpy(info, playerData[0].currentHealth <= 0 ? enemy : player, sizeof(struct playerInstance));
+            }
+            char *name = malloc(sizeof("Player 1")); {
+                memcpy(name, "Player 1", sizeof("Player 1"));
+            }
 
-    destroyEntityArray(qEntity, entity, &engine->graphics);
+            if (playerData[0].currentHealth <= 0) {
+                name[7] = '2';
+            }
+
+            addResource(&engine->resource, "playerInfo", info, free);
+            addResource(&engine->resource, "playerName", name, free);
+            break;
+        default:
+    };
+
+    vkDeviceWaitIdle(engine->graphics.device);
     destroyRenderPassObj(qRenderPass, renderPass, &engine->graphics);
-
-    vkDestroyDescriptorSetLayout(engine->graphics.device, objectLayout, NULL);
-    vkDestroyDescriptorSetLayout(engine->graphics.device, animLayout, NULL);
-    vkDestroyDescriptorSetLayout(engine->graphics.device, cameraLayout, NULL);
-
-    destroyActualModels(engine->graphics.device, modelQuantity, actualModel);
-    unloadTextures(engine->graphics.device, texture);
-    unloadTextures(engine->graphics.device, cubeMap);
 }

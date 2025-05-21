@@ -17,21 +17,23 @@ static struct Data loadCubeMap(const char *texturePath[6], VkDevice device, VkPh
     return result;
 }
 
-struct Textures loadCubeMaps(struct GraphicsSetup *vulkan, const char *texturePath[6]) {
-    struct Textures texture = {
-        .data = malloc(sizeof(struct Data)),
+struct Textures *loadCubeMaps(struct GraphicsSetup *vulkan, const char *texturePath[6]) {
+    struct Textures *texture = calloc(1, sizeof(struct Textures));
+    *texture = (struct Textures){
+        .device = &vulkan->device,
+        .data = calloc(1, sizeof(struct Data)),
         .quantity = 1,
         .descriptor = {
             .descriptorSetLayout = createTextureDescriptorSetLayout(vulkan->device, 1),
             .descriptorPool = createTextureDescriptorPool(vulkan->device, 1)
         }
     };
-    struct descriptor *desc = &texture.descriptor;
+    struct descriptor *desc = &texture->descriptor;
 
-    texture.data[0] = loadCubeMap(texturePath, vulkan->device, vulkan->physicalDevice, vulkan->surface, vulkan->commandPool, vulkan->transferQueue);
+    texture->data[0] = loadCubeMap(texturePath, vulkan->device, vulkan->physicalDevice, vulkan->surface, vulkan->commandPool, vulkan->transferQueue);
 
     createDescriptorSets(desc->descriptorSets, vulkan->device, desc->descriptorPool, desc->descriptorSetLayout);
-    bindTextureBuffersToDescriptorSets(desc->descriptorSets, vulkan->device, 1, &texture);
+    bindTextureBuffersToDescriptorSets(desc->descriptorSets, vulkan->device, 1, texture);
 
     return texture;
 }
@@ -46,38 +48,43 @@ static struct Data loadTexture(const char *texturePath, VkDevice device, VkPhysi
     return result;
 }
 
-struct Textures loadTextures(struct GraphicsSetup *vulkan, uint32_t texturesQuantity, const char *texturePath[static texturesQuantity]) {
-    struct Textures texture = {
-        .data = malloc(texturesQuantity * sizeof(struct Data)),
+struct Textures *loadTextures(struct GraphicsSetup *vulkan, uint32_t texturesQuantity, const char *texturePath[static texturesQuantity]) {
+    struct Textures *texture = calloc(1, sizeof(struct Textures));
+    *texture = (struct Textures) {
+        .device = &vulkan->device,
+        .data = calloc(texturesQuantity, sizeof(struct Data)),
         .quantity = texturesQuantity,
         .descriptor = {
             .descriptorSetLayout = createTextureDescriptorSetLayout(vulkan->device, texturesQuantity),
             .descriptorPool = createTextureDescriptorPool(vulkan->device, texturesQuantity)
         }
     };
-    struct descriptor *desc = &texture.descriptor;
+    struct descriptor *desc = &texture->descriptor;
 
     for (uint32_t i = 0; i < texturesQuantity; i += 1) {
-        texture.data[i] = loadTexture(texturePath[i], vulkan->device, vulkan->physicalDevice, vulkan->surface, vulkan->commandPool, vulkan->transferQueue);
+        texture->data[i] = loadTexture(texturePath[i], vulkan->device, vulkan->physicalDevice, vulkan->surface, vulkan->commandPool, vulkan->transferQueue);
     }
 
     createDescriptorSets(desc->descriptorSets, vulkan->device, desc->descriptorPool, desc->descriptorSetLayout);
-    bindTextureBuffersToDescriptorSets(desc->descriptorSets, vulkan->device, texturesQuantity, &texture);
+    bindTextureBuffersToDescriptorSets(desc->descriptorSets, vulkan->device, texturesQuantity, texture);
 
     return texture;
 }
 
-void unloadTextures(VkDevice device, struct Textures texture) {
-    for (uint32_t i = 0; i < texture.quantity; i += 1) {
-        vkDestroySampler(device, texture.data[i].sampler, NULL);
-        vkDestroyImageView(device, texture.data[i].imageView, NULL);
+void unloadTextures(void *texturePtr) {
+    struct Textures *texture = texturePtr;
+    for (uint32_t i = 0; i < texture->quantity; i += 1) {
+        vkDestroySampler(*texture->device, texture->data[i].sampler, NULL);
+        vkDestroyImageView(*texture->device, texture->data[i].imageView, NULL);
 
-        vkDestroyImage(device, texture.data[i].image, NULL);
-        vkFreeMemory(device, texture.data[i].imageMemory, NULL);
+        vkDestroyImage(*texture->device, texture->data[i].image, NULL);
+        vkFreeMemory(*texture->device, texture->data[i].imageMemory, NULL);
     }
 
-    free(texture.data);
+    free(texture->data);
 
-    vkDestroyDescriptorPool(device, texture.descriptor.descriptorPool, NULL);
-    vkDestroyDescriptorSetLayout(device, texture.descriptor.descriptorSetLayout, NULL);
+    vkDestroyDescriptorPool(*texture->device, texture->descriptor.descriptorPool, NULL);
+    vkDestroyDescriptorSetLayout(*texture->device, texture->descriptor.descriptorSetLayout, NULL);
+
+    free(texture);
 }

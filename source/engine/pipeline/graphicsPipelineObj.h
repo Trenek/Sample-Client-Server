@@ -29,13 +29,14 @@ struct graphicsPipelineBuilder {
 };
 
 struct graphicsPipeline {
+    VkDevice device;
     struct descriptor *texture;
 
     VkPipelineLayout pipelineLayout;
     VkPipeline pipeline;
 };
 
-struct graphicsPipeline createObjGraphicsPipeline(struct graphicsPipelineBuilder builder, struct GraphicsSetup *vulkan);
-void destroyObjGraphicsPipeline(VkDevice device, struct graphicsPipeline pipe);
+struct graphicsPipeline *createObjGraphicsPipeline(struct graphicsPipelineBuilder builder, struct GraphicsSetup *vulkan);
+void destroyObjGraphicsPipeline(void *pipePtr);
 
 #endif

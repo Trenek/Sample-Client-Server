@@ -77,8 +77,8 @@ static struct Mesh loadMesh(cgltf_mesh *mesh) {
 
     result.indicesQuantity = index_accessor->count;
     result.verticesQuantity = vertex_accessor->count;
-    result.vertices = malloc(sizeof(struct AnimVertex) * result.verticesQuantity);
-    result.indices = malloc(sizeof(uint16_t) * result.indicesQuantity);
+    result.vertices = calloc(result.verticesQuantity, sizeof(struct AnimVertex));
+    result.indices = calloc(result.indicesQuantity, sizeof(uint16_t));
 
     float localPosition[result.verticesQuantity][3];
     float localTexture[result.verticesQuantity][2];
@@ -158,8 +158,8 @@ struct timeFrame importantThings(cgltf_animation_sampler *sampler) {
     result.qValues = num_components;
     result.interpolationType = sampler->interpolation;
 
-    result.data = malloc(sizeof(struct { float a; float * b; }) * input->count);
-    result.data->values = malloc(sizeof(float) * input->count * num_components);
+    result.data = calloc(input->count, sizeof(struct timePoint));
+    result.data->values = calloc(input->count * num_components, sizeof(float));
 
     for (cgltf_size k = 0; k < input->count; k++) {
         result.data[k].values = result.data->values + k * num_components;
@@ -224,11 +224,11 @@ void loadAnimation(cgltf_data *data, struct jointData foo2[data->animations_coun
     }
 }
 
-size_t countNames(cgltf_size qNode, cgltf_node node[qNode], const char *buffer, size_t q) {
+size_t countNames(cgltf_size qNode, cgltf_node node[qNode], const char *buffer) {
     size_t result = 0;
 
     for (cgltf_size i = 0; i < qNode; i += 1) {
-        result += (node[i].name != NULL) && (0 == strncmp(node[i].name, buffer, q));
+        result += (node[i].name != NULL) && (0 == strncmp(node[i].name, buffer, strlen(buffer)));
     }
 
     return result;
@@ -270,14 +270,15 @@ void loadPlanes(void **planes, size_t qVert, struct AnimVertex vert[qVert]) {
     }
 }
 
-size_t addColisionBox(struct colisionBox *box, cgltf_node *node, struct Mesh *mesh, const char *name, size_t q) {
+size_t addColisionBox(struct colisionBox *box, cgltf_node *node, struct Mesh *mesh, const char *name) {
     size_t result = 0;
-    if (0 == strncmp(node->name, name, q)) {
+
+    if (0 == strncmp(node->name, name, strlen(name))) {
         box->qVertex = countVertex(mesh->verticesQuantity, mesh->vertices);
-        box->vertex = malloc(sizeof(void *) * box->qVertex);
+        box->vertex = calloc(box->qVertex, sizeof(void *));
         loadPlanes(box->vertex, mesh->verticesQuantity, mesh->vertices);
 
-        box->name = malloc(sizeof(char) * strlen(node->name));
+        box->name = calloc(strlen(node->name) + 1, sizeof(char));
         strcpy(box->name, node->name);
 
         result = 1;
@@ -293,7 +294,7 @@ void gltfLoadModel(const char *filePath, struct actualModel *model, VkDevice dev
     if (cgltf_result_success == cgltf_parse_file(&options, filePath, &data))
     if (cgltf_result_success == cgltf_load_buffers(&options, data, filePath)) {
         model->meshQuantity = countMeshes(data->nodes_count, data->nodes);
-        model->mesh = malloc(sizeof(struct Mesh) * model->meshQuantity);
+        model->mesh = calloc(model->meshQuantity, sizeof(struct Mesh));
         model->qAnim = 0;
         model->qJoint = 0;
         model->anim = NULL;
@@ -303,18 +304,18 @@ void gltfLoadModel(const char *filePath, struct actualModel *model, VkDevice dev
         int i = 0;
         int z[2] = {};
 
-        model->qHitbox = countNames(data->nodes_count, data->nodes, "Hit", 3);
-        model->qHurtBox = countNames(data->nodes_count, data->nodes, "Hurt", 4);
+        model->qHitbox = countNames(data->nodes_count, data->nodes, "Hit");
+        model->qHurtBox = countNames(data->nodes_count, data->nodes, "Hurt");
 
-        model->hitBox = malloc(sizeof(struct colisionBox) * model->qHitbox);
-        model->hurtBox = malloc(sizeof(struct colisionBox) * model->qHurtBox);
+        model->hitBox = calloc(model->qHitbox, sizeof(struct colisionBox));
+        model->hurtBox = calloc(model->qHurtBox, sizeof(struct colisionBox));
         for (uint32_t j = 0; j < data->nodes_count; j += 1) if (data->nodes[j].mesh != NULL) {
             model->mesh[i] = loadMesh(data->nodes[j].mesh);
             model->mesh[i].sizeOfVertex = sizeof(struct AnimVertex);
 
             if (data->nodes[j].name) {
-                z[0] += addColisionBox(&model->hitBox[z[0]], &data->nodes[j], &model->mesh[i], "Hit", 3);
-                z[1] += addColisionBox(&model->hurtBox[z[1]], &data->nodes[j], &model->mesh[i], "Hurt", 4);
+                z[0] += addColisionBox(&model->hitBox[z[0]], &data->nodes[j], &model->mesh[i], "Hit");
+                z[1] += addColisionBox(&model->hurtBox[z[1]], &data->nodes[j], &model->mesh[i], "Hurt");
             }
 
             for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {

@@ -11,9 +11,18 @@ struct player {
 
     int maxHealth;
     int currentHealth;
+    double *healthPercentage;
 
     int maxRest;
     int currentRest;
+    double *restPercentage;
+
+    bool hitLock;
+    bool hurtLock;
+    bool doesHitLast;
+    bool didHit;
+    float hitTime;
+    float hurtTime;
 
     float time;
     int state;
@@ -41,3 +50,4 @@ enum animation {
 struct WindowManager;
 void movePlayer(struct player *p, struct WindowManager *wc, float deltaTime);
 void moveEnemy(struct player *p, struct WindowManager *, float deltaTime);
+void posePlayer(struct player *p, float deltaTime);

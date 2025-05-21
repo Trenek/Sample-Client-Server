@@ -23,6 +23,7 @@ set(SOURCE_DIRECTORIES
             "${CMAKE_CURRENT_SOURCE_DIR}/engine/engineCore/deltaTimeManager"
             "${CMAKE_CURRENT_SOURCE_DIR}/engine/engineCore/windowManager"
             "${CMAKE_CURRENT_SOURCE_DIR}/engine/engineCore/soundManager"
+            "${CMAKE_CURRENT_SOURCE_DIR}/engine/engineCore/resourceManager"
         "${CMAKE_CURRENT_SOURCE_DIR}/engine/pipeline"
         "${CMAKE_CURRENT_SOURCE_DIR}/engine/entities"
         "${CMAKE_CURRENT_SOURCE_DIR}/engine/renderPass"

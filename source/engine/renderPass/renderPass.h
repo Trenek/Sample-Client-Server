@@ -12,6 +12,7 @@ struct GraphicsSetup;
 
 struct pipelineConnection {
     struct graphicsPipeline *pipe;
+    struct descriptor *texture;
     struct Entity **entity;
     size_t qEntity;
 };

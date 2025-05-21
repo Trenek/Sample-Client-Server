@@ -6,9 +6,11 @@ int main() {
     struct EngineCore engine = setup();
     void (* const state[])(struct EngineCore *engine, enum state *state) = {
         [GAME] = game,
-        [MAIN_MENU] = menu
+        [LOAD_MENU] = loadMenu,
+        [MAIN_MENU] = menu,
+        [WIN_SCREEN] = win,
     };
-    enum state stateID = MAIN_MENU;
+    enum state stateID = LOAD_MENU;
 
     loadSound(&engine.soundManager, 0, "music/music.mp3");
     playSound(&engine.soundManager, 0, true);

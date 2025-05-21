@@ -17,7 +17,8 @@ struct EngineCore setup() {
     struct EngineCore vulkan = {
         .window = initWindowManager(),
         .soundManager = initSoundManager(),
-        .deltaTime = initDeltaTimeManager()
+        .deltaTime = initDeltaTimeManager(),
+        .resource = {}
     };
 
     vulkan.graphics = setupGraphics(vulkan.window.window);
@@ -26,6 +27,8 @@ struct EngineCore setup() {
 }
 
 void cleanup(struct EngineCore vulkan) {
+    cleanupResourcesOrg(&vulkan.resource);
+
     cleanupGraphics(vulkan.graphics);
     cleanupSoundManager(vulkan.soundManager);
     cleanupWindowControl(vulkan.window);

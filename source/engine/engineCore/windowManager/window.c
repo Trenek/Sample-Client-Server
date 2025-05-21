@@ -1,3 +1,5 @@
+#include <stb_image.h>
+
 #include "windowManager.h"
 
 #include "MY_ASSERT.h"
@@ -30,6 +32,15 @@ static void mouseCallback(GLFWwindow *window, int button, int action, int) {
     stateCallback(&GET(window)->mouseButton[button], action);
 }
 
+static void setIcon(GLFWwindow *window, const char *name) {
+    GLFWimage image[1];
+    image[0].pixels = stbi_load(name, &image[0].width, &image[0].height, 0, 4);
+
+    glfwSetWindowIcon(window, 1, image);
+
+    stbi_image_free(image[0].pixels);
+}
+
 GLFWwindow *createWindow(struct windowData *data) {
     GLFWwindow *result = NULL;
     glfwInit();
@@ -39,6 +50,7 @@ GLFWwindow *createWindow(struct windowData *data) {
 
     result = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", NULL, NULL);
 
+    setIcon(result, "textures/iconka.png");
     glfwSetWindowUserPointer(result, data);
     glfwSetFramebufferSizeCallback(result, framebufferResizeCallback);
     glfwSetKeyCallback(result, keyCallback);

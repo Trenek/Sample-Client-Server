@@ -18,15 +18,17 @@ struct Mesh {
     VkDeviceMemory indexBufferMemory;
 };
 
+struct timePoint {
+    float time;
+    float *values;
+};
+
 struct timeFrame {
     size_t qData;
     size_t qValues;
     int interpolationType;
 
-    struct {
-        float time;
-        float *values;
-    } *data;
+    struct timePoint *data;
 };
 
 struct jointData {
@@ -45,6 +47,8 @@ struct colisionBox {
 };
 
 struct actualModel {
+    VkDevice device;
+
     struct buffer localMesh;
 
     size_t qAnim;
@@ -61,5 +65,8 @@ struct actualModel {
     struct colisionBox *hurtBox;
 };
 
-void loadModels(size_t quantity, struct actualModel model[quantity], const char *modelPath[quantity], struct GraphicsSetup *vulkan);
-void destroyActualModels(VkDevice device, uint32_t modelQuantity, struct actualModel *model);
+struct actualModel *loadModel(const char *filePath, struct GraphicsSetup *vulkan);
+void loadModels(size_t quantity, struct actualModel *model[quantity], const char *modelPath[quantity], struct GraphicsSetup *vulkan);
+
+void destroyActualModel(void *modelPtr);
+void destroyActualModels(uint32_t modelQuantity, struct actualModel *model[modelQuantity]);

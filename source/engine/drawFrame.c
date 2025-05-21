@@ -67,29 +67,31 @@ static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swa
     MY_ASSERT(VK_SUCCESS == vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
     for (size_t i = 0; i < qRenderPass; i += 1) {
-        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo[i], VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport[i]);
-        vkCmdSetScissor(commandBuffer, 0, 1, &renderArena[i]);
+        if (renderPassInfo[i].renderArea.extent.width > 0 && renderPassInfo[i].renderArea.extent.height > 0) {
+            vkCmdBeginRenderPass(commandBuffer, &renderPassInfo[i], VK_SUBPASS_CONTENTS_INLINE);
+            vkCmdSetViewport(commandBuffer, 0, 1, &viewport[i]);
+            vkCmdSetScissor(commandBuffer, 0, 1, &renderArena[i]);
 
-        for (uint32_t j = 0; j < renderPass[i].qData; j += 1) {
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPass[i].data[j].pipe->pipeline);
-            for (uint32_t k = 0; k < renderPass[i].data[j].qEntity; k += 1) {
-                VkDescriptorSet sets[] = {
-                    renderPass[i].data[j].entity[k]->object.descriptorSets[currentFrame],
-                    renderPass[i].data[j].pipe->texture->descriptorSets[currentFrame],
-                    renderPass[i].cameraDescriptorSet[currentFrame],
-                };
-                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPass[i].data[j].pipe->pipelineLayout, 0, 3, sets, 0, NULL);
-                for (uint32_t l = 0; l < renderPass[i].data[j].entity[k]->meshQuantity; l += 1) {
-                    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &renderPass[i].data[j].entity[k]->mesh[l].vertexBuffer, (VkDeviceSize[]){ 0 });
-                    vkCmdBindIndexBuffer(commandBuffer, renderPass[i].data[j].entity[k]->mesh[l].indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+            for (uint32_t j = 0; j < renderPass[i].qData; j += 1) {
+                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPass[i].data[j].pipe->pipeline);
+                for (uint32_t k = 0; k < renderPass[i].data[j].qEntity; k += 1) {
+                    VkDescriptorSet sets[] = {
+                        renderPass[i].data[j].entity[k]->object.descriptorSets[currentFrame],
+                        renderPass[i].data[j].pipe->texture->descriptorSets[currentFrame],
+                        renderPass[i].cameraDescriptorSet[currentFrame],
+                    };
+                    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPass[i].data[j].pipe->pipelineLayout, 0, 3, sets, 0, NULL);
+                    for (uint32_t l = 0; l < renderPass[i].data[j].entity[k]->meshQuantity; l += 1) {
+                        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &renderPass[i].data[j].entity[k]->mesh[l].vertexBuffer, (VkDeviceSize[]){ 0 });
+                        vkCmdBindIndexBuffer(commandBuffer, renderPass[i].data[j].entity[k]->mesh[l].indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-                    vkCmdPushConstants(commandBuffer, renderPass[i].data[j].pipe->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(struct MeshPushConstants), &(struct MeshPushConstants) { .meshID = l });
-                    vkCmdDrawIndexed(commandBuffer, renderPass[i].data[j].entity[k]->mesh[l].indicesQuantity, renderPass[i].data[j].entity[k]->instanceCount, 0, 0, 0);
+                        vkCmdPushConstants(commandBuffer, renderPass[i].data[j].pipe->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(struct MeshPushConstants), &(struct MeshPushConstants) { .meshID = l });
+                        vkCmdDrawIndexed(commandBuffer, renderPass[i].data[j].entity[k]->mesh[l].indicesQuantity, renderPass[i].data[j].entity[k]->instanceCount, 0, 0, 0);
+                    }
                 }
             }
+            vkCmdEndRenderPass(commandBuffer);
         }
-        vkCmdEndRenderPass(commandBuffer);
     }
     MY_ASSERT(VK_SUCCESS == vkEndCommandBuffer(commandBuffer));
 }

@@ -10,6 +10,7 @@ struct Entity *createEntity(struct EntityBuilder builder, struct GraphicsSetup *
     struct Entity *result = malloc(sizeof(struct Entity));
 
     *result = (struct Entity){
+        .device = vulkan->device,
         .additional = builder.additional,
         .cleanup = builder.cleanup,
 
@@ -54,22 +55,31 @@ struct Entity *createEntity(struct EntityBuilder builder, struct GraphicsSetup *
     return result;
 }
 
-static void destroyEntity(VkDevice device, struct Entity model) {
-    if (model.cleanup != NULL) {
-        model.cleanup(model.additional);
+void destroyEntity(void *modelPtr) {
+    struct Entity *model = modelPtr;
+
+    if (model->cleanup != NULL) {
+        model->cleanup(model->additional);
     }
 
-    free(model.instance);
+    free(model->buffer[0]);
 
-    destroyBuffers(device, model.uniformModel.buffers, model.uniformModel.buffersMemory);
+    free(model->instance);
+    free(model->buffer);
+    free(model->range);
+    free(model->mapp);
 
-    vkDestroyDescriptorPool(device, model.object.descriptorPool, NULL);
+    destroyBuffers(model->device, model->uniformModel.buffers, model->uniformModel.buffersMemory);
+
+    vkDestroyDescriptorPool(model->device, model->object.descriptorPool, NULL);
+
+    free(model);
 }
 
 void destroyEntityArray(uint16_t num, struct Entity *modelArray[num], struct GraphicsSetup *graphics) {
     vkDeviceWaitIdle(graphics->device);
 
     for (uint16_t i = 0; i < num; i += 1) {
-        destroyEntity(graphics->device, *modelArray[i]);
+        destroyEntity(modelArray[i]);
     }
 }

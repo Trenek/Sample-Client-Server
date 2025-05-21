@@ -1,5 +1,6 @@
 #include <string.h>
 
+#include "entityBuilder.h"
 #include "graphicsSetup.h"
 #include "modelLoader.h"
 
@@ -7,7 +8,9 @@
 
 #include "MY_ASSERT.h"
 
-void loadModel(const char *filePath, struct actualModel *model, struct GraphicsSetup *vulkan) {
+struct actualModel *loadModel(const char *filePath, struct GraphicsSetup *vulkan) {
+    struct actualModel *result = calloc(1, sizeof(struct actualModel));
+
     void (*fun)(const char *, struct actualModel *, VkDevice, VkPhysicalDevice, VkSurfaceKHR) =
         NULL != strstr(filePath, ".obj") ? objLoadModel : 
         NULL != strstr(filePath, ".ttf") ? ttfLoadModel :
@@ -16,17 +19,20 @@ void loadModel(const char *filePath, struct actualModel *model, struct GraphicsS
         NULL;
     assert(NULL != fun);
 
-    fun(filePath, model, vulkan->device, vulkan->physicalDevice, vulkan->surface);
+    fun(filePath, result, vulkan->device, vulkan->physicalDevice, vulkan->surface);
 
-    for (uint32_t i = 0; i < model->meshQuantity; i += 1) {
-        model->mesh[i].vertexBuffer = createVertexBuffer(&model->mesh[i].vertexBufferMemory, vulkan->device, vulkan->physicalDevice, vulkan->surface, vulkan->commandPool, vulkan->transferQueue, model->mesh[i].verticesQuantity, model->mesh[i].vertices, model->mesh[i].sizeOfVertex);
-        model->mesh[i].indexBuffer = createIndexBuffer(&model->mesh[i].indexBufferMemory, vulkan->device, vulkan->physicalDevice, vulkan->surface, vulkan->commandPool, vulkan->transferQueue, model->mesh[i].verticesQuantity, model->mesh[i].indicesQuantity, model->mesh[i].indices, model->mesh[i].sizeOfVertex);
+    for (uint32_t i = 0; i < result->meshQuantity; i += 1) {
+        result->device = vulkan->device;
+        result->mesh[i].vertexBuffer = createVertexBuffer(&result->mesh[i].vertexBufferMemory, vulkan->device, vulkan->physicalDevice, vulkan->surface, vulkan->commandPool, vulkan->transferQueue, result->mesh[i].verticesQuantity, result->mesh[i].vertices, result->mesh[i].sizeOfVertex);
+        result->mesh[i].indexBuffer = createIndexBuffer(&result->mesh[i].indexBufferMemory, vulkan->device, vulkan->physicalDevice, vulkan->surface, vulkan->commandPool, vulkan->transferQueue, result->mesh[i].verticesQuantity, result->mesh[i].indicesQuantity, result->mesh[i].indices, result->mesh[i].sizeOfVertex);
     }
+
+    return result;
 }
 
-void loadModels(size_t quantity, struct actualModel model[quantity], const char *modelPath[quantity], struct GraphicsSetup *vulkan) {
+void loadModels(size_t quantity, struct actualModel *model[quantity], const char *modelPath[quantity], struct GraphicsSetup *vulkan) {
     for (size_t i = 0; i < quantity; i += 1) {
-        loadModel(modelPath[i], &model[i], vulkan);
+        model[i] = loadModel(modelPath[i], vulkan);
     }
 }
 
@@ -57,24 +63,32 @@ void cleanupColisionBox(size_t qBox, struct colisionBox *box) {
     }
 }
 
-void destroyActualModels(VkDevice device, uint32_t modelQuantity, struct actualModel *model) {
+void destroyActualModel(void *modelPtr) {
+    struct actualModel *model = modelPtr;
+
+    for (uint32_t j = 0; j < model->meshQuantity; j += 1) {
+        destroyBuffer(model->device, model->mesh[j].indexBuffer, model->mesh[j].indexBufferMemory);
+        destroyBuffer(model->device, model->mesh[j].vertexBuffer, model->mesh[j].vertexBufferMemory);
+    }
+
+    for (uint32_t j = 0; j < model->meshQuantity; j += 1) {
+        free(model->mesh[j].vertices);
+        free(model->mesh[j].indices);
+    }
+    free(model->mesh);
+
+    freeAnimations(model->qAnim, model->qJoint, model->anim);
+
+    cleanupColisionBox(model->qHitbox, model->hitBox);
+    cleanupColisionBox(model->qHurtBox, model->hurtBox);
+
+    destroyBuffers(model->device, model->localMesh.buffers, model->localMesh.buffersMemory);
+
+    free(model);
+}
+
+void destroyActualModels(uint32_t modelQuantity, struct actualModel *model[modelQuantity]) {
     for (uint32_t i = 0; i < modelQuantity; i += 1) {
-        for (uint32_t j = 0; j < model[i].meshQuantity; j += 1) {
-            destroyBuffer(device, model[i].mesh[j].indexBuffer, model[i].mesh[j].indexBufferMemory);
-            destroyBuffer(device, model[i].mesh[j].vertexBuffer, model[i].mesh[j].vertexBufferMemory);
-        }
-
-        for (uint32_t j = 0; j < model[i].meshQuantity; j += 1) {
-            free(model[i].mesh[j].vertices);
-            free(model[i].mesh[j].indices);
-        }
-        free(model[i].mesh);
-
-        freeAnimations(model[i].qAnim, model[i].qJoint, model[i].anim);
-
-        cleanupColisionBox(model[i].qHitbox, model[i].hitBox);
-        cleanupColisionBox(model[i].qHurtBox, model[i].hurtBox);
-
-        destroyBuffers(device, model[i].localMesh.buffers, model[i].localMesh.buffersMemory);
+        destroyActualModel(model[i]);
     }
 }

@@ -46,4 +46,3 @@ void updateInstances(struct Entity **model, size_t qModel, float deltaTime) {
         model[i]->instanceUpdater(model[i]->instance, model[i]->buffer[0], model[i]->instanceCount, deltaTime);
     }
 }
-
