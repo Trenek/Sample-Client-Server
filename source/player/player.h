@@ -1,3 +1,5 @@
+#include "state.h"
+
 typedef float vec3[3];
 
 struct player {
@@ -6,6 +8,7 @@ struct player {
     struct Entity *model;
     struct actualModel *actualModel;
 
+    // w, a, s, d, x, y, a, b, left, right
     int playerKeys[10];
     int playerJoystick;
 
@@ -13,8 +16,8 @@ struct player {
     int currentHealth;
     double *healthPercentage;
 
-    int maxRest;
-    int currentRest;
+    float maxRest;
+    float currentRest;
     double *restPercentage;
 
     bool hitLock;
@@ -34,7 +37,7 @@ struct player {
 };
 
 enum animation {
-    BATTLE_WALK,
+    CHARGE,
     DAMAGE_HIT,
     DAMAGE_KICK,
     LEFT_KICK,
@@ -44,10 +47,12 @@ enum animation {
     RIGHT_LOW_PUNCH,
     RIGHT_HIGH_PUNCH,
     STANDING,
-    WALK
+    WALK,
+
+    FAST_WALK,
 };
 
 struct WindowManager;
-void movePlayer(struct player *p, struct WindowManager *wc, float deltaTime);
+void movePlayer(struct player *p, struct WindowManager *wc, float deltaTime, enum state *state);
 void moveEnemy(struct player *p, struct WindowManager *, float deltaTime);
 void posePlayer(struct player *p, float deltaTime);

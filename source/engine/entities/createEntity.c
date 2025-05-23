@@ -7,7 +7,7 @@
 #include "entityBuilder.h"
 
 struct Entity *createEntity(struct EntityBuilder builder, struct GraphicsSetup *vulkan) {
-    struct Entity *result = malloc(sizeof(struct Entity));
+    struct Entity *result = calloc(1, sizeof(struct Entity));
 
     *result = (struct Entity){
         .device = vulkan->device,
@@ -18,9 +18,9 @@ struct Entity *createEntity(struct EntityBuilder builder, struct GraphicsSetup *
         .instance = malloc(builder.instanceSize * builder.instanceCount),
         .instanceUpdater = builder.instanceUpdater,
 
-        .buffer = malloc(sizeof(void *) * (builder.qBuff + 1)),
-        .range = malloc(sizeof(size_t) * (builder.qBuff + 1)),
-        .mapp = malloc(sizeof(void *) * (builder.qBuff + 1)),
+        .buffer = calloc(builder.qBuff + 1, sizeof(void *)),
+        .range = calloc(builder.qBuff + 1, sizeof(size_t)),
+        .mapp = calloc(builder.qBuff + 1, sizeof(void *)),
 
         .meshQuantity = builder.meshQuantity,
         .mesh = builder.mesh,
@@ -30,9 +30,9 @@ struct Entity *createEntity(struct EntityBuilder builder, struct GraphicsSetup *
         .qBuff = builder.qBuff + 1
     };
 
-    result->buffer[0] = malloc(builder.instanceBufferSize * builder.instanceCount);
+    result->buffer[0] = calloc(builder.instanceCount, builder.instanceBufferSize);
     for (size_t i = 0; i < builder.qBuff; i += 1) {
-        result->buffer[i + 1] = builder.isChangable[i] ? malloc(builder.range[i]) : NULL;
+        result->buffer[i + 1] = builder.isChangable[i] ? calloc(1, builder.range[i]) : NULL;
     }
 
     VkBuffer (*buff2[builder.qBuff + 1])[MAX_FRAMES_IN_FLIGHT];
@@ -62,7 +62,9 @@ void destroyEntity(void *modelPtr) {
         model->cleanup(model->additional);
     }
 
-    free(model->buffer[0]);
+    for (size_t i = 0; i < model->qBuff; i += 1) {
+        free(model->buffer[i]);
+    }
 
     free(model->instance);
     free(model->buffer);

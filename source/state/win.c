@@ -58,7 +58,7 @@ void win(struct EngineCore *engine, enum state *state) {
     };
     size_t qEntity = sizeof(entity) / sizeof(struct Entity *);
 
-    struct renderPassObj renderPass[] = {
+    struct renderPassObj *renderPass[] = {
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 0.0, 0.0, 1.0, 1.0 },
             .data = (struct pipelineConnection[]) {
@@ -99,7 +99,7 @@ void win(struct EngineCore *engine, enum state *state) {
             .updateCameraBuffer = updateFirstPersonCameraBuffer
         }, &engine->graphics),
     };
-    size_t qRenderPass = sizeof(renderPass) / sizeof(struct renderPassObj);
+    size_t qRenderPass = sizeof(renderPass) / sizeof(struct renderPassObj *);
 
     struct instance *text = entity[0]->instance;
     struct instance *flat = entity[1]->instance;
@@ -200,25 +200,27 @@ void win(struct EngineCore *engine, enum state *state) {
         }
     };
 
-    renderPass[0].camera = (struct camera) {
+    renderPass[0]->camera = (struct camera) {
         .pos = { -1.0, 0.0, 1.7 },
         .direction = { 0.0, 0.0, 1.1 }
     };
-    renderPass[1].camera = (struct camera) {
+    renderPass[1]->camera = (struct camera) {
         .pos = { 0.0, 0.0, 0.0 },
         .direction = { 0.0, 0.0, 1.0 }
     };
 
     struct Button button = {
+        .joystick = *(char *)findResource(&engine->resource, "playerNumb"),
+        .qButton = 3,
         .entity = entity[1],
         .model = findResource(modelData, "flat"),
-        .camera = renderPass[1].cameraBufferMapped[0],
+        .camera = renderPass[1]->cameraBufferMapped[0],
         .newState = (int []) {
-            GAME,
+            LOAD_GAME,
             MAIN_MENU,
             EXIT
         },
-        .chosen = -1,
+        .chosen = 0,
     };
 
     struct player playerData[1] = {
@@ -229,6 +231,8 @@ void win(struct EngineCore *engine, enum state *state) {
         },
     };
 
+    playSound(&engine->soundManager, 2, true, 1.0f);
+
     while (WIN_SCREEN == *state && !shouldWindowClose(engine->window)) {
         glfwPollEvents();
 
@@ -237,10 +241,8 @@ void win(struct EngineCore *engine, enum state *state) {
 
         drawFrame(engine, qRenderPass, renderPass);
         shadowButton(engine->graphics, engine->window, &button);
-        if ((KEY_PRESS | KEY_CHANGE) == getMouseState(&engine->window, GLFW_MOUSE_BUTTON_LEFT)) {
-            if (button.chosen >= 0) {
-                *state = button.newState[button.chosen];
-            }
+        if (button.isClicked) {
+            *state = button.newState[button.chosen];
         }
     }
 
@@ -248,7 +250,8 @@ void win(struct EngineCore *engine, enum state *state) {
 
     cleanupResource(&engine->resource, "playerName");
     cleanupResource(&engine->resource, "playerInfo");
+    cleanupResource(&engine->resource, "playerNumb");
 
     destroyEntity(entity[0]);
-    destroyRenderPassObj(qRenderPass, renderPass, &engine->graphics);
+    destroyRenderPassObjArr(qRenderPass, renderPass);
 }

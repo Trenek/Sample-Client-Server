@@ -61,6 +61,7 @@ void cleanupColisionBox(size_t qBox, struct colisionBox *box) {
         free(box[i].name);
         free(box[i].vertex);
     }
+    free(box);
 }
 
 void destroyActualModel(void *modelPtr) {

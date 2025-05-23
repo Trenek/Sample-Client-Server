@@ -9,9 +9,11 @@ set(CMAKE_C_STANDARD_REQUIRED TRUE)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_subdirectory(source)
+add_subdirectory(icon)
 
 add_executable(Test
     ${SOURCE_FILES} 
+    ${ICON}
     "${CMAKE_SOURCE_DIR}/source/main.c"
 )
 

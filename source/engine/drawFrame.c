@@ -10,7 +10,7 @@
 
 #include "MY_ASSERT.h"
 
-static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swapChainFramebuffer, VkExtent2D swapChainExtent, struct EngineCore *vulkan, uint32_t currentFrame, uint16_t qRenderPass, struct renderPassObj renderPass[qRenderPass]) {
+static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swapChainFramebuffer, VkExtent2D swapChainExtent, struct EngineCore *vulkan, uint32_t currentFrame, uint16_t qRenderPass, struct renderPassObj *renderPass[qRenderPass]) {
     VkCommandBufferBeginInfo beginInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = 0,
@@ -38,12 +38,12 @@ static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swa
     for (size_t i = 0; i < qRenderPass; i += 1) {
         renderArena[i] = (VkRect2D) {
             .offset = {
-                .x = (int32_t)(renderPass[i].coordinates[0] * swapChainExtent.width),
-                .y = (int32_t)(renderPass[i].coordinates[1] * swapChainExtent.height)
+                .x = (int32_t)(renderPass[i]->coordinates[0] * swapChainExtent.width),
+                .y = (int32_t)(renderPass[i]->coordinates[1] * swapChainExtent.height)
             },
             .extent = {
-                .width = (uint32_t)(renderPass[i].coordinates[2] * swapChainExtent.width),
-                .height = (uint32_t)(renderPass[i].coordinates[3] * swapChainExtent.height)
+                .width = (uint32_t)(renderPass[i]->coordinates[2] * swapChainExtent.width),
+                .height = (uint32_t)(renderPass[i]->coordinates[3] * swapChainExtent.height)
             }
         };
         renderPassInfo[i] = (VkRenderPassBeginInfo){
@@ -72,21 +72,21 @@ static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swa
             vkCmdSetViewport(commandBuffer, 0, 1, &viewport[i]);
             vkCmdSetScissor(commandBuffer, 0, 1, &renderArena[i]);
 
-            for (uint32_t j = 0; j < renderPass[i].qData; j += 1) {
-                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPass[i].data[j].pipe->pipeline);
-                for (uint32_t k = 0; k < renderPass[i].data[j].qEntity; k += 1) {
+            for (uint32_t j = 0; j < renderPass[i]->qData; j += 1) {
+                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPass[i]->data[j].pipe->pipeline);
+                for (uint32_t k = 0; k < renderPass[i]->data[j].qEntity; k += 1) {
                     VkDescriptorSet sets[] = {
-                        renderPass[i].data[j].entity[k]->object.descriptorSets[currentFrame],
-                        renderPass[i].data[j].pipe->texture->descriptorSets[currentFrame],
-                        renderPass[i].cameraDescriptorSet[currentFrame],
+                        renderPass[i]->data[j].entity[k]->object.descriptorSets[currentFrame],
+                        renderPass[i]->data[j].pipe->texture->descriptorSets[currentFrame],
+                        renderPass[i]->cameraDescriptorSet[currentFrame],
                     };
-                    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPass[i].data[j].pipe->pipelineLayout, 0, 3, sets, 0, NULL);
-                    for (uint32_t l = 0; l < renderPass[i].data[j].entity[k]->meshQuantity; l += 1) {
-                        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &renderPass[i].data[j].entity[k]->mesh[l].vertexBuffer, (VkDeviceSize[]){ 0 });
-                        vkCmdBindIndexBuffer(commandBuffer, renderPass[i].data[j].entity[k]->mesh[l].indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+                    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPass[i]->data[j].pipe->pipelineLayout, 0, 3, sets, 0, NULL);
+                    for (uint32_t l = 0; l < renderPass[i]->data[j].entity[k]->meshQuantity; l += 1) {
+                        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &renderPass[i]->data[j].entity[k]->mesh[l].vertexBuffer, (VkDeviceSize[]){ 0 });
+                        vkCmdBindIndexBuffer(commandBuffer, renderPass[i]->data[j].entity[k]->mesh[l].indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-                        vkCmdPushConstants(commandBuffer, renderPass[i].data[j].pipe->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(struct MeshPushConstants), &(struct MeshPushConstants) { .meshID = l });
-                        vkCmdDrawIndexed(commandBuffer, renderPass[i].data[j].entity[k]->mesh[l].indicesQuantity, renderPass[i].data[j].entity[k]->instanceCount, 0, 0, 0);
+                        vkCmdPushConstants(commandBuffer, renderPass[i]->data[j].pipe->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(struct MeshPushConstants), &(struct MeshPushConstants) { .meshID = l });
+                        vkCmdDrawIndexed(commandBuffer, renderPass[i]->data[j].entity[k]->mesh[l].indicesQuantity, renderPass[i]->data[j].entity[k]->instanceCount, 0, 0, 0);
                     }
                 }
             }
@@ -104,21 +104,21 @@ static void updateModelBuffer(size_t currentFrame, struct Entity *model) {
     }
 }
 
-static void updateBuffers(size_t currentFrame, size_t qRenderPass, struct renderPassObj renderPass[qRenderPass], VkExtent2D swapChainExtent) {
+static void updateBuffers(size_t currentFrame, size_t qRenderPass, struct renderPassObj *renderPass[qRenderPass], VkExtent2D swapChainExtent) {
     for (uint32_t i = 0; i < qRenderPass; i += 1) {
-        renderPass[i].updateCameraBuffer(renderPass[i].cameraBufferMapped[currentFrame], (VkExtent2D) { 
-            .width = renderPass[i].coordinates[2] * swapChainExtent.width,
-            .height = renderPass[i].coordinates[3] * swapChainExtent.height,
-        }, renderPass[i].camera.pos, renderPass[i].camera.direction);
-        for (uint32_t j = 0; j < renderPass[i].qData; j += 1) {
-            for (uint32_t k = 0; k < renderPass[i].data[j].qEntity; k += 1) {
-                updateModelBuffer(currentFrame, renderPass[i].data[j].entity[k]);
+        renderPass[i]->updateCameraBuffer(renderPass[i]->cameraBufferMapped[currentFrame], (VkExtent2D) { 
+            .width = renderPass[i]->coordinates[2] * swapChainExtent.width,
+            .height = renderPass[i]->coordinates[3] * swapChainExtent.height,
+        }, renderPass[i]->camera.pos, renderPass[i]->camera.direction);
+        for (uint32_t j = 0; j < renderPass[i]->qData; j += 1) {
+            for (uint32_t k = 0; k < renderPass[i]->data[j].qEntity; k += 1) {
+                updateModelBuffer(currentFrame, renderPass[i]->data[j].entity[k]);
             }
         }
     }
 }
 
-static VkResult localDrawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPassObj renderPass[qRenderPass]) {
+static VkResult localDrawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPassObj *renderPass[qRenderPass]) {
     VkResult result = VK_TRUE;
 
     uint32_t imageIndex = 0;
@@ -184,7 +184,7 @@ static VkResult localDrawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, 
     return result;
 }
 
-void drawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPassObj *renderPass) {
+void drawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPassObj **renderPass) {
     updateDeltaTime(&vulkan->deltaTime);
 
     switch (localDrawFrame(vulkan, qRenderPass, renderPass)) {

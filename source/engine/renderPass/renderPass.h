@@ -32,6 +32,7 @@ struct renderPass {
 };
 
 struct renderPassObj {
+    VkDevice device;
     double coordinates[4];
     
     struct renderPass *renderPass;
@@ -50,7 +51,8 @@ struct renderPassObj {
     VkDescriptorSet cameraDescriptorSet[MAX_FRAMES_IN_FLIGHT];
 };
 
-struct renderPassObj createRenderPassObj(struct renderPassBuilder builder, struct GraphicsSetup *vulkan);
-void destroyRenderPassObj(size_t qRenderPass, struct renderPassObj *renderPass, struct GraphicsSetup *vulkan);
+struct renderPassObj *createRenderPassObj(struct renderPassBuilder builder, struct GraphicsSetup *vulkan);
+void destroyRenderPassObj(void *renderPassPtr);
+void destroyRenderPassObjArr(size_t qRenderPass, struct renderPassObj **renderPass);
 
 #endif

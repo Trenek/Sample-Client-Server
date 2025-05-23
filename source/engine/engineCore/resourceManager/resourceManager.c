@@ -31,6 +31,7 @@ void cleanupResource(struct ResourceManager *this, const char *name) {
         if (this->resources[i].cleanup) {
             this->resources[i].cleanup(this->resources[i].this);
         }
+        free(this->resources[i].name);
         while (i < this->qResources - 1) {
             this->resources[i] = this->resources[i + 1];
 
@@ -46,7 +47,10 @@ void cleanupResourcesOrg(struct ResourceManager *this) {
         if (this->resources[i].cleanup) {
             this->resources[i].cleanup(this->resources[i].this);
         }
+        free(this->resources[i].name);
     }
+
+    free(this->resources);
 }
 
 void cleanupResources(void *this) {

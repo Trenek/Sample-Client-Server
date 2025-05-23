@@ -94,9 +94,16 @@ struct swapChain createSwapChain(GLFWwindow *window, VkSurfaceKHR surface, VkPhy
     vkGetSwapchainImagesKHR(device, swapChain.this, &swapChain.imagesCount, NULL);
     swapChain.images = malloc(sizeof(VkImage) * imageCount);
     vkGetSwapchainImagesKHR(device, swapChain.this, &swapChain.imagesCount, swapChain.images);
+    freeSwapChainSupportDetails(&swapChainSupport);
 
     swapChain.imageFormat = surfaceFormat.format;
     swapChain.extent = extent;
 
     return swapChain;
+}
+
+void freeSwapChain(VkDevice device, struct swapChain *swapChain) {
+    vkDestroySwapchainKHR(device, swapChain->this, NULL);
+
+    free(swapChain->images);
 }

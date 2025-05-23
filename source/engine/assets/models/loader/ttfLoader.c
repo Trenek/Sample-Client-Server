@@ -610,10 +610,32 @@ size_t getGlyphID(char a) {
         buffer[i] == 0 ? i - 1 : i;
 }
 
+void LoadCharacter(struct actualModel *model, FT_Face face) {
+    float space = 0;
+    mat4 **glyphOffset = (mat4 **)model->localMesh.buffersMapped;
+
+    for (size_t i = 0; i < model->meshQuantity; i += 1) {
+        loadCharacter(face, &model->mesh[i], buffer[i], &space);
+
+        for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {
+            model->mesh[i].sizeOfVertex = sizeof(struct FontVertex);
+            glm_mat4_identity(glyphOffset[k][i]);
+            glm_translate(glyphOffset[k][i], (vec3) {
+                space, 0, 0
+            });
+        }
+    }
+    for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {
+        glm_mat4_identity(glyphOffset[k][model->meshQuantity]);
+        glm_translate(glyphOffset[k][model->meshQuantity], (vec3) {
+            loadSpaceOffset(face), 0, 0
+        });
+    }
+}
+
 void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     FT_Library library;
     FT_Face face;
-    float space = 0;
 
     model->meshQuantity = strlen(buffer);
     model->mesh = malloc(sizeof(struct Mesh) * (model->meshQuantity));
@@ -629,27 +651,13 @@ void ttfLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
         surface
     );
 
-    mat4 **glyphOffset = (mat4 **)model->localMesh.buffersMapped;
-
-    IF (0 == FT_Init_FreeType(&library), "No Library")
-    IF (0 == FT_New_Face(library, objectPath, 0, &face), "No Face")
-    IF (0 == FT_Set_Pixel_Sizes(face, 100, 100), "Size Error") {
-        for (size_t i = 0; i < model->meshQuantity; i += 1) {
-            loadCharacter(face, &model->mesh[i], buffer[i], &space);
-
-            for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {
-                model->mesh[i].sizeOfVertex = sizeof(struct FontVertex);
-                glm_mat4_identity(glyphOffset[k][i]);
-                glm_translate(glyphOffset[k][i], (vec3) {
-                    space, 0, 0
-                });
+    IF (0 == FT_Init_FreeType(&library), "No Library") {
+        IF (0 == FT_New_Face(library, objectPath, 0, &face), "No Face") {
+            IF (0 == FT_Set_Pixel_Sizes(face, 100, 100), "Size Error") {
+                LoadCharacter(model, face);
             }
+            FT_Done_Face(face);
         }
-        for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {
-            glm_mat4_identity(glyphOffset[k][model->meshQuantity]);
-            glm_translate(glyphOffset[k][model->meshQuantity], (vec3) {
-                loadSpaceOffset(face), 0, 0
-            });
-        }
+        FT_Done_FreeType(library);
     }
 }

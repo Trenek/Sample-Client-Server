@@ -37,7 +37,7 @@ void menu(struct EngineCore *engine, enum state *state) {
     };
     size_t qEntity = sizeof(entity) / sizeof(struct Entity *);
 
-    struct renderPassObj renderPass[] = {
+    struct renderPassObj *renderPass[] = {
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 0.0, 0.0, 1.0, 1.0 },
             .data = (struct pipelineConnection[]) {
@@ -65,17 +65,20 @@ void menu(struct EngineCore *engine, enum state *state) {
             .updateCameraBuffer = updateFirstPersonCameraBuffer
         }, &engine->graphics),
     };
-    size_t qRenderPass = sizeof(renderPass) / sizeof(struct renderPassObj);
+    size_t qRenderPass = sizeof(renderPass) / sizeof(struct renderPassObj *);
 
     struct Button button = {
+        .joystick = GLFW_JOYSTICK_1,
+        .isClicked = false,
+        .qButton = 2,
         .entity = entity[1],
         .model = findResource(modelData, "flat"),
-        .camera = renderPass[0].cameraBufferMapped[0],
+        .camera = renderPass[0]->cameraBufferMapped[0],
         .newState = (int []) {
-            GAME,
+            LOAD_GAME,
             EXIT
         },
-        .chosen = -1,
+        .chosen = 0,
     };
 
     struct instance *text = entity[0]->instance;
@@ -142,10 +145,12 @@ void menu(struct EngineCore *engine, enum state *state) {
         .shadow = false
     };
 
-    renderPass[0].camera = (struct camera) {
+    renderPass[0]->camera = (struct camera) {
         .pos = { 0.0, 0.0, 0.0 },
         .direction = { 0.0, 1.0, 0.0 }
     };
+
+    playSound(&engine->soundManager, 0, true, 1.0f);
 
     while (MAIN_MENU == *state && !shouldWindowClose(engine->window)) {
         glfwPollEvents();
@@ -154,13 +159,11 @@ void menu(struct EngineCore *engine, enum state *state) {
 
         drawFrame(engine, qRenderPass, renderPass);
         shadowButton(engine->graphics, engine->window, &button);
-        if ((KEY_PRESS | KEY_CHANGE) == getMouseState(&engine->window, GLFW_MOUSE_BUTTON_LEFT)) {
-            if (button.chosen >= 0) {
-                *state = button.newState[button.chosen];
-            }
+        if (button.isClicked) {
+            *state = button.newState[button.chosen];
         }
     }
 
     vkDeviceWaitIdle(engine->graphics.device);
-    destroyRenderPassObj(qRenderPass, renderPass, &engine->graphics);
+    destroyRenderPassObjArr(qRenderPass, renderPass);
 }

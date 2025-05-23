@@ -19,12 +19,13 @@ static void addTextures(struct EngineCore *this) {
     addResource(textureManager, "button", loadTextures(&this->graphics, 1, (const char *[]){
         "textures/button.png",
     }), unloadTextures);
-    addResource(textureManager, "simpleColors", loadTextures(&this->graphics, 5, (const char *[]){
+    addResource(textureManager, "simpleColors", loadTextures(&this->graphics, 6, (const char *[]){
         "textures/background.png",
         "textures/red.png",
         "textures/red_bg.png",
         "textures/blue.png",
         "textures/blue_bg.png",
+        "textures/floor.png",
     }), unloadTextures);
     addResource(textureManager, "cubeMap", loadCubeMaps(&this->graphics, (const char *[]) {
         "textures/CubeMaps/xpos.png",
@@ -46,6 +47,7 @@ static void addModelData(struct EngineCore *this) {
     addResource(modelData, "flat", loadModel("models/my_model2d.obj", &this->graphics), destroyActualModel);
     addResource(modelData, "skyBox", loadModel("models/my_skybox.obj", &this->graphics), destroyActualModel);
     addResource(modelData, "floor", loadModel("models/my_floor.obj", &this->graphics), destroyActualModel);
+    addResource(modelData, "cube", loadModel("models/my_cube.obj", &this->graphics), destroyActualModel);
 
     addResource(&this->resource, "modelData", modelData, cleanupResources);
 }
@@ -234,6 +236,25 @@ static void createGraphicPipelines(struct EngineCore *this) {
     addResource(&this->resource, "graphicPipelines", graphicPipelinesData, cleanupResources);
 }
 
+void addString(
+    struct ResourceManager *entityData,
+    struct ResourceManager *modelData,
+
+    struct descriptorSetLayout *objectLayout,
+    struct EngineCore *this,
+    const char *buffer
+) {
+    addResource(entityData, buffer, createString((struct StringBuilder) {
+        .instanceCount = 1,
+        .string = buffer,
+        .modelData = findResource(modelData, "font"),
+        .objectLayout = objectLayout->descriptorSetLayout,
+
+        INS(instance, instanceBuffer),
+        .center = 0
+    }, &this->graphics), destroyEntity);
+}
+
 static void addEntities(struct EngineCore *this) {
     struct ResourceManager *entityData = calloc(1, sizeof(struct ResourceManager));
     struct ResourceManager *modelData = findResource(&this->resource, "modelData");
@@ -255,6 +276,13 @@ static void addEntities(struct EngineCore *this) {
 
         INS(instance, instanceBuffer),
     }, &this->graphics), destroyEntity);
+    addResource(entityData, "Cube", createModel((struct ModelBuilder) {
+        .instanceCount = 4,
+        .modelData = findResource(modelData, "cube"),
+        .objectLayout = objectLayout->descriptorSetLayout,
+
+        INS(instance, instanceBuffer),
+    }, &this->graphics), destroyEntity);
     addResource(entityData, "Background", createModel((struct ModelBuilder) {
         .instanceCount = 1,
         .modelData = findResource(modelData, "skyBox"),
@@ -262,45 +290,25 @@ static void addEntities(struct EngineCore *this) {
 
         INS(instance, instanceBuffer),
     }, &this->graphics), destroyEntity);
-    addResource(entityData, "Main Menu", createString((struct StringBuilder) {
+    addString(entityData, modelData, objectLayout, this, "Main Menu");
+    addString(entityData, modelData, objectLayout, this, "Restart");
+    addString(entityData, modelData, objectLayout, this, "Play");
+    addString(entityData, modelData, objectLayout, this, "Exit");
+    addString(entityData, modelData, objectLayout, this, "Fight!");
+    addString(entityData, modelData, objectLayout, this, "Pause");
+    addString(entityData, modelData, objectLayout, this, "Resume");
+    addResource(entityData, "Player 1 Text", createString((struct StringBuilder) {
         .instanceCount = 1,
-        .string = "Main Menu",
+        .string = "Player 1",
         .modelData = findResource(modelData, "font"),
         .objectLayout = objectLayout->descriptorSetLayout,
 
         INS(instance, instanceBuffer),
         .center = 0
     }, &this->graphics), destroyEntity);
-    addResource(entityData, "Restart", createString((struct StringBuilder) {
+    addResource(entityData, "Player 2 Text", createString((struct StringBuilder) {
         .instanceCount = 1,
-        .string = "Restart",
-        .modelData = findResource(modelData, "font"),
-        .objectLayout = objectLayout->descriptorSetLayout,
-
-        INS(instance, instanceBuffer),
-        .center = 0
-    }, &this->graphics), destroyEntity);
-    addResource(entityData, "Play", createString((struct StringBuilder) {
-        .instanceCount = 1,
-        .string = "Play",
-        .modelData = findResource(modelData, "font"),
-        .objectLayout = objectLayout->descriptorSetLayout,
-
-        INS(instance, instanceBuffer),
-        .center = 0
-    }, &this->graphics), destroyEntity);
-    addResource(entityData, "Exit", createString((struct StringBuilder) {
-        .instanceCount = 1,
-        .string = "Exit",
-        .modelData = findResource(modelData, "font"),
-        .objectLayout = objectLayout->descriptorSetLayout,
-
-        INS(instance, instanceBuffer),
-        .center = 0
-    }, &this->graphics), destroyEntity);
-    addResource(entityData, "Fight!", createString((struct StringBuilder) {
-        .instanceCount = 1,
-        .string = "Fight!",
+        .string = "Player 2",
         .modelData = findResource(modelData, "font"),
         .objectLayout = objectLayout->descriptorSetLayout,
 
@@ -320,24 +328,6 @@ static void addEntities(struct EngineCore *this) {
         .objectLayout = animLayout->descriptorSetLayout,
 
         INS(playerInstance, playerInstanceBuffer),
-    }, &this->graphics), destroyEntity);
-    addResource(entityData, "Player 1 Text", createString((struct StringBuilder) {
-        .instanceCount = 1,
-        .string = "Player 1",
-        .modelData = findResource(modelData, "font"),
-        .objectLayout = objectLayout->descriptorSetLayout,
-
-        INS(instance, instanceBuffer),
-        .center = 0
-    }, &this->graphics), destroyEntity);
-    addResource(entityData, "Player 2 Text", createString((struct StringBuilder) {
-        .instanceCount = 1,
-        .string = "Player 2",
-        .modelData = findResource(modelData, "font"),
-        .objectLayout = objectLayout->descriptorSetLayout,
-
-        INS(instance, instanceBuffer),
-        .center = 0
     }, &this->graphics), destroyEntity);
     addResource(entityData, "Blue Back", createModel((struct ModelBuilder) {
         .instanceCount = 1,
@@ -378,7 +368,13 @@ static void addEntities(struct EngineCore *this) {
     addResource(&this->resource, "Entity", entityData, cleanupResources);
 }
 
-void loadMenu(struct EngineCore *engine, enum state *state) {
+static void loadSounds(struct EngineCore *this) {
+    loadSound(&this->soundManager, 2, "music/Victory Music.mp3");
+    loadSound(&this->soundManager, 1, "music/Music Bustin Loose.mp3");
+    loadSound(&this->soundManager, 0, "music/Synthwave Music - Hackers by Karl Casey.mp3");
+}
+
+void loadResources(struct EngineCore *engine, enum state *state) {
     addTextures(engine);
     addModelData(engine);
 
@@ -386,6 +382,8 @@ void loadMenu(struct EngineCore *engine, enum state *state) {
 
     createGraphicPipelines(engine);
     addEntities(engine);
+
+    loadSounds(engine);
 
     *state = MAIN_MENU;
 }

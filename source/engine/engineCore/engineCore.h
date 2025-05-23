@@ -22,6 +22,6 @@ void recreateSwapChain(struct EngineCore *vulkan);
 void cleanup(struct EngineCore vulkan);
 
 struct renderPassObj;
-void drawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPassObj *renderPass);
+void drawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPassObj **renderPass);
 
 #endif

@@ -4,7 +4,8 @@
 #include <stdint.h>
 
 enum state {
-    LOAD_MENU,
+    LOAD_RESOURCES,
+    LOAD_GAME,
     MAIN_MENU,
     GAME,
     PAUSE,
@@ -19,6 +20,8 @@ struct renderPassObj;
 void game(struct EngineCore *engine, enum state *state);
 void menu(struct EngineCore *engine, enum state *state);
 void win(struct EngineCore *engine, enum state *state);
-void loadMenu(struct EngineCore *engine, enum state *state);
+void loadResources(struct EngineCore *engine, enum state *state);
+void loadGame(struct EngineCore *engine, enum state *state);
+void pause(struct EngineCore *engine, enum state *state);
 
 #endif

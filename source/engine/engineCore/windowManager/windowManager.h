@@ -14,6 +14,8 @@ struct windowData {
 
     union keyState mouseButton[GLFW_MOUSE_BUTTON_LAST + 1];
     union keyState key[GLFW_KEY_LAST + 1];
+    unsigned char gamepad[GLFW_GAMEPAD_BUTTON_LAST + 1];
+    float state[GLFW_GAMEPAD_AXIS_LAST + 1];
 };
 
 struct WindowManager {

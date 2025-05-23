@@ -221,4 +221,8 @@ void objLoadModel(const char *objectPath, struct actualModel *model, VkDevice de
     for (uint32_t k = 0; k < MAX_FRAMES_IN_FLIGHT; k += 1) {
         glm_mat4_identity(((mat4 **)model->localMesh.buffersMapped)[k][0]);
     }
+
+    tinyobj_attrib_free(&attrib);
+    tinyobj_shapes_free(shapes, num_shapes);
+    tinyobj_materials_free(materials, num_materials);
 }

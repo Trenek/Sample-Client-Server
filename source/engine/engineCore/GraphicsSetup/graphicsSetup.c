@@ -103,7 +103,7 @@ void cleanupGraphics(struct GraphicsSetup vulkan) {
     vkDestroyRenderPass(vulkan.device, vulkan.renderPass, NULL);
 
     destroyImageViews(vulkan.swapChainImageViews, vulkan.swapChain.imagesCount, vulkan.device);
-    vkDestroySwapchainKHR(vulkan.device, vulkan.swapChain.this, NULL);
+    freeSwapChain(vulkan.device, &vulkan.swapChain);
     vkDestroyDevice(vulkan.device, NULL);
     DestroyDebugUtilsMessengerEXT(vulkan.instance, vulkan.debugMessenger, NULL);
     vkDestroySurfaceKHR(vulkan.instance, vulkan.surface, NULL);

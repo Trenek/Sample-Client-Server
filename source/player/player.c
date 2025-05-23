@@ -1,3 +1,4 @@
+#include "state.h"
 #include "player.h"
 #include "entity.h"
 #include "camera.h"
@@ -52,10 +53,10 @@ static void getPlayerDisplacement(struct player *p, struct WindowManager *wc, ve
     vec2 direction; {
         getWalkDirection(wc, p->playerKeys, p->playerJoystick, direction);
     }
-    vec2 delta;
-
-    glm_vec2_sub(enemy->pos, player->pos, delta);
-    glm_vec2_normalize(delta);
+    vec2 delta; {
+        glm_vec2_sub(enemy->pos, player->pos, delta);
+        glm_vec2_normalize(delta);
+    }
 
     displacement[0] = + direction[1] * delta[1] - direction[0] * delta[0];
     displacement[1] = - direction[1] * delta[0] - direction[0] * delta[1];
@@ -172,7 +173,7 @@ static void hurtLock(struct player *p, float deltaTime) {
             glm_vec2_scale(delta, 0.01, delta);
         }
         glm_vec2_add(delta, player->pos, player->pos);
-        player->pos[2] += 0.015;
+        player->pos[2] += deltaTime * 3;
     }
     p->time += deltaTime;
     p->hurtTime -= deltaTime;
@@ -213,7 +214,7 @@ static void newMove(struct player *p, float deltaTime, int wal, vec2 dis) {
         p->state = wal;
         p->time = 0;
         switch (wal) {
-            case BATTLE_WALK:
+            case WALK:
                 move(p, deltaTime, dis);
                 break;
             case LEFT_HIGH_PUNCH:
@@ -240,40 +241,108 @@ static void newMove(struct player *p, float deltaTime, int wal, vec2 dis) {
         }
     }
     else switch (wal) {
-        case BATTLE_WALK:
+        case WALK:
             move(p, deltaTime, dis);
             break;
+        case CHARGE:
+            if (p->currentRest < p->maxRest) {
+                p->currentRest += deltaTime * 5000;
+                if (p->currentRest > p->maxRest) {
+                    p->currentRest = p->maxRest;
+                }
+            }
+            p->time += deltaTime;
+            break;
         default:
-            p->time = 0;
+            p->time += deltaTime;
             break;
     }
 }
 
-void movePlayer(struct player *p, struct WindowManager *wc, float deltaTime) {
-    struct playerInstance *player = p->model->instance;
-    vec2 displacement; {
-        getPlayerDisplacement(p, wc, displacement);
+int getState(struct player *p, struct WindowManager *wc, vec2 displacement, enum state *eState) {
+    int resState = 0;
+    getPlayerDisplacement(p, wc, displacement);
+
+    GLFWgamepadstate state;
+    if (glfwJoystickIsGamepad(p->playerJoystick) && glfwGetGamepadState(p->playerJoystick, &state)) {
+        if (state.buttons[GLFW_GAMEPAD_BUTTON_START] == GLFW_PRESS) {
+            *eState = PAUSE;
+        }
+        resState = (
+            state.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER] > 0.1 ? (
+                GLFW_PRESS == state.buttons[GLFW_GAMEPAD_BUTTON_X] ? LEFT_LOW_PUNCH :
+                GLFW_PRESS == state.buttons[GLFW_GAMEPAD_BUTTON_Y] ? LEFT_HIGH_PUNCH :
+                GLFW_PRESS == state.buttons[GLFW_GAMEPAD_BUTTON_B] ? LEFT_KICK :
+                glm_vec2_norm(displacement) > 0.4                  ? WALK :
+                                                                     STANDING 
+            ) :
+            state.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER] > 0.1 ? (
+                GLFW_PRESS == state.buttons[GLFW_GAMEPAD_BUTTON_X] ? RIGHT_LOW_PUNCH :
+                GLFW_PRESS == state.buttons[GLFW_GAMEPAD_BUTTON_Y] ? RIGHT_HIGH_PUNCH :
+                GLFW_PRESS == state.buttons[GLFW_GAMEPAD_BUTTON_B] ? RIGHT_KICK :
+                glm_vec2_norm(displacement) > 0.4                  ? WALK :
+                                                                     STANDING 
+            ) :
+            GLFW_PRESS == state.buttons[GLFW_GAMEPAD_BUTTON_Y] ? CHARGE :
+            glm_vec2_norm(displacement) > 0.4                  ? WALK :
+                                                                 STANDING 
+        );
+
+        if (GLFW_PRESS == state.buttons[GLFW_GAMEPAD_BUTTON_A] && resState == WALK) {
+            resState = FAST_WALK;
+        }
+    }
+    else {
+        resState = (
+            (KEY_PRESS & getKeyState(wc, p->playerKeys[8])) > 0.1 ? (
+                (KEY_PRESS & getKeyState(wc, p->playerKeys[4]))   ? LEFT_LOW_PUNCH :
+                (KEY_PRESS & getKeyState(wc, p->playerKeys[5]))   ? LEFT_HIGH_PUNCH :
+                (KEY_PRESS & getKeyState(wc, p->playerKeys[7]))   ? LEFT_KICK :
+                glm_vec2_norm(displacement) > 0.4                 ? WALK :
+                                                                    STANDING 
+            ) :
+            (KEY_PRESS & getKeyState(wc, p->playerKeys[9])) > 0.1 ? (
+                (KEY_PRESS & getKeyState(wc, p->playerKeys[4]))   ? RIGHT_LOW_PUNCH :
+                (KEY_PRESS & getKeyState(wc, p->playerKeys[5]))   ? RIGHT_HIGH_PUNCH :
+                (KEY_PRESS & getKeyState(wc, p->playerKeys[7]))   ? RIGHT_KICK :
+                glm_vec2_norm(displacement) > 0.4                 ? WALK :
+                                                                    STANDING 
+            ) :
+            (KEY_PRESS & getKeyState(wc, p->playerKeys[5]))       ? CHARGE :
+            glm_vec2_norm(displacement) > 0.4                     ? WALK :
+                                                                    STANDING 
+        );
+
+        if ((KEY_PRESS & getKeyState(wc, p->playerKeys[6])) && resState == WALK) {
+            resState = FAST_WALK;
+        }
     }
 
-    int wal = (
-        (KEY_PRESS & getKeyState(wc, p->playerKeys[4])) ? LEFT_HIGH_PUNCH :
-        (KEY_PRESS & getKeyState(wc, p->playerKeys[5])) ? RIGHT_HIGH_PUNCH :
-        (KEY_PRESS & getKeyState(wc, p->playerKeys[6])) ? LEFT_LOW_PUNCH :
-        (KEY_PRESS & getKeyState(wc, p->playerKeys[7])) ? RIGHT_LOW_PUNCH :
-        (KEY_PRESS & getKeyState(wc, p->playerKeys[8])) ? LEFT_KICK :
-        (KEY_PRESS & getKeyState(wc, p->playerKeys[9])) ? RIGHT_KICK :
-        glm_vec2_norm(displacement) > 0.1               ? BATTLE_WALK :
-                                                          STANDING
-    );
+    return resState;
+}
+
+void movePlayer(struct player *p, struct WindowManager *wc, float deltaTime, enum state *state) {
+    struct playerInstance *player = p->model->instance;
+    vec2 displacement = {};
+    int wal = getState(p, wc, displacement, state);
+
+    if (wal == FAST_WALK) {
+        wal = WALK;
+        if (p->currentRest > 2000 * deltaTime) {
+            deltaTime *= 4;
+            p->currentRest -= 2000 * deltaTime;
+        }
+    }
 
     if (p->hurtLock || p->hurtTime > 0) hurtLock(p, deltaTime);
     else if (p->hitLock) hitLock(p, deltaTime);
-    else if (wal != STANDING) {
+    else if (wal != STANDING && p->hitTime != 0) {
         p->hitLock = false;
         p->didHit = false;
         p->enemy->hurtLock = false;
         p->hitTime = 0;
         p->doesHitLast = false;
+        p->state = STANDING;
 
         newMove(p, deltaTime, wal, displacement);
     }
@@ -295,9 +364,15 @@ void movePlayer(struct player *p, struct WindowManager *wc, float deltaTime) {
     *p->restPercentage = MAX(0, p->currentRest / (8.0 * p->maxRest));
 
     if (p->currentRest < p->maxRest) {
-        p->currentRest += 3;
+        p->currentRest += 800 * deltaTime;
     }
-    player->pos[2] = (player->pos[2] > 0) ? player->pos[2] - 0.005 : 0;
+    
+    if (player->pos[0] < -10) player->pos[0] = -10;
+    if (player->pos[0] >  10) player->pos[0] =  10;
+    if (player->pos[1] < -10) player->pos[1] = -10;
+    if (player->pos[1] >  10) player->pos[1] =  10;
+    player->pos[2] = (player->pos[2] > 0) ? player->pos[2] - deltaTime : 0;
+
     animate(p->model, p->actualModel, p->state, p->time);
 }
 
