@@ -22,7 +22,7 @@ target_include_directories(Arena-Fighter PRIVATE
     ${INCLUDE_DIRECTORIES}
     ${SOURCE_DIRECTORIES}
 )
-target_compile_options(Arena-Fighter PUBLIC
+set(COMPILE_OPTIONS
     -g
     -W
     -Wall
@@ -42,10 +42,16 @@ target_compile_options(Arena-Fighter PUBLIC
 )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(COMPILE_OPTIONS 
+        ${COMPILE_OPTIONS}
+        -O3
+    )
     if (WIN32)
         target_link_options(Arena-Fighter PRIVATE -mwindows)
     endif()
 endif()
+
+target_compile_options(Arena-Fighter PUBLIC ${COMPILE_OPTIONS})
 
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/shaders)
 
