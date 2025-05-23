@@ -1,5 +1,5 @@
 #! /bin/bash
 
 cd build
-./Test
+./Arena-Fighter
 cd ..

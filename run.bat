@@ -1,7 +1,7 @@
 @echo off
 
 cd build
-Test
+Arena-Fighter
 cd ..
 
 echo:

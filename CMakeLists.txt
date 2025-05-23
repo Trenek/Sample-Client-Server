@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(Test VERSION 1.0 LANGUAGES C)
+project(Arena-Fighter VERSION 1.0 LANGUAGES C)
 
 add_subdirectory(dependencies)
 
@@ -11,18 +11,18 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_subdirectory(source)
 add_subdirectory(icon)
 
-add_executable(Test
+add_executable(Arena-Fighter
     ${SOURCE_FILES} 
     ${ICON}
     "${CMAKE_SOURCE_DIR}/source/main.c"
 )
 
-target_link_libraries(Test ${LINK_LIBRARIES})
-target_include_directories(Test PRIVATE 
+target_link_libraries(Arena-Fighter ${LINK_LIBRARIES})
+target_include_directories(Arena-Fighter PRIVATE 
     ${INCLUDE_DIRECTORIES}
     ${SOURCE_DIRECTORIES}
 )
-target_compile_options(Test PUBLIC
+target_compile_options(Arena-Fighter PUBLIC
     -g
     -W
     -Wall
@@ -43,7 +43,7 @@ target_compile_options(Test PUBLIC
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
     if (WIN32)
-        target_link_options(Test PRIVATE -mwindows)
+        target_link_options(Arena-Fighter PRIVATE -mwindows)
     endif()
 endif()
 
@@ -79,4 +79,4 @@ add_custom_command(TARGET shaders POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/music ${CMAKE_BINARY_DIR}/music
 )
 
-add_dependencies(Test shaders)
+add_dependencies(Arena-Fighter shaders)
