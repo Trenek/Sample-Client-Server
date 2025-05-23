@@ -166,6 +166,8 @@ void pause(struct EngineCore *engine, enum state *state) {
         .chosen = 0,
     };
 
+    playSound(&engine->soundManager, 3, true, 1.0f);
+
     while (PAUSE == *state && !shouldWindowClose(engine->window)) {
         glfwPollEvents();
 

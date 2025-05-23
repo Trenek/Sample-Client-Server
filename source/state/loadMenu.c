@@ -369,6 +369,7 @@ static void addEntities(struct EngineCore *this) {
 }
 
 static void loadSounds(struct EngineCore *this) {
+    loadSound(&this->soundManager, 3, "music/Elevator Music.mp3");
     loadSound(&this->soundManager, 2, "music/Victory Music.mp3");
     loadSound(&this->soundManager, 1, "music/Music Bustin Loose.mp3");
     loadSound(&this->soundManager, 0, "music/Synthwave Music - Hackers by Karl Casey.mp3");
