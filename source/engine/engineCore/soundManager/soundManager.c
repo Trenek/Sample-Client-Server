@@ -1,4 +1,4 @@
-#include <assert.h>
+#include "MY_ASSERT.h"
 #include <stdlib.h>
 
 #include "soundManager.h"
@@ -10,7 +10,7 @@ struct SoundManager initSoundManager(void) {
         .sound = NULL
     };
 
-    assert(MA_SUCCESS == ma_engine_init(NULL, result.engine));
+    MY_ASSERT(MA_SUCCESS == ma_engine_init(NULL, result.engine));
 
     return result;
 }
@@ -32,7 +32,7 @@ void loadSound(struct SoundManager *this, size_t soundIndex, const char *soundNa
     }
 
     this->sound[soundIndex] = malloc(sizeof(ma_sound));
-    assert(MA_SUCCESS == ma_sound_init_from_file(this->engine, soundName, 0, NULL, NULL, this->sound[soundIndex]));
+    MY_ASSERT(MA_SUCCESS == ma_sound_init_from_file(this->engine, soundName, 0, NULL, NULL, this->sound[soundIndex]));
 }
 
 void playSound(struct SoundManager *this, size_t soundIndex, bool shouldLoop, float volume) {

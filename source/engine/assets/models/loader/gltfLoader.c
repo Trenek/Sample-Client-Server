@@ -5,6 +5,7 @@
 #include <cgltf.h>
 #include <string.h>
 
+#include "MY_ASSERT.h"
 #include "actualModel.h"
 
 #include "Vertex.h"
@@ -164,8 +165,8 @@ struct timeFrame importantThings(cgltf_animation_sampler *sampler) {
     for (cgltf_size k = 0; k < input->count; k++) {
         result.data[k].values = result.data->values + k * num_components;
 
-        assert(cgltf_accessor_read_float(input, k, &result.data[k].time, 1));
-        assert(cgltf_accessor_read_float(output, k, result.data[k].values, num_components));
+        MY_ASSERT(cgltf_accessor_read_float(input, k, &result.data[k].time, 1));
+        MY_ASSERT(cgltf_accessor_read_float(output, k, result.data[k].values, num_components));
     }
 
     return result;

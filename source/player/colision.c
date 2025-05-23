@@ -1,4 +1,5 @@
 #include <openGJK.h>
+#include <assert.h>
 #include <string.h>
 
 #include "player.h"

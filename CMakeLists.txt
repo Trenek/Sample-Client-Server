@@ -42,7 +42,9 @@ target_compile_options(Test PUBLIC
 )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
-    target_link_options(Test PRIVATE -mwindows)
+    if (WIN32)
+        target_link_options(Test PRIVATE -mwindows)
+    endif()
 endif()
 
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/shaders)
