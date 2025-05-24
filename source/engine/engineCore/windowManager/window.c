@@ -48,7 +48,7 @@ GLFWwindow *createWindow(struct windowData *data) {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    result = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", NULL, NULL);
+    result = glfwCreateWindow(WIDTH, HEIGHT, "Arena Fighter", NULL, NULL);
 
     setIcon(result, "textures/iconka.png");
     glfwSetWindowUserPointer(result, data);

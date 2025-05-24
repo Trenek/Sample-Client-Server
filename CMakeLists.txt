@@ -23,7 +23,6 @@ target_include_directories(Arena-Fighter PRIVATE
     ${SOURCE_DIRECTORIES}
 )
 set(COMPILE_OPTIONS
-    -g
     -W
     -Wall
     -Wextra
@@ -49,6 +48,11 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
     if (WIN32)
         target_link_options(Arena-Fighter PRIVATE -mwindows)
     endif()
+else()
+    set(COMPILE_OPTIONS 
+        ${COMPILE_OPTIONS}
+        -g
+    )
 endif()
 
 target_compile_options(Arena-Fighter PUBLIC ${COMPILE_OPTIONS})
