@@ -9,6 +9,8 @@
 #include "stringBuilder.h"
 #include "instanceBuffer.h"
 
+#include "renderPassCore.h"
+
 #include "graphicsPipelineObj.h"
 
 #include "Vertex.h"
@@ -50,6 +52,21 @@ static void addModelData(struct EngineCore *this) {
     addResource(modelData, "cube", loadModel("models/my_cube.obj", &this->graphics), destroyActualModel);
 
     addResource(&this->resource, "modelData", modelData, cleanupResources);
+}
+
+static void addRenderPassCoreData(struct EngineCore *this) {
+    struct ResourceManager *renderPassCoreData = calloc(1, sizeof(struct ResourceManager));
+
+    addResource(renderPassCoreData, "Clean", createRenderPassCore((struct renderPassCoreBuilder) {
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .initLayout = VK_IMAGE_LAYOUT_UNDEFINED
+    }, &this->graphics), freeRenderPassCore);
+    addResource(renderPassCoreData, "Stay", createRenderPassCore((struct renderPassCoreBuilder) {
+        .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
+        .initLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+    }, &this->graphics), freeRenderPassCore);
+
+    addResource(&this->resource, "RenderPassCoreData", renderPassCoreData, cleanupResources);
 }
 
 static void addObjectLayout(struct EngineCore *this) {
@@ -110,6 +127,7 @@ static void addObjectLayout(struct EngineCore *this) {
 
 static void createGraphicPipelines(struct EngineCore *this) {
     struct ResourceManager *graphicPipelinesData = calloc(1, sizeof(struct ResourceManager));
+    struct ResourceManager *renderPassCoreData = findResource(&this->resource, "RenderPassCoreData");
 
     struct Textures *texture = findResource(findResource(&this->resource, "textures"), "button");
     struct Textures *colorTexture = findResource(findResource(&this->resource, "textures"), "simpleColors");
@@ -118,120 +136,120 @@ static void createGraphicPipelines(struct EngineCore *this) {
     struct descriptorSetLayout *animLayout = findResource(findResource(&this->resource, "objectLayout"), "anim");
     struct descriptorSetLayout *cameraLayout = findResource(findResource(&this->resource, "objectLayout"), "camera");
 
-    addResource(graphicPipelinesData, "Text",
-        createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
-            .vertexShader = "shaders/text2dV.spv",
-            .fragmentShader = "shaders/textF.spv",
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f,
-            .texture = &texture->descriptor,
-            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+    struct renderPassCore *renderPass[] = {
+        findResource(renderPassCoreData, "Clean"),
+        findResource(renderPassCoreData, "Stay")
+    };
+    size_t qRenderPass = sizeof(renderPass) / sizeof(struct renderPassCore *);
 
-            .objectLayout = objectLayout->descriptorSetLayout,
+    addResource(graphicPipelinesData, "Text", createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
+        .qRenderPassCore = qRenderPass,
+        .renderPassCore = renderPass,
+        .vertexShader = "shaders/text2dV.spv",
+        .fragmentShader = "shaders/textF.spv",
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+        .texture = &texture->descriptor,
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 
-            Vert(FontVertex),
-            .operation = VK_COMPARE_OP_LESS,
-            .cullFlags = VK_CULL_MODE_BACK_BIT,
+        .objectLayout = objectLayout->descriptorSetLayout,
 
-            .cameraLayout = cameraLayout->descriptorSetLayout
-        }, &this->graphics),
-        destroyObjGraphicsPipeline
-    );
-    addResource(graphicPipelinesData, "Flat",
-        createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
-            .vertexShader = "shaders/vert2d.spv",
-            .fragmentShader = "shaders/frag2d.spv",
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f,
-            .texture = &texture->descriptor,
-            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        Vert(FontVertex),
+        .operation = VK_COMPARE_OP_LESS,
+        .cullFlags = VK_CULL_MODE_BACK_BIT,
 
-            .objectLayout = objectLayout->descriptorSetLayout,
+        .cameraLayout = cameraLayout->descriptorSetLayout
+    }, &this->graphics), destroyObjGraphicsPipeline);
+    addResource(graphicPipelinesData, "Flat", createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
+        .qRenderPassCore = qRenderPass,
+        .renderPassCore = renderPass,
+        .vertexShader = "shaders/vert2d.spv",
+        .fragmentShader = "shaders/frag2d.spv",
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+        .texture = &texture->descriptor,
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 
-            Vert(AnimVertex),
-            .operation = VK_COMPARE_OP_LESS,
-            .cullFlags = VK_CULL_MODE_NONE,
+        .objectLayout = objectLayout->descriptorSetLayout,
 
-            .cameraLayout = cameraLayout->descriptorSetLayout
-        }, &this->graphics),
-        destroyObjGraphicsPipeline
-    );
-    addResource(graphicPipelinesData, "FlatColor",
-        createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
-            .vertexShader = "shaders/vert2d.spv",
-            .fragmentShader = "shaders/frag2d.spv",
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f,
-            .texture = &colorTexture->descriptor,
-            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        Vert(AnimVertex),
+        .operation = VK_COMPARE_OP_LESS,
+        .cullFlags = VK_CULL_MODE_NONE,
 
-            .objectLayout = objectLayout->descriptorSetLayout,
+        .cameraLayout = cameraLayout->descriptorSetLayout
+    }, &this->graphics), destroyObjGraphicsPipeline);
+    addResource(graphicPipelinesData, "FlatColor", createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
+        .qRenderPassCore = qRenderPass,
+        .renderPassCore = renderPass,
+        .vertexShader = "shaders/vert2d.spv",
+        .fragmentShader = "shaders/frag2d.spv",
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+        .texture = &colorTexture->descriptor,
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 
-            Vert(AnimVertex),
-            .operation = VK_COMPARE_OP_LESS,
-            .cullFlags = VK_CULL_MODE_NONE,
+        .objectLayout = objectLayout->descriptorSetLayout,
 
-            .cameraLayout = cameraLayout->descriptorSetLayout
-        }, &this->graphics),
-        destroyObjGraphicsPipeline
-    );
-    addResource(graphicPipelinesData, "Skybox",
-        createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
-            .vertexShader = "shaders/skyboxV.spv",
-            .fragmentShader = "shaders/skyboxF.spv",
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f,
-            .texture = &cubeMap->descriptor,
-            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        Vert(AnimVertex),
+        .operation = VK_COMPARE_OP_LESS,
+        .cullFlags = VK_CULL_MODE_NONE,
 
-            .objectLayout = objectLayout->descriptorSetLayout,
+        .cameraLayout = cameraLayout->descriptorSetLayout
+    }, &this->graphics), destroyObjGraphicsPipeline);
+    addResource(graphicPipelinesData, "Skybox", createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
+        .qRenderPassCore = qRenderPass,
+        .renderPassCore = renderPass,
+        .vertexShader = "shaders/skyboxV.spv",
+        .fragmentShader = "shaders/skyboxF.spv",
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+        .texture = &cubeMap->descriptor,
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 
-            Vert(AnimVertex),
-            .operation = VK_COMPARE_OP_LESS_OR_EQUAL,
-            .cullFlags = VK_CULL_MODE_BACK_BIT,
+        .objectLayout = objectLayout->descriptorSetLayout,
 
-            .cameraLayout = cameraLayout->descriptorSetLayout
-        }, &this->graphics),
-        destroyObjGraphicsPipeline
-    );
-    addResource(graphicPipelinesData, "Animated Model",
-        createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
-            .vertexShader = "shaders/playerAnimation.spv",
-            .fragmentShader = "shaders/playerFrag.spv",
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f,
-            .texture = &texture->descriptor,
-            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        Vert(AnimVertex),
+        .operation = VK_COMPARE_OP_LESS_OR_EQUAL,
+        .cullFlags = VK_CULL_MODE_BACK_BIT,
 
-            .objectLayout = animLayout->descriptorSetLayout,
+        .cameraLayout = cameraLayout->descriptorSetLayout
+    }, &this->graphics), destroyObjGraphicsPipeline);
+    addResource(graphicPipelinesData, "Animated Model", createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
+        .qRenderPassCore = qRenderPass,
+        .renderPassCore = renderPass,
+        .vertexShader = "shaders/playerAnimation.spv",
+        .fragmentShader = "shaders/playerFrag.spv",
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+        .texture = &texture->descriptor,
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 
-            Vert(AnimVertex),
-            .operation = VK_COMPARE_OP_LESS,
-            .cullFlags = VK_CULL_MODE_NONE,
+        .objectLayout = animLayout->descriptorSetLayout,
 
-            .cameraLayout = cameraLayout->descriptorSetLayout
-        }, &this->graphics),
-        destroyObjGraphicsPipeline
-    );
-    addResource(graphicPipelinesData, "Floor",
-        createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
-            .vertexShader = "shaders/vert.spv",
-            .fragmentShader = "shaders/frag.spv",
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f,
-            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        Vert(AnimVertex),
+        .operation = VK_COMPARE_OP_LESS,
+        .cullFlags = VK_CULL_MODE_NONE,
 
-            .texture = &colorTexture->descriptor,
-            .objectLayout = objectLayout->descriptorSetLayout,
+        .cameraLayout = cameraLayout->descriptorSetLayout
+    }, &this->graphics), destroyObjGraphicsPipeline);
+    addResource(graphicPipelinesData, "Floor", createObjGraphicsPipeline((struct graphicsPipelineBuilder) {
+        .qRenderPassCore = qRenderPass,
+        .renderPassCore = renderPass,
+        .vertexShader = "shaders/vert.spv",
+        .fragmentShader = "shaders/frag.spv",
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 
-            Vert(AnimVertex),
-            .operation = VK_COMPARE_OP_LESS,
-            .cullFlags = VK_CULL_MODE_BACK_BIT,
+        .texture = &colorTexture->descriptor,
+        .objectLayout = objectLayout->descriptorSetLayout,
 
-            .cameraLayout = cameraLayout->descriptorSetLayout
-        }, &this->graphics),
-        destroyObjGraphicsPipeline
-    );
+        Vert(AnimVertex),
+        .operation = VK_COMPARE_OP_LESS,
+        .cullFlags = VK_CULL_MODE_BACK_BIT,
+
+        .cameraLayout = cameraLayout->descriptorSetLayout
+    }, &this->graphics), destroyObjGraphicsPipeline);
 
     addResource(&this->resource, "graphicPipelines", graphicPipelinesData, cleanupResources);
 }
@@ -379,6 +397,7 @@ void loadResources(struct EngineCore *engine, enum state *state) {
     addTextures(engine);
     addModelData(engine);
 
+    addRenderPassCoreData(engine);
     addObjectLayout(engine);
 
     createGraphicPipelines(engine);

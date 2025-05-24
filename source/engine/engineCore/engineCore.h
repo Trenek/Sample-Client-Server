@@ -8,6 +8,7 @@
 
 #include "graphicsSetup.h"
 
+struct renderPassCore;
 struct EngineCore {
     struct WindowManager window;
     struct DeltaTimeManager deltaTime;
@@ -18,10 +19,10 @@ struct EngineCore {
 };
 
 struct EngineCore setup();
-void recreateSwapChain(struct EngineCore *vulkan);
+void recreateSwapChain(struct EngineCore *vulkan, uint16_t qRenderPassCore, struct renderPassCore **renderPassCore);
 void cleanup(struct EngineCore vulkan);
 
 struct renderPassObj;
-void drawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPassObj **renderPass);
+void drawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPassObj **renderPass, uint16_t qRenderPassCore, struct renderPassCore **renderPassCore);
 
 #endif

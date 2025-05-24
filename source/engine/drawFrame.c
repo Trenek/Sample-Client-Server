@@ -2,7 +2,8 @@
 
 #include "engineCore.h"
 
-#include "renderPass.h"
+#include "renderPassCore.h"
+#include "renderPassObj.h"
 #include "graphicsPipelineObj.h"
 #include "entity.h"
 #include "actualModel.h"
@@ -10,7 +11,7 @@
 
 #include "MY_ASSERT.h"
 
-static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swapChainFramebuffer, VkExtent2D swapChainExtent, struct EngineCore *vulkan, uint32_t currentFrame, uint16_t qRenderPass, struct renderPassObj *renderPass[qRenderPass]) {
+static void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, VkExtent2D swapChainExtent, uint32_t currentFrame, uint16_t qRenderPass, struct renderPassObj *renderPass[qRenderPass]) {
     VkCommandBufferBeginInfo beginInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = 0,
@@ -48,8 +49,8 @@ static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swa
         };
         renderPassInfo[i] = (VkRenderPassBeginInfo){
             .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-            .renderPass = vulkan->graphics.renderPass,
-            .framebuffer = swapChainFramebuffer,
+            .renderPass = renderPass[i]->renderPass->renderPass,
+            .framebuffer = renderPass[i]->renderPass->swapChainFramebuffers[imageIndex],
             .renderArea = renderArena[i],
             .clearValueCount = sizeof(clearValues) / sizeof(VkClearValue),
             .pClearValues = clearValues
@@ -73,7 +74,7 @@ static void recordCommandBuffer(VkCommandBuffer commandBuffer, VkFramebuffer swa
             vkCmdSetScissor(commandBuffer, 0, 1, &renderArena[i]);
 
             for (uint32_t j = 0; j < renderPass[i]->qData; j += 1) {
-                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPass[i]->data[j].pipe->pipeline);
+                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderPass[i]->data[j].pipe->pipeline[renderPass[i]->data[j].pipeNum].pipeline);
                 for (uint32_t k = 0; k < renderPass[i]->data[j].qEntity; k += 1) {
                     VkDescriptorSet sets[] = {
                         renderPass[i]->data[j].entity[k]->object.descriptorSets[currentFrame],
@@ -170,7 +171,7 @@ static VkResult localDrawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, 
         vkResetFences(vulkan->graphics.device, 1, &vulkan->graphics.inFlightFence[currentFrame]);
 
         vkResetCommandBuffer(vulkan->graphics.commandBuffer[currentFrame], 0);
-        recordCommandBuffer(vulkan->graphics.commandBuffer[currentFrame], vulkan->graphics.swapChainFramebuffers[imageIndex], vulkan->graphics.swapChain.extent, vulkan, currentFrame, qRenderPass, renderPass);
+        recordCommandBuffer(vulkan->graphics.commandBuffer[currentFrame], imageIndex, vulkan->graphics.swapChain.extent, currentFrame, qRenderPass, renderPass);
 
         MY_ASSERT(VK_SUCCESS == vkQueueSubmit(vulkan->graphics.graphicsQueue, 1, &submitInfo, vulkan->graphics.inFlightFence[currentFrame]));
         result = vkQueuePresentKHR(vulkan->graphics.presentQueue, &presentInfo);
@@ -184,7 +185,7 @@ static VkResult localDrawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, 
     return result;
 }
 
-void drawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPassObj **renderPass) {
+void drawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPassObj **renderPass, uint16_t qRenderPassCore, struct renderPassCore **renderPassCore) {
     updateDeltaTime(&vulkan->deltaTime);
 
     switch (localDrawFrame(vulkan, qRenderPass, renderPass)) {
@@ -203,6 +204,6 @@ void drawFrame(struct EngineCore *vulkan, uint16_t qRenderPass, struct renderPas
     if (vulkan->window.data->framebufferResized) {
         vulkan->window.data->framebufferResized = false;
 
-        recreateSwapChain(vulkan);
+        recreateSwapChain(vulkan, qRenderPassCore, renderPassCore);
     }
 }

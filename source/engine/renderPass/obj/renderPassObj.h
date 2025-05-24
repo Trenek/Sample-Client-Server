@@ -1,5 +1,5 @@
-#ifndef RENDER_PASS_H
-#define RENDER_PASS_H
+#ifndef RENDER_PASS_OBJ_H
+#define RENDER_PASS_OBJ_H
 
 #include <vulkan/vulkan.h>
 
@@ -11,6 +11,7 @@ struct graphicsPipeline;
 struct GraphicsSetup;
 
 struct pipelineConnection {
+    size_t pipeNum;
     struct graphicsPipeline *pipe;
     struct descriptor *texture;
     struct Entity **entity;
@@ -19,6 +20,7 @@ struct pipelineConnection {
 
 struct renderPassBuilder {
     double coordinates[4];
+    struct renderPassCore *renderPass;
     
     void (*updateCameraBuffer)(void *buffersMapped, VkExtent2D swapChainExtent, vec3 cameraPos, vec3 direction);
 
@@ -26,16 +28,11 @@ struct renderPassBuilder {
     size_t qData;
 };
 
-struct renderPass {
-    VkRenderPass renderPass;
-    VkFramebuffer *swapChainFramebuffers;
-};
-
 struct renderPassObj {
     VkDevice device;
     double coordinates[4];
     
-    struct renderPass *renderPass;
+    struct renderPassCore *renderPass;
     struct camera camera;
     void (*updateCameraBuffer)(void *buffersMapped, VkExtent2D swapChainExtent, vec3 cameraPos, vec3 direction);
 

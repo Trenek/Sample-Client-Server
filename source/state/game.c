@@ -9,7 +9,7 @@
 #include "instanceBuffer.h"
 
 #include "graphicsPipelineObj.h"
-#include "renderPass.h"
+#include "renderPassObj.h"
 
 #include "player.h"
 
@@ -56,6 +56,13 @@ void game(struct EngineCore *engine, enum state *state) {
 
     size_t qRenderPass = sizeof(renderPass) / sizeof(struct renderPassObj *);
 
+    struct ResourceManager *renderPassCoreData = findResource(&engine->resource, "RenderPassCoreData");
+    struct renderPassCore *renderPassArr[] = { 
+        findResource(renderPassCoreData, "Clean"),
+        findResource(renderPassCoreData, "Stay")
+    };
+    size_t qRenderPassArr = sizeof(renderPassArr) / sizeof(struct renderPassCore *);
+
     struct player *playerData = findResource(&engine->resource, "actualPlayerData");
 
     struct playerInstance *player = entity[1]->instance;
@@ -72,7 +79,7 @@ void game(struct EngineCore *engine, enum state *state) {
         movePlayer(&playerData[0], &engine->window, engine->deltaTime.deltaTime, state);
         movePlayer(&playerData[1], &engine->window, engine->deltaTime.deltaTime, state);
 
-        drawFrame(engine, qRenderPass, renderPass);
+        drawFrame(engine, qRenderPass, renderPass, qRenderPassArr, renderPassArr);
 
         bool isMClicked = (KEY_PRESS | KEY_CHANGE) == getKeyState(&engine->window, GLFW_KEY_M);
         bool isPClicked = (KEY_PRESS | KEY_CHANGE) == getKeyState(&engine->window, GLFW_KEY_P);

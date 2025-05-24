@@ -6,6 +6,9 @@
 struct GraphicsSetup;
 
 struct graphicsPipelineBuilder {
+    size_t qRenderPassCore;
+    struct renderPassCore **renderPassCore;
+
     VkDescriptorSetLayout objectLayout;
     VkDescriptorSetLayout cameraLayout;
 
@@ -28,12 +31,18 @@ struct graphicsPipelineBuilder {
     VkCompareOp operation;
 };
 
+struct renderPipeline {
+    VkPipeline pipeline;
+    struct renderPassCore *core;
+};
+
 struct graphicsPipeline {
     VkDevice device;
     struct descriptor *texture;
 
     VkPipelineLayout pipelineLayout;
-    VkPipeline pipeline;
+    size_t qPipelines;
+    struct renderPipeline *pipeline;
 };
 
 struct graphicsPipeline *createObjGraphicsPipeline(struct graphicsPipelineBuilder builder, struct GraphicsSetup *vulkan);

@@ -19,9 +19,6 @@ struct GraphicsSetup {
     struct swapChain swapChain;
     VkImageView *swapChainImageViews;
 
-    VkRenderPass renderPass;
-    VkFramebuffer *swapChainFramebuffers;
-
     VkCommandPool commandPool;
     VkCommandBuffer commandBuffer[MAX_FRAMES_IN_FLIGHT];
     VkCommandPool transferCommandPool;

@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stddef.h>
 
-#include "renderPass.h"
+#include "renderPassObj.h"
 
 #include "graphicsSetup.h"
 #include "definitions.h"
@@ -10,11 +10,13 @@
 #include "buffer.h"
 #include "descriptor.h"
 #include "cameraBufferObject.h"
+#include "graphicsPipelineObj.h"
 
 struct renderPassObj *createRenderPassObj(struct renderPassBuilder builder, struct GraphicsSetup *vulkan) {
     struct renderPassObj *result = calloc(1, sizeof(struct renderPassObj));
     *result = (struct renderPassObj){
         .device = vulkan->device,
+        .renderPass = builder.renderPass,
         .data = malloc(sizeof(struct pipelineConnection) * builder.qData),
         .qData = builder.qData,
         .cameraDescriptorPool = createCameraDescriptorPool(vulkan->device),
@@ -24,6 +26,8 @@ struct renderPassObj *createRenderPassObj(struct renderPassBuilder builder, stru
 
     memcpy(result->data, builder.data, sizeof(struct pipelineConnection) * builder.qData);
     for (size_t i = 0; i < result->qData; i += 1) {
+        while (result->renderPass != result->data[i].pipe->pipeline[result->data[i].pipeNum].core) result->data[i].pipeNum += 1;
+
         result->data[i].entity = malloc(sizeof(struct Entity *) * result->data[i].qEntity);
         memcpy(result->data[i].entity, builder.data[i].entity, sizeof(struct Entity *) * result->data[i].qEntity);
     }

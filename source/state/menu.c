@@ -11,7 +11,7 @@
 #include "instanceBuffer.h"
 
 #include "graphicsPipelineObj.h"
-#include "renderPass.h"
+#include "renderPassObj.h"
 
 #include "player.h"
 
@@ -37,8 +37,12 @@ void menu(struct EngineCore *engine, enum state *state) {
     };
     size_t qEntity = sizeof(entity) / sizeof(struct Entity *);
 
+    struct ResourceManager *renderPassCoreData = findResource(&engine->resource, "RenderPassCoreData");
+    struct renderPassCore *clean = findResource(renderPassCoreData, "Clean");
+
     struct renderPassObj *renderPass[] = {
         createRenderPassObj((struct renderPassBuilder){
+            .renderPass = clean,
             .coordinates = { 0.0, 0.0, 1.0, 1.0 },
             .data = (struct pipelineConnection[]) {
                 {
@@ -157,7 +161,7 @@ void menu(struct EngineCore *engine, enum state *state) {
 
         updateInstances(entity, qEntity, engine->deltaTime.deltaTime);
 
-        drawFrame(engine, qRenderPass, renderPass);
+        drawFrame(engine, qRenderPass, renderPass, 1, &clean);
         shadowButton(engine->graphics, engine->window, &button);
         if (button.isClicked) {
             *state = button.newState[button.chosen];

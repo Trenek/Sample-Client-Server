@@ -9,7 +9,7 @@
 #include "instanceBuffer.h"
 
 #include "graphicsPipelineObj.h"
-#include "renderPass.h"
+#include "renderPassObj.h"
 
 #include "player.h"
 
@@ -43,8 +43,13 @@ static void createScreens(struct EngineCore *engine) {
     
     struct ResourceManager *screenData = calloc(1, sizeof(struct ResourceManager));
 
+    struct ResourceManager *renderPassCoreData = findResource(&engine->resource, "RenderPassCoreData");
+    struct renderPassCore *clean = findResource(renderPassCoreData, "Clean");
+    struct renderPassCore *stay = findResource(renderPassCoreData, "Stay");
+
     addResource(screenData, "Left Screen", createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 0.0, 0.0, 0.5, 1.0 },
+            .renderPass = clean,
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[0],
@@ -73,6 +78,7 @@ static void createScreens(struct EngineCore *engine) {
     addResource(screenData, "Right Screen",
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 0.5, 0.0, 0.5, 1.0 },
+            .renderPass = clean,
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[0],
@@ -101,6 +107,7 @@ static void createScreens(struct EngineCore *engine) {
     addResource(screenData, "Background Left 1",
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 0.0 / 8, 0.0 / 8, 2.0 / 8, 1.0 / 8 },
+            .renderPass = stay,
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[4],
@@ -116,6 +123,7 @@ static void createScreens(struct EngineCore *engine) {
     addResource(screenData, "Background Right 1",
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 6.0 / 8, 0.0 / 8, 2.0 / 8, 1.0 / 8 },
+            .renderPass = stay,
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[4],
@@ -131,6 +139,7 @@ static void createScreens(struct EngineCore *engine) {
     addResource(screenData, "Middle Text",
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 0.0, 0.0, 1.0, 1.0 },
+            .renderPass = stay,
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[2],
@@ -148,6 +157,7 @@ static void createScreens(struct EngineCore *engine) {
     addResource(screenData, "Left Figure",
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 0.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
+            .renderPass = stay,
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[1],
@@ -163,6 +173,7 @@ static void createScreens(struct EngineCore *engine) {
     addResource(screenData, "Right Figure",
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 7.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
+            .renderPass = stay,
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[1],
@@ -178,6 +189,7 @@ static void createScreens(struct EngineCore *engine) {
     addResource(screenData, "Left Text",
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 0.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
+            .renderPass = stay,
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[2],
@@ -195,6 +207,7 @@ static void createScreens(struct EngineCore *engine) {
     addResource(screenData, "Right Text",
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 7.0 / 8, 0.0 / 8, 1.0 / 8, 1.0 / 8 },
+            .renderPass = stay,
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[2],
@@ -212,6 +225,7 @@ static void createScreens(struct EngineCore *engine) {
     addResource(screenData, "Background Left 2",
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 1.0 / 8, 2.0 / 80, 1.0 / 8, 3.0 / 80 },
+            .renderPass = stay,
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[4],
@@ -227,6 +241,7 @@ static void createScreens(struct EngineCore *engine) {
     addResource(screenData, "Background Left 3",
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 1.0 / 8, 6.0 / 90, 1.0 / 8, 3.0 / 80 },
+            .renderPass = stay,
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[4],
@@ -242,6 +257,7 @@ static void createScreens(struct EngineCore *engine) {
     addResource(screenData, "Background Left 4",
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 1.0 / 8, 2.0 / 80, 1.0 / 8, 3.0 / 80 },
+            .renderPass = stay,
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[4],
@@ -257,6 +273,7 @@ static void createScreens(struct EngineCore *engine) {
     addResource(screenData, "Background Left 5",
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 1.0 / 8, 6.0 / 90, 1.0 / 8, 3.0 / 80 },
+            .renderPass = stay,
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[4],
@@ -272,6 +289,7 @@ static void createScreens(struct EngineCore *engine) {
     addResource(screenData, "Background Right 2",
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 6.0 / 8, 2.0 / 80, 1.0 / 8, 3.0 / 80 },
+            .renderPass = stay,
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[4],
@@ -287,6 +305,7 @@ static void createScreens(struct EngineCore *engine) {
     addResource(screenData, "Background Right 3",
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 6.0 / 8, 6.0 / 90, 1.0 / 8, 3.0 / 80 },
+            .renderPass = stay,
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[4],
@@ -302,6 +321,7 @@ static void createScreens(struct EngineCore *engine) {
     addResource(screenData, "Background Right 4",
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 6.0 / 8, 2.0 / 80, 1.0 / 8, 3.0 / 80 },
+            .renderPass = stay,
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[4],
@@ -317,6 +337,7 @@ static void createScreens(struct EngineCore *engine) {
     addResource(screenData, "Background Right 5",
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 6.0 / 8, 6.0 / 90, 1.0 / 8, 3.0 / 80 },
+            .renderPass = stay,
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[4],

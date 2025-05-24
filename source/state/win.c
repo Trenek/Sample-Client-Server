@@ -12,7 +12,7 @@
 #include "instanceBuffer.h"
 
 #include "graphicsPipelineObj.h"
-#include "renderPass.h"
+#include "renderPassObj.h"
 
 #include "player.h"
 
@@ -58,9 +58,17 @@ void win(struct EngineCore *engine, enum state *state) {
     };
     size_t qEntity = sizeof(entity) / sizeof(struct Entity *);
 
+    struct ResourceManager *renderPassCoreData = findResource(&engine->resource, "RenderPassCoreData");
+    struct renderPassCore *renderPassArr[] = { 
+        findResource(renderPassCoreData, "Clean"),
+        findResource(renderPassCoreData, "Stay")
+    };
+
+    size_t qRenderPassArr = sizeof(renderPassArr) / sizeof(struct renderPassCore *);
     struct renderPassObj *renderPass[] = {
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 0.0, 0.0, 1.0, 1.0 },
+            .renderPass = renderPassArr[0],
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[2],
@@ -78,6 +86,7 @@ void win(struct EngineCore *engine, enum state *state) {
         }, &engine->graphics),
         createRenderPassObj((struct renderPassBuilder){
             .coordinates = { 0.0, 0.0, 1.0, 1.0 },
+            .renderPass = renderPassArr[1],
             .data = (struct pipelineConnection[]) {
                 {
                     .pipe = pipe[0],
@@ -239,7 +248,7 @@ void win(struct EngineCore *engine, enum state *state) {
         posePlayer(playerData, engine->deltaTime.deltaTime);
         updateInstances(entity, qEntity, engine->deltaTime.deltaTime);
 
-        drawFrame(engine, qRenderPass, renderPass);
+        drawFrame(engine, qRenderPass, renderPass, qRenderPassArr, renderPassArr);
         shadowButton(engine->graphics, engine->window, &button);
         if (button.isClicked) {
             *state = button.newState[button.chosen];

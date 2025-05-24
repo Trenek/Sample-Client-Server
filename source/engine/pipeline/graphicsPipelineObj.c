@@ -1,6 +1,7 @@
 #include <malloc.h>
 
 #include "graphicsPipelineObj.h"
+#include "renderPassCore.h"
 
 #include "pipelineFunctions.h"
 #include "graphicsSetup.h"
@@ -22,7 +23,18 @@ struct graphicsPipeline *createObjGraphicsPipeline(struct graphicsPipelineBuilde
         .pipelineLayout = createPipelineLayout(vulkan->device, qDescriptorSetLayout, descriptorSetLayout)
     };
 
-    graphics->pipeline = createGraphicsPipeline(builder, vulkan->device, vulkan->renderPass, graphics->pipelineLayout, vulkan->msaaSamples);
+    graphics->qPipelines = builder.qRenderPassCore;
+    graphics->pipeline = malloc(sizeof(struct renderPipeline) * graphics->qPipelines);
+    for (size_t i = 0; i < graphics->qPipelines; i += 1) {
+        graphics->pipeline[i].pipeline = createGraphicsPipeline(
+            builder, 
+            vulkan->device, 
+            builder.renderPassCore[i]->renderPass, 
+            graphics->pipelineLayout, 
+            vulkan->msaaSamples
+        );
+        graphics->pipeline[i].core = builder.renderPassCore[i];
+    }
 
     return graphics;
 }
@@ -31,7 +43,11 @@ void destroyObjGraphicsPipeline(void *pipePtr) {
     struct graphicsPipeline *pipe = pipePtr;
     vkDeviceWaitIdle(pipe->device);
 
-    vkDestroyPipeline(pipe->device, pipe->pipeline, NULL);
+    for (size_t i = 0; i < pipe->qPipelines; i += 1) {
+        vkDestroyPipeline(pipe->device, pipe->pipeline[i].pipeline, NULL);
+    }
+    free(pipe->pipeline);
+
     vkDestroyPipelineLayout(pipe->device, pipe->pipelineLayout, NULL);
 
     free(pipe);

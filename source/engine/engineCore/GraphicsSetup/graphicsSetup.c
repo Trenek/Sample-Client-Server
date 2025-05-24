@@ -20,8 +20,6 @@ static void cleanupSwapChain(struct GraphicsSetup *vulkan) {
     vkDestroyImage(vulkan->device, vulkan->depthImage, NULL);
     vkFreeMemory(vulkan->device, vulkan->depthImageMemory, NULL);
 
-    destroyFramebuffers(vulkan->device, vulkan->swapChainFramebuffers, vulkan->swapChain.imagesCount);
-
     destroyImageViews(vulkan->swapChainImageViews, vulkan->swapChain.imagesCount, vulkan->device);
 
     vkDestroySwapchainKHR(vulkan->device, vulkan->swapChain.this, NULL);
@@ -35,11 +33,8 @@ void recreateSwapChainGraphics(GLFWwindow *window, struct GraphicsSetup *vulkan)
     vulkan->swapChain = createSwapChain(window, vulkan->surface, vulkan->physicalDevice, vulkan->device);
     vulkan->swapChainImageViews = createImageViews(vulkan->device, vulkan->swapChain);
 
-
     createColorResources(&vulkan->colorImage, &vulkan->colorImageMemory, &vulkan->colorImageView, vulkan->device, vulkan->physicalDevice, vulkan->swapChain.extent, vulkan->swapChain.imageFormat, vulkan->msaaSamples);
     createDepthResources(&vulkan->depthImage, &vulkan->depthImageMemory, &vulkan->depthImageView, vulkan->device, vulkan->physicalDevice, vulkan->swapChain.extent, vulkan->msaaSamples, vulkan->transferCommandPool, vulkan->transferQueue);
-
-    vulkan->swapChainFramebuffers = createFramebuffers(vulkan->device, vulkan->swapChainImageViews, vulkan->swapChain.imagesCount, vulkan->swapChain.extent, vulkan->renderPass, vulkan->depthImageView, vulkan->colorImageView);
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i += 1) {
         vulkan->imageAvailableSemaphore[i] = createSemaphore(vulkan->device);
@@ -65,9 +60,6 @@ struct GraphicsSetup setupGraphics(GLFWwindow *window) {
 
     createColorResources(&vulkan.colorImage, &vulkan.colorImageMemory, &vulkan.colorImageView, vulkan.device, vulkan.physicalDevice, vulkan.swapChain.extent, vulkan.swapChain.imageFormat, vulkan.msaaSamples);
     createDepthResources(&vulkan.depthImage, &vulkan.depthImageMemory, &vulkan.depthImageView, vulkan.device, vulkan.physicalDevice, vulkan.swapChain.extent, vulkan.msaaSamples, vulkan.transferCommandPool, vulkan.transferQueue);
-
-    vulkan.renderPass = createRenderPass(vulkan.device, vulkan.physicalDevice, vulkan.swapChain.imageFormat, vulkan.msaaSamples);
-    vulkan.swapChainFramebuffers = createFramebuffers(vulkan.device, vulkan.swapChainImageViews, vulkan.swapChain.imagesCount, vulkan.swapChain.extent, vulkan.renderPass, vulkan.depthImageView, vulkan.colorImageView);
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i += 1) {
         vulkan.imageAvailableSemaphore[i] = createSemaphore(vulkan.device);
@@ -97,10 +89,6 @@ void cleanupGraphics(struct GraphicsSetup vulkan) {
 
     vkDestroyCommandPool(vulkan.device, vulkan.commandPool, NULL);
     vkDestroyCommandPool(vulkan.device, vulkan.transferCommandPool, NULL);
-
-    destroyFramebuffers(vulkan.device, vulkan.swapChainFramebuffers, vulkan.swapChain.imagesCount);
-
-    vkDestroyRenderPass(vulkan.device, vulkan.renderPass, NULL);
 
     destroyImageViews(vulkan.swapChainImageViews, vulkan.swapChain.imagesCount, vulkan.device);
     freeSwapChain(vulkan.device, &vulkan.swapChain);
